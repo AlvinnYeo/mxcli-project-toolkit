@@ -121,6 +121,15 @@ never appears in the ledger is clean here *or* wrong; `--rule <id>` and the blin
 which. Before this file existed the only history was `lint-baseline.json` in git, which records
 the count that was *accepted*, not what each run saw.
 
+**The metrics ledger is the outcome side of the same question.** `project-bin/exec.sh` appends
+one row per run to `.claude/loop/metrics-ledger.tsv` via `metrics-ledger.sh` (outcome class,
+elapsed seconds, mxbuild errors, lint total, and — after a clean build — the `mxcli report`
+overall score plus its seven category scores and violation count), and `metrics-trend.sh`
+reads it back: applied-vs-failed counts, median elapsed first half → second half, lint total
+and report score first → last. Lint counts say whether a rule fires; this says whether the app
+got better and the sessions faster while it did. `bin/harvest-learnings.sh` carries the
+trend summary (never the rows — those name scripts) into the toolkit inbox at wrap-up.
+
 ## Two false-pass bugs already designed out of `lint-gate.sh` — keep them out
 
 Both were found by testing the gate, not by reading it:
