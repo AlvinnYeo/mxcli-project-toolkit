@@ -454,6 +454,21 @@ def table(headers, body_rows, cls=None):
 def vbadge(v):
     return '<span class="v %s">%s</span>' % (v, v)
 
+# The per-partition cell names each blocking edge once, without its "why": that sentence is on the
+# edge's own row below. On a real monolith (FSM 9.24.2, 2026-10-12: 80 blocking rows on one cut) the
+# full text made one cell of 10 KB and the stdout summary a 16 KB line nobody could read.
+def edge_only(b):
+    return b.split(": ", 1)[0]
+
+def blockers_cell(blockers, cap=12):
+    if not blockers:
+        return "-"
+    out = ["<b>%d blocking edge%s</b>" % (len(blockers), "" if len(blockers) == 1 else "s")]
+    out += [E_(edge_only(b)) for b in blockers[:cap]]
+    if len(blockers) > cap:
+        out.append("… %d more, all in the rows below" % (len(blockers) - cap))
+    return "<br>".join(out)
+
 p = []
 p.append('<header><h1>Cut score: %s</h1><p class="sub">%s%s · facts %s · rendered %s · '
          'the judgement for this page is skills/layering-review.md and the Stage 3 interview</p></header>' % (
@@ -485,7 +500,7 @@ p.append(table(["Partition", "Modules", "Out edges (refs)", "In edges (refs)", "
                [[n, ", ".join(d["modules"]), "%d (%d)" % (d["out_edges"], d["out_weight"]),
                  "%d (%d)" % (d["in_edges"], d["in_weight"]),
                  ", ".join("%s x%d" % (k, v) for k, v in sorted(d["lanes"].items())) or "-",
-                 ("<br>".join(E_(b) for b in d["blockers"]) or "-", "why"),
+                 (blockers_cell(d["blockers"]), "why"),
                  (vbadge(d["verdict"]), "")] for n, d in parts.items()]))
 if bidir:
     p.append('<h3>Bidirectional call pairs (blocker)</h3>')
@@ -553,7 +568,9 @@ print("  verdict %s; %s; %d bidirectional call pair(s); aggregates %s (%d)" % (
 for n, d_ in parts.items():
     print("  %-28s %-8s out %d(%d) in %d(%d)%s" % (n, d_["verdict"], d_["out_edges"], d_["out_weight"],
                                                   d_["in_edges"], d_["in_weight"],
-                                                  ("  blockers: " + "; ".join(d_["blockers"])) if d_["blockers"] else ""))
+                                                  ("  blockers: %d (%s%s)" % (len(d_["blockers"]),
+                                                   "; ".join(edge_only(b) for b in d_["blockers"][:3]),
+                                                   " …" if len(d_["blockers"]) > 3 else "")) if d_["blockers"] else ""))
 for g in gaps:
     print("  gap: %s" % g)
 PY

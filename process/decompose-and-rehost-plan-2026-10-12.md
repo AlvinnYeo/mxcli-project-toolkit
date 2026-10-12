@@ -119,8 +119,8 @@ silent.
 | 1 | Rehost | ako/mxcli-banking (11.x, one module) | **DONE 2026-10-12** — `pipelines/mendix-mpr/rehost-extract.sh`: 155/155 docs, 154 identical, mx check 0, mxbuild green, struct diff empty; ledger format set | cloud |
 | 1 | Decompose | Tier 0 synthetic: 4 modules, one tangle, built in Mendix **10.24** with `mxcli new` | **DONE 2026-10-12** — `bin/cut-score.sh` + `tests/wave2/test-cut-score.sh` (56 checks): tangle → blocker, foreign aggregate → costly, association-only → acceptable, all found. Not yet in a skill or the routing table | cloud |
 | 2 | Rehost | GenAI Showcase (48 modules, 11.12) | scale: time per module, ledger over a real widget mix | cloud |
-| 2 | Decompose | FSM template (9.24.2) | **Read probe PASSED 2026-10-12** (MPR v1, 45 own modules, 1896 microflows; captures in `pipelines/mendix-mpr/samples/fsm-template-9.24.2/`). Next: `cut-score.sh` on the planner-vs-NativeMobile seam through `Synchronization` | cloud |
-| 3 | both | FSM | first actual slice: one module out, two edges rewired, journeys across the cut | cloud |
+| 2 | Decompose | FSM template (9.24.2) | **Read probe PASSED 2026-10-12** (MPR v1, 45 own modules, 1896 microflows; captures in `pipelines/mendix-mpr/samples/fsm-template-9.24.2/`). **Cut scoring DONE 2026-10-12** (`samples/fsm-template-9.24.2/cut-score-findings.md`): best landscape Planner (25) \| Mobile+Sync+Utils (14) \| retire 3; classifier gaps found: client-side `call` sub-types, missing `sync` kind. First slice: `NativeNote` | cloud |
+| 3 | both | FSM (a copy; the original stays read-only) | first actual slice: `NativeNote` + its `Synchronization_Note` flows out into a fresh **Mendix 11** app, crossing edges rewired, journeys across the cut. Decided 2026-10-12: target is Mendix 11, monolith side is a copy. MPK-vs-MDL route decided by the parallel probe on `claude/youthful-hypatia-qapq73-mpk-export` | cloud |
 | 4 | both | user's Mendix 11 project | fidelity ledger and cut score on a real customer-shaped app; read-only | user's container |
 
 Field-proof rules apply (`CLAUDE.md` → "Shipping an instrument"): captured fixtures, both

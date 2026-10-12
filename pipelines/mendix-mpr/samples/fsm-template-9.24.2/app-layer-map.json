@@ -1,0 +1,995 @@
+{
+  "back_edge_sources": 24,
+  "back_edge_weight": 622,
+  "back_edges": 73,
+  "back_edges_list": [
+    {
+      "from": "Technician",
+      "kinds": {
+        "call": 3,
+        "datasource": 2,
+        "member": 8,
+        "retrieve": 8,
+        "return": 6,
+        "show_page": 2,
+        "xpath": 30
+      },
+      "to": "TicketManagement",
+      "weight": 59
+    },
+    {
+      "from": "NativeMobile",
+      "kinds": {
+        "call": 35,
+        "datasource": 1,
+        "retrieve": 18,
+        "return": 1
+      },
+      "to": "Synchronization",
+      "weight": 55
+    },
+    {
+      "from": "Form",
+      "kinds": {
+        "associate": 2,
+        "call": 3,
+        "change": 3,
+        "datasource": 1,
+        "parameter": 11,
+        "retrieve": 1,
+        "return": 2,
+        "xpath": 24
+      },
+      "to": "TicketManagement",
+      "weight": 47
+    },
+    {
+      "from": "NativeMobile",
+      "kinds": {
+        "action": 1,
+        "call": 5,
+        "change": 1,
+        "member": 14,
+        "parameter": 1,
+        "retrieve": 14,
+        "return": 5,
+        "show_page": 2
+      },
+      "to": "NativeMobilePart",
+      "weight": 43
+    },
+    {
+      "from": "NativeMobile",
+      "kinds": {
+        "associate": 2,
+        "call": 7,
+        "member": 4,
+        "parameter": 6,
+        "retrieve": 2,
+        "return": 7,
+        "show_page": 4
+      },
+      "to": "NativeMobileAsset",
+      "weight": 32
+    },
+    {
+      "from": "AssetManagement",
+      "kinds": {
+        "associate": 3,
+        "datasource": 1,
+        "member": 3,
+        "retrieve": 5,
+        "return": 1,
+        "show_page": 1,
+        "xpath": 5
+      },
+      "to": "CustomerManagement",
+      "weight": 19
+    },
+    {
+      "from": "TicketManagement",
+      "kinds": {
+        "call": 8,
+        "member": 1,
+        "parameter": 7,
+        "retrieve": 1
+      },
+      "to": "Synchronization",
+      "weight": 17
+    },
+    {
+      "from": "NativeMobile",
+      "kinds": {
+        "action": 1,
+        "call": 5,
+        "member": 5,
+        "retrieve": 4,
+        "show_page": 1
+      },
+      "to": "NativeNote",
+      "weight": 16
+    },
+    {
+      "from": "NativeMobileForm",
+      "kinds": {
+        "associate": 2,
+        "call": 5,
+        "xpath": 9
+      },
+      "to": "NativeMobile",
+      "weight": 16
+    },
+    {
+      "from": "NativeMobileTimeRegistration",
+      "kinds": {
+        "action": 1,
+        "associate": 2,
+        "call": 5,
+        "parameter": 4,
+        "xpath": 4
+      },
+      "to": "NativeMobile",
+      "weight": 16
+    },
+    {
+      "from": "Skill",
+      "kinds": {
+        "associate": 1,
+        "call": 4,
+        "change": 1,
+        "member": 3,
+        "parameter": 4,
+        "retrieve": 2,
+        "return": 1
+      },
+      "to": "Technician",
+      "weight": 16
+    },
+    {
+      "from": "Form",
+      "kinds": {
+        "call": 12,
+        "parameter": 2
+      },
+      "to": "Synchronization",
+      "weight": 14
+    },
+    {
+      "from": "Skill",
+      "kinds": {
+        "call": 3,
+        "member": 2,
+        "parameter": 2,
+        "retrieve": 2,
+        "return": 4
+      },
+      "to": "TicketManagement",
+      "weight": 13
+    },
+    {
+      "from": "TicketManagement",
+      "kinds": {
+        "call": 10,
+        "member": 2,
+        "return": 1
+      },
+      "to": "NativeMobile",
+      "weight": 13
+    },
+    {
+      "from": "TicketManagement",
+      "kinds": {
+        "action": 1,
+        "call": 5,
+        "change": 2,
+        "member": 1,
+        "parameter": 3,
+        "return": 1
+      },
+      "to": "Scheduler",
+      "weight": 13
+    },
+    {
+      "from": "NativeMobilePart",
+      "kinds": {
+        "call": 12
+      },
+      "to": "Synchronization",
+      "weight": 12
+    },
+    {
+      "from": "Part",
+      "kinds": {
+        "associate": 2,
+        "change": 1,
+        "parameter": 2,
+        "xpath": 7
+      },
+      "to": "TicketManagement",
+      "weight": 12
+    },
+    {
+      "from": "NativeReason",
+      "kinds": {
+        "associate": 2,
+        "parameter": 2,
+        "xpath": 6
+      },
+      "to": "NativeMobile",
+      "weight": 10
+    },
+    {
+      "from": "NativeMobileForm",
+      "kinds": {
+        "call": 7,
+        "return": 2
+      },
+      "to": "Synchronization",
+      "weight": 9
+    },
+    {
+      "from": "Part",
+      "kinds": {
+        "associate": 1,
+        "member": 3,
+        "parameter": 1,
+        "return": 2,
+        "show_page": 1
+      },
+      "to": "AssetManagement",
+      "weight": 8
+    },
+    {
+      "from": "Part",
+      "kinds": {
+        "call": 8
+      },
+      "to": "NativeMobilePart",
+      "weight": 8
+    },
+    {
+      "from": "Tool",
+      "kinds": {
+        "associate": 1,
+        "change": 1,
+        "parameter": 2,
+        "xpath": 4
+      },
+      "to": "TicketManagement",
+      "weight": 8
+    },
+    {
+      "from": "FSM_Specific",
+      "kinds": {
+        "action": 7
+      },
+      "to": "NativeMobile",
+      "weight": 7
+    },
+    {
+      "from": "NativeMobileWarehouse",
+      "kinds": {
+        "associate": 2,
+        "parameter": 1,
+        "xpath": 4
+      },
+      "to": "NativeMobilePart",
+      "weight": 7
+    },
+    {
+      "from": "NativeNote",
+      "kinds": {
+        "call": 7
+      },
+      "to": "Synchronization",
+      "weight": 7
+    },
+    {
+      "from": "Part",
+      "kinds": {
+        "call": 7
+      },
+      "to": "Synchronization",
+      "weight": 7
+    },
+    {
+      "from": "Technician",
+      "kinds": {
+        "associate": 1,
+        "datasource": 1,
+        "parameter": 5
+      },
+      "to": "WarehouseManagement",
+      "weight": 7
+    },
+    {
+      "from": "TicketManagement",
+      "kinds": {
+        "call": 3,
+        "member": 1,
+        "retrieve": 3
+      },
+      "to": "AppSettings",
+      "weight": 7
+    },
+    {
+      "from": "AssetManagement",
+      "kinds": {
+        "member": 4,
+        "retrieve": 1,
+        "show_page": 1
+      },
+      "to": "TicketManagement",
+      "weight": 6
+    },
+    {
+      "from": "NativeMobile",
+      "kinds": {
+        "action": 6
+      },
+      "to": "General",
+      "weight": 6
+    },
+    {
+      "from": "NativeTechnician",
+      "kinds": {
+        "call": 1,
+        "member": 1,
+        "retrieve": 2,
+        "return": 1,
+        "xpath": 1
+      },
+      "to": "NativeMobile",
+      "weight": 6
+    },
+    {
+      "from": "TicketManagement",
+      "kinds": {
+        "action": 1,
+        "call": 1,
+        "member": 3,
+        "retrieve": 1
+      },
+      "to": "Note",
+      "weight": 6
+    },
+    {
+      "from": "NativeMobileAsset",
+      "kinds": {
+        "action": 1,
+        "change": 2,
+        "parameter": 2
+      },
+      "to": "NativeMobileRelated",
+      "weight": 5
+    },
+    {
+      "from": "NativeMobileTimeRegistration",
+      "kinds": {
+        "call": 5
+      },
+      "to": "Synchronization",
+      "weight": 5
+    },
+    {
+      "from": "NativeMobileTimeRegistration",
+      "kinds": {
+        "type": 5
+      },
+      "to": "TimeRegistration",
+      "weight": 5
+    },
+    {
+      "from": "RosterManagement",
+      "kinds": {
+        "associate": 1,
+        "xpath": 4
+      },
+      "to": "TicketManagement",
+      "weight": 5
+    },
+    {
+      "from": "NativeMobile",
+      "kinds": {
+        "action": 1,
+        "call": 1,
+        "retrieve": 2
+      },
+      "to": "AppSettings",
+      "weight": 4
+    },
+    {
+      "from": "NativeMobile",
+      "kinds": {
+        "associate": 3,
+        "call": 1
+      },
+      "to": "NativeMobileRelated",
+      "weight": 4
+    },
+    {
+      "from": "RosterManagement",
+      "kinds": {
+        "associate": 2,
+        "parameter": 2
+      },
+      "to": "Technician",
+      "weight": 4
+    },
+    {
+      "from": "Technician",
+      "kinds": {
+        "call": 4
+      },
+      "to": "Synchronization",
+      "weight": 4
+    },
+    {
+      "from": "TicketManagement",
+      "kinds": {
+        "call": 4
+      },
+      "to": "IDCreation",
+      "weight": 4
+    },
+    {
+      "from": "AppSettings",
+      "kinds": {
+        "action": 3
+      },
+      "to": "NativeModelCheck",
+      "weight": 3
+    },
+    {
+      "from": "ModuleIntegration_Administration_Impl",
+      "kinds": {
+        "delete": 1,
+        "member": 1,
+        "retrieve": 1
+      },
+      "to": "Synchronization",
+      "weight": 3
+    },
+    {
+      "from": "Part",
+      "kinds": {
+        "associate": 1,
+        "xpath": 2
+      },
+      "to": "WarehouseManagement",
+      "weight": 3
+    },
+    {
+      "from": "Reason",
+      "kinds": {
+        "call": 3
+      },
+      "to": "Synchronization",
+      "weight": 3
+    },
+    {
+      "from": "TicketManagement",
+      "kinds": {
+        "action": 3
+      },
+      "to": "General",
+      "weight": 3
+    },
+    {
+      "from": "TicketManagement",
+      "kinds": {
+        "call": 3
+      },
+      "to": "Visualizations",
+      "weight": 3
+    },
+    {
+      "from": "TimeRegistration",
+      "kinds": {
+        "associate": 1,
+        "member": 2
+      },
+      "to": "TicketManagement",
+      "weight": 3
+    },
+    {
+      "from": "AppSettings",
+      "kinds": {
+        "call": 2
+      },
+      "to": "Synchronization",
+      "weight": 2
+    },
+    {
+      "from": "AssetManagement",
+      "kinds": {
+        "call": 2
+      },
+      "to": "NativeMobileAsset",
+      "weight": 2
+    },
+    {
+      "from": "AssetManagement",
+      "kinds": {
+        "call": 2
+      },
+      "to": "Synchronization",
+      "weight": 2
+    },
+    {
+      "from": "Form",
+      "kinds": {
+        "call": 2
+      },
+      "to": "NativeMobileForm",
+      "weight": 2
+    },
+    {
+      "from": "NativeMobileAsset",
+      "kinds": {
+        "call": 2
+      },
+      "to": "Synchronization",
+      "weight": 2
+    },
+    {
+      "from": "NativeMobileTimeRegistration",
+      "kinds": {
+        "call": 2
+      },
+      "to": "AppSettings",
+      "weight": 2
+    },
+    {
+      "from": "NativeMobileTimeRegistration",
+      "kinds": {
+        "associate": 1,
+        "call": 1
+      },
+      "to": "NativeTechnician",
+      "weight": 2
+    },
+    {
+      "from": "NativeMobileWarehouse",
+      "kinds": {
+        "xpath": 2
+      },
+      "to": "NativeMobile",
+      "weight": 2
+    },
+    {
+      "from": "NativeTechnician",
+      "kinds": {
+        "call": 1,
+        "retrieve": 1
+      },
+      "to": "NativeMobileWarehouse",
+      "weight": 2
+    },
+    {
+      "from": "NativeTechnician",
+      "kinds": {
+        "xpath": 2
+      },
+      "to": "NativeNote",
+      "weight": 2
+    },
+    {
+      "from": "Note",
+      "kinds": {
+        "call": 2
+      },
+      "to": "Synchronization",
+      "weight": 2
+    },
+    {
+      "from": "Reason",
+      "kinds": {
+        "associate": 2
+      },
+      "to": "TicketManagement",
+      "weight": 2
+    },
+    {
+      "from": "TicketManagement",
+      "kinds": {
+        "show_page": 2
+      },
+      "to": "MasterData",
+      "weight": 2
+    },
+    {
+      "from": "WarehouseManagement",
+      "kinds": {
+        "call": 2
+      },
+      "to": "Synchronization",
+      "weight": 2
+    },
+    {
+      "from": "AppSettings",
+      "kinds": {
+        "call": 1
+      },
+      "to": "General",
+      "weight": 1
+    },
+    {
+      "from": "Form",
+      "kinds": {
+        "action": 1
+      },
+      "to": "General",
+      "weight": 1
+    },
+    {
+      "from": "NativeMobilePart",
+      "kinds": {
+        "associate": 1
+      },
+      "to": "NativeMobileAsset",
+      "weight": 1
+    },
+    {
+      "from": "NativeReason",
+      "kinds": {
+        "type": 1
+      },
+      "to": "Reason",
+      "weight": 1
+    },
+    {
+      "from": "Part",
+      "kinds": {
+        "call": 1
+      },
+      "to": "AppSettings",
+      "weight": 1
+    },
+    {
+      "from": "RosterManagement",
+      "kinds": {
+        "associate": 1
+      },
+      "to": "AssetManagement",
+      "weight": 1
+    },
+    {
+      "from": "TicketManagement",
+      "kinds": {
+        "return": 1
+      },
+      "to": "CustomerManagement",
+      "weight": 1
+    },
+    {
+      "from": "TimeRegistration",
+      "kinds": {
+        "call": 1
+      },
+      "to": "AppSettings",
+      "weight": 1
+    },
+    {
+      "from": "TimeRegistration",
+      "kinds": {
+        "call": 1
+      },
+      "to": "NativeMobile",
+      "weight": 1
+    },
+    {
+      "from": "TimeRegistration",
+      "kinds": {
+        "call": 1
+      },
+      "to": "Synchronization",
+      "weight": 1
+    },
+    {
+      "from": "TimeRegistration",
+      "kinds": {
+        "call": 1
+      },
+      "to": "Visualizations",
+      "weight": 1
+    }
+  ],
+  "cut_ladder": [
+    {
+      "edges": 10,
+      "largest_tangle_cumulative": 34,
+      "largest_tangle_if_only_this": 34,
+      "module": "TicketManagement",
+      "tangles_cumulative": 1,
+      "weight": 69
+    },
+    {
+      "edges": 7,
+      "largest_tangle_cumulative": 34,
+      "largest_tangle_if_only_this": 36,
+      "module": "NativeMobile",
+      "tangles_cumulative": 1,
+      "weight": 160
+    },
+    {
+      "edges": 6,
+      "largest_tangle_cumulative": 34,
+      "largest_tangle_if_only_this": 36,
+      "module": "Part",
+      "tangles_cumulative": 1,
+      "weight": 39
+    },
+    {
+      "edges": 5,
+      "largest_tangle_cumulative": 34,
+      "largest_tangle_if_only_this": 36,
+      "module": "NativeMobileTimeRegistration",
+      "tangles_cumulative": 1,
+      "weight": 30
+    },
+    {
+      "edges": 5,
+      "largest_tangle_cumulative": 33,
+      "largest_tangle_if_only_this": 36,
+      "module": "TimeRegistration",
+      "tangles_cumulative": 1,
+      "weight": 7
+    },
+    {
+      "edges": 4,
+      "largest_tangle_cumulative": 33,
+      "largest_tangle_if_only_this": 36,
+      "module": "Form",
+      "tangles_cumulative": 1,
+      "weight": 64
+    },
+    {
+      "edges": 4,
+      "largest_tangle_cumulative": 32,
+      "largest_tangle_if_only_this": 36,
+      "module": "AssetManagement",
+      "tangles_cumulative": 1,
+      "weight": 29
+    },
+    {
+      "edges": 3,
+      "largest_tangle_cumulative": 32,
+      "largest_tangle_if_only_this": 36,
+      "module": "Technician",
+      "tangles_cumulative": 1,
+      "weight": 70
+    },
+    {
+      "edges": 3,
+      "largest_tangle_cumulative": 32,
+      "largest_tangle_if_only_this": 36,
+      "module": "NativeTechnician",
+      "tangles_cumulative": 1,
+      "weight": 10
+    },
+    {
+      "edges": 3,
+      "largest_tangle_cumulative": 32,
+      "largest_tangle_if_only_this": 36,
+      "module": "RosterManagement",
+      "tangles_cumulative": 1,
+      "weight": 10
+    },
+    {
+      "edges": 3,
+      "largest_tangle_cumulative": 28,
+      "largest_tangle_if_only_this": 34,
+      "module": "AppSettings",
+      "tangles_cumulative": 1,
+      "weight": 6
+    },
+    {
+      "edges": 2,
+      "largest_tangle_cumulative": 28,
+      "largest_tangle_if_only_this": 36,
+      "module": "Skill",
+      "tangles_cumulative": 1,
+      "weight": 29
+    },
+    {
+      "edges": 2,
+      "largest_tangle_cumulative": 28,
+      "largest_tangle_if_only_this": 36,
+      "module": "NativeMobileForm",
+      "tangles_cumulative": 1,
+      "weight": 25
+    },
+    {
+      "edges": 2,
+      "largest_tangle_cumulative": 28,
+      "largest_tangle_if_only_this": 36,
+      "module": "NativeMobilePart",
+      "tangles_cumulative": 1,
+      "weight": 13
+    },
+    {
+      "edges": 2,
+      "largest_tangle_cumulative": 28,
+      "largest_tangle_if_only_this": 36,
+      "module": "NativeReason",
+      "tangles_cumulative": 1,
+      "weight": 11
+    },
+    {
+      "edges": 2,
+      "largest_tangle_cumulative": 28,
+      "largest_tangle_if_only_this": 36,
+      "module": "NativeMobileWarehouse",
+      "tangles_cumulative": 1,
+      "weight": 9
+    },
+    {
+      "edges": 2,
+      "largest_tangle_cumulative": 28,
+      "largest_tangle_if_only_this": 36,
+      "module": "NativeMobileAsset",
+      "tangles_cumulative": 1,
+      "weight": 7
+    },
+    {
+      "edges": 2,
+      "largest_tangle_cumulative": 28,
+      "largest_tangle_if_only_this": 36,
+      "module": "Reason",
+      "tangles_cumulative": 1,
+      "weight": 5
+    },
+    {
+      "edges": 1,
+      "largest_tangle_cumulative": 28,
+      "largest_tangle_if_only_this": 36,
+      "module": "Tool",
+      "tangles_cumulative": 1,
+      "weight": 8
+    },
+    {
+      "edges": 1,
+      "largest_tangle_cumulative": 17,
+      "largest_tangle_if_only_this": 34,
+      "module": "FSM_Specific",
+      "tangles_cumulative": 1,
+      "weight": 7
+    },
+    {
+      "edges": 1,
+      "largest_tangle_cumulative": 17,
+      "largest_tangle_if_only_this": 36,
+      "module": "NativeNote",
+      "tangles_cumulative": 1,
+      "weight": 7
+    },
+    {
+      "edges": 1,
+      "largest_tangle_cumulative": 11,
+      "largest_tangle_if_only_this": 36,
+      "module": "ModuleIntegration_Administration_Impl",
+      "tangles_cumulative": 1,
+      "weight": 3
+    },
+    {
+      "edges": 1,
+      "largest_tangle_cumulative": 11,
+      "largest_tangle_if_only_this": 36,
+      "module": "Note",
+      "tangles_cumulative": 1,
+      "weight": 2
+    },
+    {
+      "edges": 1,
+      "largest_tangle_cumulative": 0,
+      "largest_tangle_if_only_this": 36,
+      "module": "WarehouseManagement",
+      "tangles_cumulative": 0,
+      "weight": 2
+    }
+  ],
+  "facts_generated": "2026-10-12T06:09:13+00:00",
+  "gaps": [],
+  "generated": "2026-10-12 06:09",
+  "largest_tangle": 36,
+  "layered_weight_pct": 86.2,
+  "levels": 14,
+  "levels_by_module": {
+    "AppSettings": 10,
+    "AssetManagement": 4,
+    "CustomerManagement": 6,
+    "Dashboard": 12,
+    "FSMPublishedAPI": 7,
+    "FSM_Specific": 0,
+    "FeatureToggle": 1,
+    "Form": 1,
+    "General": 11,
+    "IDCreation": 6,
+    "LoadTest": 7,
+    "MasterData": 12,
+    "ModuleIntegration_Administration_Impl": 1,
+    "ModuleIntegration_DeepLink_Impl": 1,
+    "ModuleIntegration_Logging_Impl": 1,
+    "NativeMobile": 7,
+    "NativeMobileAsset": 9,
+    "NativeMobileForm": 3,
+    "NativeMobilePart": 8,
+    "NativeMobileRelated": 10,
+    "NativeMobileTimeRegistration": 1,
+    "NativeMobileWarehouse": 3,
+    "NativeModelCheck": 13,
+    "NativeNote": 8,
+    "NativeReason": 3,
+    "NativeRestAPI": 6,
+    "NativeTechnician": 2,
+    "Note": 11,
+    "Part": 3,
+    "Reason": 4,
+    "RosterManagement": 1,
+    "Scheduler": 11,
+    "Skill": 1,
+    "Synchronization": 12,
+    "TEST_NativeLocalLogin": 0,
+    "Technician": 2,
+    "TicketManagement": 5,
+    "TimeRegistration": 3,
+    "Tool": 1,
+    "Utils": 0,
+    "Visualizations": 6,
+    "WarehouseManagement": 4
+  },
+  "mismatch": null,
+  "modules_in_tangles": 36,
+  "mpr": "Siemens FSM powered by Mendix.mpr",
+  "mxcli": "mxcli version v0.26.0 (2026-10-11T18:37:07Z)",
+  "order": [
+    "NativeModelCheck",
+    "Dashboard",
+    "MasterData",
+    "Synchronization",
+    "Scheduler",
+    "Note",
+    "General",
+    "NativeMobileRelated",
+    "AppSettings",
+    "NativeMobileAsset",
+    "NativeNote",
+    "NativeMobilePart",
+    "FSMPublishedAPI",
+    "LoadTest",
+    "NativeMobile",
+    "CustomerManagement",
+    "IDCreation",
+    "Visualizations",
+    "NativeRestAPI",
+    "TicketManagement",
+    "AssetManagement",
+    "WarehouseManagement",
+    "Reason",
+    "TimeRegistration",
+    "NativeMobileForm",
+    "NativeReason",
+    "NativeMobileWarehouse",
+    "Part",
+    "NativeTechnician",
+    "Technician",
+    "ModuleIntegration_DeepLink_Impl",
+    "ModuleIntegration_Logging_Impl",
+    "Tool",
+    "NativeMobileTimeRegistration",
+    "Form",
+    "Skill",
+    "RosterManagement",
+    "ModuleIntegration_Administration_Impl",
+    "FeatureToggle",
+    "FSM_Specific",
+    "Utils",
+    "TEST_NativeLocalLogin"
+  ],
+  "own_edge_weight": 4508,
+  "own_edges": 312,
+  "own_modules": 42,
+  "self_loops_ignored": 0,
+  "tangles": 1
+}
