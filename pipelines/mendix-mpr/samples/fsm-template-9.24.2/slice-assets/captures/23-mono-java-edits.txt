@@ -1,0 +1,46 @@
+# 3 Java hand-off edits (same as the seam probe): Mendix 10 generates final action parameters; rollbackTransAction -> rollbackTransaction
+--- deepClone.java.orig	2026-10-12 09:18:21.796541122 +0000
++++ objecthandling/actions/deepClone.java	2026-10-12 09:18:30.438916722 +0000
+@@ -61,13 +61,13 @@
+ 	public java.lang.Boolean executeAction() throws Exception
+ 	{
+ 		// BEGIN USER CODE
+-        this.membersToSkip       = this.membersToSkip == null       ? "" : this.membersToSkip;
+-        this.membersToKeep       = this.membersToKeep == null       ? "" : this.membersToKeep;
+-        this.reverseAssociations = this.reverseAssociations == null ? "" : this.reverseAssociations;
+-        this.excludeEntities     = this.excludeEntities == null     ? "" : this.excludeEntities;
+-        this.excludeModules      = this.excludeModules == null      ? "" : this.excludeModules;
++        java.lang.String _membersToSkip = this.membersToSkip == null ? "" : this.membersToSkip;
++        java.lang.String _membersToKeep = this.membersToKeep == null ? "" : this.membersToKeep;
++        java.lang.String _reverseAssociations = this.reverseAssociations == null ? "" : this.reverseAssociations;
++        java.lang.String _excludeEntities = this.excludeEntities == null ? "" : this.excludeEntities;
++        java.lang.String _excludeModules = this.excludeModules == null ? "" : this.excludeModules;
+ 	    
+-		ORM.deepClone(getContext(), source, target, membersToSkip, membersToKeep, reverseAssociations, excludeEntities, excludeModules);
++		ORM.deepClone(getContext(), source, target, _membersToSkip, _membersToKeep, _reverseAssociations, _excludeEntities, _excludeModules);
+ 		return true;
+ 		// END USER CODE
+ 	}
+--- DeepClone.java.orig	2026-10-12 09:18:21.826737629 +0000
++++ communitycommons/actions/DeepClone.java	2026-10-12 09:18:30.492413530 +0000
+@@ -61,13 +61,13 @@
+ 	public java.lang.Boolean executeAction() throws Exception
+ 	{
+ 		// BEGIN USER CODE
+-        this.membersToSkip       = this.membersToSkip == null       ? "" : this.membersToSkip;
+-        this.membersToKeep       = this.membersToKeep == null       ? "" : this.membersToKeep;
+-        this.reverseAssociations = this.reverseAssociations == null ? "" : this.reverseAssociations;
+-        this.excludeEntities     = this.excludeEntities == null     ? "" : this.excludeEntities;
+-        this.excludeModules      = this.excludeModules == null      ? "" : this.excludeModules;
++        java.lang.String _membersToSkip = this.membersToSkip == null ? "" : this.membersToSkip;
++        java.lang.String _membersToKeep = this.membersToKeep == null ? "" : this.membersToKeep;
++        java.lang.String _reverseAssociations = this.reverseAssociations == null ? "" : this.reverseAssociations;
++        java.lang.String _excludeEntities = this.excludeEntities == null ? "" : this.excludeEntities;
++        java.lang.String _excludeModules = this.excludeModules == null ? "" : this.excludeModules;
+ 	    
+-		ORM.deepClone(getContext(), source, target, membersToSkip, membersToKeep, reverseAssociations, excludeEntities, excludeModules);
++		ORM.deepClone(getContext(), source, target, _membersToSkip, _membersToKeep, _reverseAssociations, _excludeEntities, _excludeModules);
+ 		return true;
+ 		// END USER CODE
+ 	}
+$ sed -i s/rollbackTransAction()/rollbackTransaction()/g objecthandling/XPath.java communitycommons/Misc.java communitycommons/XPath.java

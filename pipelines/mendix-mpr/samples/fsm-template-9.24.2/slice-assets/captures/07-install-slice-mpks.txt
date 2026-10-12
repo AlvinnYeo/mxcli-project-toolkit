@@ -1,0 +1,40 @@
+$ mxcli marketplace install --file ../out1024/AssetManagement.mpk -p AssetsApp.mpr
+Installed module "AssetManagement" from AssetManagement.mpk into AssetsApp.mpr
+  50 units copied, 7 bundled file(s) installed.
+
+  Next, repair what a headless install leaves for Studio Pro to finish:
+      mxcli fix widgets -p <project.mpr>             # CE0463
+      mxcli fix design-properties -p <project.mpr>   # CE6087
+      mxcli docker check -p <project.mpr>
+exit=0 real 8.7 s
+
+$ mxcli marketplace install --file ../out1024/Part.mpk -p AssetsApp.mpr
+Installed module "Part" from Part.mpk into AssetsApp.mpr
+  107 units copied, 7 bundled file(s) installed.
+
+  Next, repair what a headless install leaves for Studio Pro to finish:
+      mxcli fix widgets -p <project.mpr>             # CE0463
+      mxcli fix design-properties -p <project.mpr>   # CE6087
+      mxcli docker check -p <project.mpr>
+exit=0 real 8.4 s
+
+$ mxcli marketplace install --file ../out1024/WarehouseManagement.mpk -p AssetsApp.mpr
+Installed module "WarehouseManagement" from WarehouseManagement.mpk into AssetsApp.mpr
+  48 units copied, 7 bundled file(s) installed.
+
+  Next, repair what a headless install leaves for Studio Pro to finish:
+      mxcli fix widgets -p <project.mpr>             # CE0463
+      mxcli fix design-properties -p <project.mpr>   # CE6087
+      mxcli docker check -p <project.mpr>
+exit=0 real 8.4 s
+
+$ mxcli marketplace install --file ../out1024/Tool.mpk -p AssetsApp.mpr
+Installed module "Tool" from Tool.mpk into AssetsApp.mpr
+  41 units copied, 7 bundled file(s) installed.
+
+  Next, repair what a headless install leaves for Studio Pro to finish:
+      mxcli fix widgets -p <project.mpr>             # CE0463
+      mxcli fix design-properties -p <project.mpr>   # CE6087
+      mxcli docker check -p <project.mpr>
+exit=0 real 7.7 s
+

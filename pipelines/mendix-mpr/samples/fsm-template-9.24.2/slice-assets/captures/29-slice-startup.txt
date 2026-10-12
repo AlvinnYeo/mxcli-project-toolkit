@@ -1,0 +1,3 @@
+$ mxcli run --local --detach --db-type hsqldb --app-port 8480 --admin-port 8490 -p AssetsApp.mpr
+running: http://127.0.0.1:8480/ (pid 22894, no watch, log .mxcli/run.log)
+exit=0 real 62.0 s

@@ -1,0 +1,50 @@
+mdl 1;
+-- Increment 5, slice security: Production level, FSM's user roles recreated with the slice module roles they
+-- held in the monolith (describe user role <R> on the source), stub module roles added so stub pages/entities
+-- stay reachable, plus the API user role for the monolith. Accounts are created at startup from constants whose
+-- values live only in this machine's mxcli constant store (never in git).
+create module SliceSetup;
+create constant SliceSetup.APIUserName ( Type: String, DefaultValue: 'fsm_monolith' );
+create constant SliceSetup.APIUserPassword ( Type: String, DefaultValue: '' );
+create constant SliceSetup.JourneyUserName ( Type: String, DefaultValue: 'journey_fnadm' );
+create constant SliceSetup.JourneyUserPassword ( Type: String, DefaultValue: '' );
+
+create user role AssetsAPI (ModuleRoles: (System.User, AssetManagement.APIConsumer, Part.APIConsumer, WarehouseManagement.APIConsumer, Tool.APIConsumer), Description: 'Machine role: the FSM monolith calling the slice (OData read, REST write)', CheckSecurity: true);
+create user role CallCenterEmployee (ModuleRoles: (System.User, Administration.User, DataWidgets.User, AssetManagement.ViewAll, AssetManagement._AddOn_EditNotes, Part.ViewAll, Part._AddOn_SelectParts, Tool.ViewAll, Tool._AddOn_SelectTools, WarehouseManagement.ViewAll, CustomerManagement.User, RosterManagement.User, TicketManagement.User), CheckSecurity: true);
+create user role FunctionalAdministrator (ModuleRoles: (System.User, Administration.User, DataWidgets.User, AssetManagement.EditAsset, AssetManagement._AddOn_CreateAssetRosters, AssetManagement._AddOn_EditNotes, Part.EditAll, Part._AddOn_SelectParts, Tool.EditAll, Tool._AddOn_SelectTools, WarehouseManagement.EditAll, WarehouseManagement.ViewAll, WarehouseManagement._AddOn_WarehouseNavigationItem, CustomerManagement.User, RosterManagement.User, TicketManagement.User), CheckSecurity: true);
+create user role Mechanic (ModuleRoles: (System.User, Administration.User, DataWidgets.User, CommunityCommons.User, AssetManagement.ViewAll, AssetManagement._AddOn_EditNotes, Part.ViewMy, Tool.ViewMy, WarehouseManagement.ViewMy, CustomerManagement.User, RosterManagement.User, TicketManagement.User), CheckSecurity: true);
+create user role ServiceDeskEmployee (ModuleRoles: (System.User, Administration.User, DataWidgets.User, AssetManagement.ViewAll, AssetManagement._AddOn_CreateAssetRosters, AssetManagement._AddOn_EditNotes, Part.ViewAll, Part._AddOn_SelectParts, Tool.ViewAll, Tool._AddOn_SelectTools, WarehouseManagement.ViewAll, CustomerManagement.User, RosterManagement.User, TicketManagement.User), CheckSecurity: true);
+create user role ServiceRegionManager (ModuleRoles: (System.User, Administration.User, DataWidgets.User, AssetManagement.ViewAll, AssetManagement._AddOn_EditNotes, Part.ViewAll, Tool.ViewAll, WarehouseManagement.ViewAll, CustomerManagement.User, RosterManagement.User, TicketManagement.User), CheckSecurity: true);
+create user role TechnicalAdministrator (ModuleRoles: (System.User, Administration.Administrator, DataWidgets.User, CommunityCommons.Administrator, CommunityCommons.User, AssetManagement.EditAssetAdmin, AssetManagement.ViewAll, Part.EditAllAdmin, Tool.EditAll, WarehouseManagement.EditAllAdmin, WarehouseManagement.ViewAll, CustomerManagement.User, RosterManagement.User, TicketManagement.User), CheckSecurity: true);
+alter user role Administrator add module roles (DataWidgets.User, AssetManagement.EditAssetAdmin, Part.EditAllAdmin, Tool.EditAll, WarehouseManagement.EditAllAdmin, CustomerManagement.User, RosterManagement.User, TicketManagement.User);
+
+create or modify microflow SliceSetup.EnsureAccount (
+  $Name: String,
+  $Password: String,
+  $RoleName: String
+)
+begin
+  if $Password = empty or $Password = '' then
+    log warning node 'SliceSetup' 'no password configured for {1}: account not created' with ({1} = $Name);
+    return;
+  end if;
+  retrieve $Role from System.UserRole where [Name = $RoleName] first;
+  retrieve $Existing from Administration.Account where [Name = $Name] first;
+  if $Existing = empty then
+    $Account = create Administration.Account (Name = $Name, FullName = $Name, Password = $Password, Active = true);
+    change $Account (System.UserRoles = $Role);
+    commit $Account;
+    log info node 'SliceSetup' 'account {1} created with role {2}' with ({1} = $Name, {2} = $RoleName);
+  end if;
+end;
+create or modify microflow SliceSetup.ASU_EnsureAccounts ()
+returns Boolean
+begin
+  call microflow SliceSetup.EnsureAccount(Name = @SliceSetup.APIUserName, Password = @SliceSetup.APIUserPassword, RoleName = 'AssetsAPI');
+  call microflow SliceSetup.EnsureAccount(Name = @SliceSetup.JourneyUserName, Password = @SliceSetup.JourneyUserPassword, RoleName = 'FunctionalAdministrator');
+  return true;
+end;
+alter settings runtime (AfterStartupMicroflow: 'SliceSetup.ASU_EnsureAccounts');
+
+-- navigation: the slice's own menu (the monolith keeps deep links, handoff rows)
+alter app security (SecurityLevel: PRODUCTION, EnableDemoUsers: false);

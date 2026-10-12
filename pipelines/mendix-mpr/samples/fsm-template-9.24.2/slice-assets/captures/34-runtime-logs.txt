@@ -1,0 +1,21 @@
+# runtime log excerpts (startup + seam), both apps
+## slice AssetsApp (11.13.0, 8480/8490)
+2026-10-12 09:26:48.792 INFO - Core: Mendix Runtime 11.13.0 (build 11.13.0). Copyright © 2003-2026 Mendix Technology B.V. All rights reserved.
+2026-10-12 09:26:58.932 INFO - SliceSetup: account fsm_monolith created with role AssetsAPI
+2026-10-12 09:26:59.402 INFO - SliceSetup: account journey_fnadm created with role FunctionalAdministrator
+2026-10-12 09:27:00.973 INFO - Core: Mendix Runtime successfully started, the application is now available.
+2026-10-12 09:33:40.669 ERROR - Connector: 404 - file not found for file: resources%2Fimg%2FSiemensAGLogin.png
+2026-10-12 09:33:40.678 ERROR - Connector: 404 - file not found for file: resources%2FInlogscherm-logo.svg
+2026-10-12 09:33:40.735 ERROR - Connector: 404 - file not found for file: resources%2Ffonts%2FMaterial-icons%2FMaterialIconsOutlined-Regular.woff2
+2026-10-12 09:33:40.761 ERROR - Connector: 404 - file not found for file: resources%2Ffonts%2FMaterial-icons%2FMaterialIconsOutlined-Regular.woff
+2026-10-12 09:33:41.062 ERROR - Connector: 404 - file not found for file: resources%2Ffonts%2FMaterial-icons%2FMaterialIconsOutlined-Regular.ttf
+2026-10-12 09:33:56.325 ERROR - Connector: 404 - file not found for file: resources%2Fimg%2FSiemensAGLogin.png
+2026-10-12 09:33:56.328 ERROR - Connector: 404 - file not found for file: resources%2FInlogscherm-logo.svg
+2026-10-12 09:33:56.345 ERROR - Connector: 404 - file not found for file: resources%2Ffonts%2FMaterial-icons%2FMaterialIconsOutlined-Regular.woff2
+## monolith fsm 10.24 copy (8580/8590)
+2026-10-12 09:32:45.718 INFO - Core: Mendix Runtime 10.24.0.73019 (build 10.24.0.73019). Copyright © 2003-2025 Mendix Technology B.V. All rights reserved.
+2026-10-12 09:32:56.868 INFO - AssetsSeam: journey account created
+2026-10-12 09:32:57.462 INFO - Core: Mendix Runtime successfully started, the application is now available.
+2026-10-12 09:39:04.671 INFO - Core: Mendix Runtime 10.24.0.73019 (build 10.24.0.73019). Copyright © 2003-2025 Mendix Technology B.V. All rights reserved.
+2026-10-12 09:39:11.302 INFO - AssetsSeam: journey account journey_techadm created with role TechnicalAdministrator
+2026-10-12 09:39:11.627 INFO - Core: Mendix Runtime successfully started, the application is now available.

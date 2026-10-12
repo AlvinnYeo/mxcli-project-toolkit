@@ -1,0 +1,37 @@
+{
+  "module": "Tool",
+  "product_version": "9.24.2.6130",
+  "units_module_subtree": 41,
+  "units_shell": 6,
+  "project_docs_scrubbed": [
+    "Settings$ProjectSettings",
+    "Navigation$NavigationDocument",
+    "Security$ProjectSecurity"
+  ],
+  "unit_types": {
+    "DomainModels$DomainModel": 1,
+    "Forms$Page": 4,
+    "Forms$Snippet": 1,
+    "Microflows$Microflow": 24,
+    "Projects$Folder": 8,
+    "Projects$ModuleImpl": 1,
+    "Projects$ModuleSettings": 1,
+    "Security$ModuleSecurity": 1
+  },
+  "from_app_store": null,
+  "files": 7,
+  "java_files": 0,
+  "js_files": 0,
+  "widgets_referenced": [],
+  "widgets_shipped": [],
+  "widgets_unresolved": [],
+  "crossing_refs_by_module": {
+    "Administration": 1,
+    "Atlas_Core": 1,
+    "CommunityCommons": 2,
+    "FSM_Specific": 3,
+    "Technician": 1,
+    "TicketManagement": 3
+  },
+  "out": "out924/Tool.mpk"
+}

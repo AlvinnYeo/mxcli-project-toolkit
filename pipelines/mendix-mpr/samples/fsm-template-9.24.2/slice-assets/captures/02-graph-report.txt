@@ -1,0 +1,8 @@
+$ mxcli -p mono/fsm.mpr graph-report
+| NativeMobilePart.NativeUsedPart | 53 | AppSettings,MasterData,NativeMobile,NativeMobileRelated,NativeModelCheck,NativeMobilePart,Synchronization |
+| NativeMobile.NativeTicket | 52 | AppSettings,MasterData,NativeMobile,NativeMobileAsset,NativeModelCheck,Synchronization,TicketManagement |
+| NativeNote.NativeNote | 51 | MasterData,NativeNote,NativeMobileRelated,NativeModelCheck,Synchronization,NativeMobile |
+| Administration.Account | 49 | Technician,DemoUserSwitcher,General,Administration,NativeRestAPI,Scheduler,Utils,Synchronization,ModuleIntegration_Administration_Impl,TicketManagement,NativeMobile |
+| NativeMobileTimeRegistration.NativeWorkBreak | 42 | MasterData,NativeMobileTimeRegistration,NativeModelCheck,Synchronization,NativeTechnician,NativeMobile |
+| NativeMobileForm.NativeInstanceItem | 41 | AppSettings,MasterData,NativeMobileForm,NativeMobileRelated,NativeModelCheck,Synchronization,NativeMobile |
+real 20.0 s

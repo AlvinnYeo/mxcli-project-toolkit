@@ -1,0 +1,24 @@
+$ mxcli marketplace update 109515 --to 5.2.1 -p fsm.mpr
+    JAVASCRIPT_ACTION Wait
+
+  - Save them first:  --save-edits <dir>
+  - Then update:      --force
+exit=1 real 18.8 s
+$ mxcli marketplace update 109513 --to 10.1.17 -p fsm.mpr
+    JAVASCRIPT_ACTION Vibrate
+
+  - Save them first:  --save-edits <dir>
+  - Then update:      --force
+exit=1 real 16.1 s
+$ mxcli marketplace update 109515 --to 5.2.1 --force -p fsm.mpr   # first try without --force refused: local edits detected in JS actions (Wait / Vibrate ...)
+
+  Then validate and review:
+      mxcli docker check -p <project.mpr>
+      mxcli diff-local -p <project.mpr>
+exit=0 real 12.3 s
+$ mxcli marketplace update 109513 --to 10.1.17 --force -p fsm.mpr   # first try without --force refused: local edits detected in JS actions (Wait / Vibrate ...)
+
+  Then validate and review:
+      mxcli docker check -p <project.mpr>
+      mxcli diff-local -p <project.mpr>
+exit=0 real 29.8 s

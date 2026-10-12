@@ -1,0 +1,17 @@
+$ mxcli new AssetsApp --version 11.13.0 --theme none --skip-init
+
+Step 5/7: Skipped (--skip-init)
+
+Step 6/7: Running the first build (settles generated sources)...
+  Generated sources are in their post-build form.
+
+Step 7/7: Setting up mxcli binary...
+  Linked mxcli to <lab>/web-assets/AssetsApp/mxcli (shared inode, no copy)
+
+✓ Project 'AssetsApp' created at <lab>/web-assets/AssetsApp
+
+Next steps:
+  1. Open the project folder in VS Code
+  2. Reopen in Dev Container when prompted
+  3. Run './mxcli -p AssetsApp.mpr' to start working
+exit=0 real 34.2 s

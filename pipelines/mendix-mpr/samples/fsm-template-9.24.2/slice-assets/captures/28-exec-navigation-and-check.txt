@@ -1,0 +1,29 @@
+$ mxcli exec mdl/seam-navigation-slice.mdl -p AssetsApp.mpr
+5 issues: 0 errors, 5 warnings, 0 info
+Navigation profile 'Responsive' updated.
+$ mx(11.13) check AssetsApp.mpr   # seam-live final
+[error] [CE0557] "At least one allowed role must be selected if the page is used from navigation, a button, or a URL." at Page 'Part.Part_Overview'
+[error] [CE0557] "At least one allowed role must be selected if the page is used from navigation, a button, or a URL." at Page 'Tool.Tool_Overview'
+The app contains: 2 errors.
+$ mxcli exec mdl/seam-navigation-slice.mdl -p AssetsApp.mpr   # rerun with page grants (CE0557 x2)
+Granted view access on Tool.Tool_Overview to Tool.ViewAll, Tool.EditAll
+Unchanged navigation profile 'Responsive'
+$ mx(11.13) check AssetsApp.mpr   # seam-live final
+[error] [CE2729] "No access to entity 'Part.Part' for user role 'User' (with no roles defined in module 'Part')." at Data grid 2 'grid1'
+[error] [CE2729] "No read access to attribute 'Name' in entity 'Part.Part' for user role 'User' (with no roles defined in module 'Part')." at Sort bar of data grid 2 'grid1', Entity 'Part.Part'
+[error] [CE2729] "No read access to attribute 'PartID' in entity 'Part.Part' for user role 'User' (with no roles defined in module 'Part')." at Columns (1/9) of data grid 2 'grid1', Entity 'Part.Part'
+[error] [CE2729] "No read access to attribute 'Name' in entity 'Part.Part' for user role 'User' (with no roles defined in module 'Part')." at Columns (2/9) of data grid 2 'grid1', Entity 'Part.Part'
+[error] [CE2729] "No read access to attribute 'Description' in entity 'Part.Part' for user role 'User' (with no roles defined in module 'Part')." at Columns (3/9) of data grid 2 'grid1', Entity 'Part.Part'
+[error] [CE2729] "No read access to attribute 'Price' in entity 'Part.Part' for user role 'User' (with no roles defined in module 'Part')." at Columns (4/9) of data grid 2 'grid1', Entity 'Part.Part'
+[error] [CE2729] "No read access to attribute 'IsAdditionalPart' in entity 'Part.Part' for user role 'User' (with no roles defined in module 'Part')." at Columns (5/9) of data grid 2 'grid1', Entity 'Part.Part'
+[error] [CE2729] "No read access to attribute 'Vendor' in entity 'Part.Part' for user role 'User' (with no roles defined in module 'Part')." at Columns (6/9) of data grid 2 'grid1', Entity 'Part.Part'
+[error] [CE2729] "No read access to association 'Part_UnitOfMeasure' in entity 'Part.Part' for user role 'User' (with no roles defined in module 'Part')." at Columns (7/9) of data grid 2 'grid1', Entity 'Part.Part'
+[error] [CE2729] "No read access to attribute 'IsActive' in entity 'Part.Part' for user role 'User' (with no roles defined in module 'Part')." at Columns (8/9) of data grid 2 'grid1', Entity 'Part.Part'
+[error] [CE2729] "No read access to attribute 'IsAdditionalPart' in entity 'Part.Part' for user role 'AssetsAPI' (with role 'APIConsumer' in module 'Part')." at Columns (5/9) of data grid 2 'grid1', Entity 'Part.Part'
+[error] [CE2729] "No read access to association 'Part_UnitOfMeasure' in entity 'Part.Part' for user role 'AssetsAPI' (with role 'APIConsumer' in module 'Part')." at Columns (7/9) of data grid 2 'grid1', Entity 'Part.Part'
+The app contains: 12 errors.
+$ mxcli exec mdl/seam-navigation-slice.mdl -p AssetsApp.mpr   # rerun: home page checked for every role (CE2729 x12)
+  Result: create, read (IsAdditionalPart, Part_UnitOfMeasure, PartID, SystemID, Name, "Description", Price, IsActive, Vendor), write (PartID, SystemID, Name, "Description", Price, IsActive, Vendor)
+Unchanged navigation profile 'Responsive'
+$ mx(11.13) check AssetsApp.mpr   # seam-live final
+The app contains: 0 errors.

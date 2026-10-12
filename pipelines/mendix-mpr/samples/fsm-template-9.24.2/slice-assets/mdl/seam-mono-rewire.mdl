@@ -1,0 +1,98 @@
+mdl 1;
+-- Increment 5 seam, monolith rewires (10.24 copy). Each replaces a read or write of a slice-owned entity.
+
+-- READ (OData): the dashboard's asset count reads the slice's assets (in-edge Dashboard.DS_CountAssets -> AssetManagement.Asset)
+create or modify microflow Dashboard.DS_CountAssets ()
+returns Dashboard.Count
+folder 'Pages/Dashboards'
+begin
+  retrieve $AssetList from AssetsSeam.Assets;
+  $Count = count $AssetList;
+  $NewCount = create Dashboard.Count (Total = $Count);
+  return $NewCount;
+end;
+grant execute on microflow Dashboard.DS_CountAssets to Dashboard.ViewExternal;
+
+-- READ (OData): a monolith page over the slice's parts (the browsing the monolith did over Part.Part)
+grant read * on entity AssetsSeam.Parts to AssetsSeam.User;
+grant read * on entity AssetsSeam.Assets to AssetsSeam.User;
+create or modify page AssetsSeam.Parts_FromSlice (
+  Title: 'Parts (served by the Assets app)',
+  Layout: FSM_Specific.LeftMenuLayout,
+  Url: 'parts-from-slice'
+) {
+  dynamictext heading (Content: 'Parts (served by the Assets app over OData)', RenderMode: H2)
+  datagrid partsGrid (DataSource: DATABASE AssetsSeam.Parts SORT BY Name ASC) {
+    column (Attribute: PartID, Caption: 'Part ID')
+    column (Attribute: Name, Caption: 'Name')
+    column (Attribute: Description, Caption: 'Description')
+    column (Attribute: Price, Caption: 'Price')
+    column (Attribute: Vendor, Caption: 'Vendor')
+  }
+};
+grant view on page AssetsSeam.Parts_FromSlice to AssetsSeam.User;
+alter user role FunctionalAdministrator add module roles (AssetsSeam.User);
+alter user role TechnicalAdministrator add module roles (AssetsSeam.User);
+alter user role ServiceDeskEmployee add module roles (AssetsSeam.User);
+alter user role CallCenterEmployee add module roles (AssetsSeam.User);
+alter user role ServiceRegionManager add module roles (AssetsSeam.User);
+
+-- WRITE (REST): saving a part in the monolith's MxAdmin page upserts it in the slice (system of record).
+-- A slice outage must not roll back the monolith's own save: error handler logs and continues.
+create or modify microflow MasterData.ACT_Part_Save_MxAdmin (
+  $Part: Part.Part
+)
+folder 'Pages/Part'
+begin
+  call microflow Part.Part_Save(Part = $Part);
+  $SliceResponse = call rest service post '{1}/rest/assets/v1/parts?PartID={2}&Name={3}&Description={4}&Price={5}&Vendor={6}' with (
+    {1} = @AssetsSeam.SliceBaseUrl,
+    {2} = urlEncode(if $Part/PartID = empty then $Part/SystemID else $Part/PartID),
+    {3} = urlEncode(if $Part/Name = empty then '' else $Part/Name),
+    {4} = urlEncode(if $Part/Description = empty then '' else $Part/Description),
+    {5} = toString(if $Part/Price = empty then 0 else $Part/Price),
+    {6} = urlEncode(if $Part/Vendor = empty then '' else $Part/Vendor)
+  ) (
+    Authentication: basic (Username: @AssetsSeam.APIUserName, Password: @AssetsSeam.APIUserPassword),
+    Timeout: 30,
+  ) returns String on error without rollback begin
+    log error node 'AssetsSeam' 'slice upsert of part {1} failed: {2}' with ({1} = $Part/PartID, {2} = $latestError/Message);
+    close page;
+    return;
+  end error;
+  log info node 'AssetsSeam' 'slice answered: {1}' with ({1} = $SliceResponse);
+  close page;
+  return;
+end;
+grant execute on microflow MasterData.ACT_Part_Save_MxAdmin to MasterData.EditAllAdmin;
+
+-- journey account (Production security, no demo users): created at startup from machine-local constants
+create or modify microflow AssetsSeam.EnsureJourneyAccount (
+  $Name: String,
+  $Password: String,
+  $RoleName: String
+)
+begin
+  if $Password = empty or $Password = '' then
+    log warning node 'AssetsSeam' 'no journey password configured: account not created';
+    return;
+  end if;
+  retrieve $Role from System.UserRole where [Name = $RoleName] first;
+  retrieve $Existing from Administration.Account where [Name = $Name] first;
+  if $Existing = empty then
+    $Account = create Administration.Account (Name = $Name, FullName = $Name, Password = $Password, Active = true);
+    change $Account (System.UserRoles = $Role);
+    commit $Account;
+    log info node 'AssetsSeam' 'journey account {1} created with role {2}' with ({1} = $Name, {2} = $RoleName);
+  end if;
+end;
+create or modify microflow AssetsSeam.ASU_EnsureJourneyAccounts ()
+begin
+  call microflow AssetsSeam.EnsureJourneyAccount(Name = @AssetsSeam.JourneyUserName, Password = @AssetsSeam.JourneyUserPassword, RoleName = 'FunctionalAdministrator');
+  call microflow AssetsSeam.EnsureJourneyAccount(Name = 'journey_techadm', Password = @AssetsSeam.JourneyUserPassword, RoleName = 'TechnicalAdministrator');
+end;
+alter microflow General.ASU_General {
+  insert before return true begin
+    call microflow AssetsSeam.ASU_EnsureJourneyAccounts();
+  end;
+};

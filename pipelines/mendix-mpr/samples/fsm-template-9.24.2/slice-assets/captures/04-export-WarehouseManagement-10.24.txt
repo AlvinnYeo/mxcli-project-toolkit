@@ -1,0 +1,40 @@
+$ python3 -I export-module-mpk.py mono/fsm.mpr WarehouseManagement out1024/WarehouseManagement.mpk --json
+{
+  "module": "WarehouseManagement",
+  "product_version": "10.24.0.73019",
+  "units_module_subtree": 48,
+  "units_shell": 6,
+  "project_docs_scrubbed": [
+    "Settings$ProjectSettings",
+    "Navigation$NavigationDocument",
+    "Security$ProjectSecurity"
+  ],
+  "unit_types": {
+    "DomainModels$DomainModel": 1,
+    "Forms$Page": 5,
+    "Forms$Snippet": 2,
+    "Microflows$Microflow": 26,
+    "Projects$Folder": 11,
+    "Projects$ModuleImpl": 1,
+    "Projects$ModuleSettings": 1,
+    "Security$ModuleSecurity": 1
+  },
+  "from_app_store": null,
+  "files": 7,
+  "java_files": 0,
+  "js_files": 0,
+  "widgets_referenced": [],
+  "widgets_shipped": [],
+  "widgets_unresolved": [],
+  "crossing_refs_by_module": {
+    "Administration": 1,
+    "CommunityCommons": 2,
+    "FSM_Specific": 5,
+    "NativeMobileWarehouse": 2,
+    "Part": 6,
+    "Synchronization": 2,
+    "Technician": 2
+  },
+  "out": "out1024/WarehouseManagement.mpk"
+}
+exit=0

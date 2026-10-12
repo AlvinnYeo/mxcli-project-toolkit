@@ -1,0 +1,6 @@
+$ mxcli run --local --detach --db-type hsqldb --app-port 8580 --admin-port 8590 --serve-port 6643 -p fsm.mpr   (10.24 copy; first try without --serve-port: port 6543 held by the slice's mxbuild serve)
+running: http://127.0.0.1:8580/ (pid 24153, no watch, log .mxcli/run.log)
+exit=0 real 71.3 s
+$ mxcli run --local --detach --db-type hsqldb --app-port 8580 --admin-port 8590 --serve-port 6643 -p fsm.mpr   # restart after the rewire re-exec
+running: http://127.0.0.1:8580/ (pid 26214, no watch, log .mxcli/run.log)
+exit=0 real 63.3 s

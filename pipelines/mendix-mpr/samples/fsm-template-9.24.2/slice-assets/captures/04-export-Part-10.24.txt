@@ -1,0 +1,46 @@
+$ python3 -I export-module-mpk.py mono/fsm.mpr Part out1024/Part.mpk --json
+{
+  "module": "Part",
+  "product_version": "10.24.0.73019",
+  "units_module_subtree": 107,
+  "units_shell": 6,
+  "project_docs_scrubbed": [
+    "Settings$ProjectSettings",
+    "Navigation$NavigationDocument",
+    "Security$ProjectSecurity"
+  ],
+  "unit_types": {
+    "DomainModels$DomainModel": 1,
+    "Forms$Page": 7,
+    "Forms$Snippet": 3,
+    "Microflows$Microflow": 63,
+    "Microflows$Nanoflow": 10,
+    "Projects$Folder": 20,
+    "Projects$ModuleImpl": 1,
+    "Projects$ModuleSettings": 1,
+    "Security$ModuleSecurity": 1
+  },
+  "from_app_store": null,
+  "files": 7,
+  "java_files": 0,
+  "js_files": 0,
+  "widgets_referenced": [],
+  "widgets_shipped": [],
+  "widgets_unresolved": [],
+  "crossing_refs_by_module": {
+    "Administration": 1,
+    "AppSettings": 1,
+    "AssetManagement": 5,
+    "Atlas_Core": 1,
+    "CommunityCommons": 5,
+    "CustomerManagement": 1,
+    "FSM_Specific": 6,
+    "NativeMobilePart": 5,
+    "Synchronization": 7,
+    "Technician": 2,
+    "TicketManagement": 3,
+    "WarehouseManagement": 1
+  },
+  "out": "out1024/Part.mpk"
+}
+exit=0

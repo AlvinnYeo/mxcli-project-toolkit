@@ -1,0 +1,7 @@
+$ mxcli exec t.mdl   # scratch copy of the 10.24 monolith: local Ticket -> external AssetsSeam.Assets
+mdl 1;
+create association TicketManagement.Ticket_SliceAsset from TicketManagement.Ticket to AssetsSeam.Assets;
+Reconciled 3 access rule(s) for new association
+Created association: TicketManagement.Ticket_SliceAsset
+$ mx(10.24) check
+The app contains: 0 errors.

@@ -1,0 +1,42 @@
+{
+  "module": "AssetManagement",
+  "product_version": "9.24.2.6130",
+  "units_module_subtree": 50,
+  "units_shell": 6,
+  "project_docs_scrubbed": [
+    "Settings$ProjectSettings",
+    "Navigation$NavigationDocument",
+    "Security$ProjectSecurity"
+  ],
+  "unit_types": {
+    "DomainModels$DomainModel": 1,
+    "Forms$Page": 10,
+    "Forms$Snippet": 3,
+    "Microflows$Microflow": 24,
+    "Microflows$Rule": 1,
+    "Projects$Folder": 8,
+    "Projects$ModuleImpl": 1,
+    "Projects$ModuleSettings": 1,
+    "Security$ModuleSecurity": 1
+  },
+  "from_app_store": null,
+  "files": 7,
+  "java_files": 0,
+  "js_files": 0,
+  "widgets_referenced": [],
+  "widgets_shipped": [],
+  "widgets_unresolved": [],
+  "crossing_refs_by_module": {
+    "Atlas_Core": 7,
+    "CommunityCommons": 1,
+    "CustomerManagement": 5,
+    "FSM_Specific": 3,
+    "NativeMobileAsset": 1,
+    "Part": 8,
+    "RosterManagement": 5,
+    "Synchronization": 2,
+    "Technician": 4,
+    "TicketManagement": 2
+  },
+  "out": "out924/AssetManagement.mpk"
+}

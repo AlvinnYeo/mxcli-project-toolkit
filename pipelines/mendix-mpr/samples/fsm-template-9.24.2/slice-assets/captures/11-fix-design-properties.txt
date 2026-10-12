@@ -1,0 +1,6 @@
+$ mxcli fix design-properties -p AssetsApp.mpr
+
+Updated design properties: 9 unit(s) changed.
+  Storage: 828 .mxunit file(s), unchanged from 828 before (MPR v2 preserved).
+
+  Next: 'mxcli docker check -p <project.mpr>'

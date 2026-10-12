@@ -1,0 +1,9 @@
+$ cp -r <mono>/themesource/fsm_specific/web themesource/fsm_specific/   # FSM design properties (CE6083 x38)
+$ mx(11.13) check AssetsApp.mpr
+Checking your app for issues...
+Checking the version of the mpr file.
+The mpr file version is '11.13.0'.
+Loading the mpr file.
+The mpr file version is '11.13.0'.
+Checking app for errors...
+The app contains: 0 errors.

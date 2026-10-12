@@ -1,0 +1,46 @@
+$ mx(11.13) check AssetsApp.mpr   # after edges C
+Checking your app for issues...
+Checking the version of the mpr file.
+The mpr file version is '11.13.0'.
+Loading the mpr file.
+The mpr file version is '11.13.0'.
+Checking app for errors...
+[error] [CE6083] "Design property Padding bottom is not supported by your theme. Right-click to see more options." at Action button 'actionButton1'
+[error] [CE6083] "Design property Padding left is not supported by your theme. Right-click to see more options." at Action button 'actionButton1'
+[error] [CE6083] "Design property Padding right is not supported by your theme. Right-click to see more options." at Action button 'actionButton1'
+[error] [CE6083] "Design property Padding top is not supported by your theme. Right-click to see more options." at Action button 'actionButton1'
+[error] [CE6083] "Design property Make card is not supported by your theme. Right-click to see more options." at Container 'container2'
+[error] [CE6083] "Design property Make card is not supported by your theme. Right-click to see more options." at Container 'container2'
+[error] [CE6083] "Design property Make card is not supported by your theme. Right-click to see more options." at Container 'container6'
+[error] [CE6083] "Design property Make card is not supported by your theme. Right-click to see more options." at Container 'container5'
+[error] [CE6083] "Design property Padding right is not supported by your theme. Right-click to see more options." at Layout grid 'layoutGrid10'
+[error] [CE6083] "Design property Make card is not supported by your theme. Right-click to see more options." at Container 'container3'
+[error] [CE6083] "Design property Padding bottom is not supported by your theme. Right-click to see more options." at Action button 'actionButton1'
+[error] [CE6083] "Design property Padding left is not supported by your theme. Right-click to see more options." at Action button 'actionButton1'
+[error] [CE6083] "Design property Padding right is not supported by your theme. Right-click to see more options." at Action button 'actionButton1'
+[error] [CE6083] "Design property Padding top is not supported by your theme. Right-click to see more options." at Action button 'actionButton1'
+[error] [CE6083] "Design property Padding bottom is not supported by your theme. Right-click to see more options." at Action button 'actionButton4'
+[error] [CE6083] "Design property Padding left is not supported by your theme. Right-click to see more options." at Action button 'actionButton4'
+[error] [CE6083] "Design property Padding right is not supported by your theme. Right-click to see more options." at Action button 'actionButton4'
+[error] [CE6083] "Design property Padding top is not supported by your theme. Right-click to see more options." at Action button 'actionButton4'
+[error] [CE6083] "Design property Make card is not supported by your theme. Right-click to see more options." at Container 'container1'
+[error] [CE6083] "Design property Make card is not supported by your theme. Right-click to see more options." at Container 'container1'
+[error] [CE6083] "Design property Padding bottom is not supported by your theme. Right-click to see more options." at Action button 'actionButton4'
+[error] [CE6083] "Design property Padding left is not supported by your theme. Right-click to see more options." at Action button 'actionButton4'
+[error] [CE6083] "Design property Padding right is not supported by your theme. Right-click to see more options." at Action button 'actionButton4'
+[error] [CE6083] "Design property Padding top is not supported by your theme. Right-click to see more options." at Action button 'actionButton4'
+[error] [CE6083] "Design property Make card is not supported by your theme. Right-click to see more options." at Container 'container2'
+[error] [CE6083] "Design property Make card is not supported by your theme. Right-click to see more options." at Container 'container1'
+[error] [CE6083] "Design property Padding bottom is not supported by your theme. Right-click to see more options." at Action button 'actionButton4'
+[error] [CE6083] "Design property Padding left is not supported by your theme. Right-click to see more options." at Action button 'actionButton4'
+[error] [CE6083] "Design property Padding right is not supported by your theme. Right-click to see more options." at Action button 'actionButton4'
+[error] [CE6083] "Design property Padding top is not supported by your theme. Right-click to see more options." at Action button 'actionButton4'
+[error] [CE6083] "Design property Make card is not supported by your theme. Right-click to see more options." at Container 'container1'
+[error] [CE6083] "Design property Make card is not supported by your theme. Right-click to see more options." at Container 'container1'
+[error] [CE6083] "Design property Padding bottom is not supported by your theme. Right-click to see more options." at Action button 'actionButton4'
+[error] [CE6083] "Design property Padding left is not supported by your theme. Right-click to see more options." at Action button 'actionButton4'
+[error] [CE6083] "Design property Padding right is not supported by your theme. Right-click to see more options." at Action button 'actionButton4'
+[error] [CE6083] "Design property Padding top is not supported by your theme. Right-click to see more options." at Action button 'actionButton4'
+[error] [CE6083] "Design property Make card is not supported by your theme. Right-click to see more options." at Container 'container1'
+[error] [CE6083] "Design property Make card is not supported by your theme. Right-click to see more options." at Container 'container1'
+The app contains: 38 errors.

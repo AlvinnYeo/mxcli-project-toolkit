@@ -1,0 +1,33 @@
+mdl 1;
+-- Increment 5 seam, monolith side. Executed on the 10.24 converted copy of FSM: mxcli 0.26 cannot create or
+-- alter microflows in a 9.x project (increment 4). Reads of slice data go over the slice's published OData
+-- service as external entities; the part save writes through the slice's published REST action.
+create module AssetsSeam;
+create constant AssetsSeam.SliceBaseUrl ( Type: String, DefaultValue: 'http://127.0.0.1:8480' );
+create constant AssetsSeam.ODataServiceUrl ( Type: String, DefaultValue: 'http://127.0.0.1:8480/odata/assets/v1/' );
+create constant AssetsSeam.APIUserName ( Type: String, DefaultValue: 'fsm_monolith' );
+create constant AssetsSeam.APIUserPassword ( Type: String, DefaultValue: '' );
+create constant AssetsSeam.JourneyUserName ( Type: String, DefaultValue: 'journey_fnadm' );
+create constant AssetsSeam.JourneyUserPassword ( Type: String, DefaultValue: '' );
+create or modify module role AssetsSeam.User description 'reads slice data (external entities)';
+
+-- basic authentication for the consumed service: a headers microflow (the password is a machine-local constant)
+create or modify microflow AssetsSeam.GetAuthHeaders ()
+returns List of System.HttpHeader
+begin
+  $Token = call java action CommunityCommons.Base64Encode(value = @AssetsSeam.APIUserName + ':' + @AssetsSeam.APIUserPassword);
+  $Headers = create list of System.HttpHeader;
+  $Authorization = create System.HttpHeader (Key = 'Authorization', Value = 'Basic ' + $Token);
+  add $Authorization to $Headers;
+  return $Headers;
+end;
+
+create consumed odata service AssetsSeam.AssetsAPI (
+  Version: '1.0.0',
+  ODataVersion: OData4,
+  MetadataUrl: 'assets-metadata.xml',
+  Timeout: 60,
+  ServiceUrl: AssetsSeam.ODataServiceUrl,
+  ConfigurationMicroflow: microflow AssetsSeam.GetAuthHeaders
+);
+create external entities from AssetsSeam.AssetsAPI into AssetsSeam entities (Asset, Part, UnitOfMeasure, Warehouse);

@@ -1,0 +1,19 @@
+mdl 1;
+-- the slice's own menu: the FSM monolith's Responsive menu items for these modules (Navigation in-edges) now live here
+create or modify navigation Responsive
+  home page Part.Part_Overview
+{
+  menu item 'Assets' ( OnClick: show page AssetManagement.Asset_Overview )
+  menu item 'Parts' ( OnClick: show page Part.Part_Overview )
+  menu item 'Units of measure' ( OnClick: show page Part.UnitOfMeasure_Overview )
+  menu item 'Warehouses' ( OnClick: show page WarehouseManagement.Warehouse_Overview )
+  menu item 'Tools' ( OnClick: show page Tool.Tool_Overview )
+};
+-- Part_Overview and Tool_Overview had no allowed roles in FSM (reached there through other modules); in the slice
+-- they are menu pages (CE0557)
+grant view on page Part.Part_Overview to Part.ViewAll, Part.EditAll, Part.EditAllAdmin;
+grant view on page Tool.Tool_Overview to Tool.ViewAll, Tool.EditAll;
+-- Part_Overview as the profile home page is checked against every user role (CE2729 x12): the starter's
+-- User role gets Part.ViewAll; the API role reads the two members the grid shows that the API did not grant
+alter user role User add module roles (Part.ViewAll, DataWidgets.User);
+grant read (PartID, SystemID, Name, "Description", Price, Vendor, IsActive, IsAdditionalPart, Part_UnitOfMeasure), write (PartID, SystemID, Name, "Description", Price, Vendor, IsActive) on entity Part.Part to Part.APIConsumer;

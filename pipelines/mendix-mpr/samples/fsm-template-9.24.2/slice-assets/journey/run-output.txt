@@ -1,0 +1,10 @@
+$ SLICE_URL=http://127.0.0.1:8480 MONO_URL=http://127.0.0.1:8580 SLICE_MPR=<lab>/web-assets/AssetsApp/AssetsApp.mpr MXCLI=<lab>/mxcli JOURNEY_PW=*** node assets-seam.journey.js   # Playwright 1.56.1, headless Chromium
+  PASS  [slice login] logged in to the slice as journey_fnadm; home page is Parts — ledger: in Navigation.Responsive -> slice menu (handoff)
+  PASS  [slice: new unit of measure] unit Box-261012093950 committed in the slice database — [{"SystemID":"82cbeb68-4985-4d66-954d-76b5c5aa6682","UnitName":"Box-261012093950"}]
+  PASS  [slice: new part] part PW-261012093950 committed in the slice with Part_UnitOfMeasure = Box-261012093950 — [{"Name":"Journey part 261012093950","PartID":"PW-261012093950","UnitName":"Box-261012093950"}]
+  PASS  [monolith: part visible over OData] monolith page lists PW-261012093950 from external entity AssetsSeam.Parts — row: "PW-261012093950 Journey part 261012093950 12.5 ACME" — ledger: in-edge read of Part.Part rewired to OData (seam-mono-rewire.mdl)
+
+assets-seam journey: 4/4 assertions passed in 5.2 s — PASS
+  ids: unit=Box-261012093950 part=PW-261012093950
+  trace rung: NOT RUN (no OTel exporter on either app)
+exit=0 wall 5.7 s

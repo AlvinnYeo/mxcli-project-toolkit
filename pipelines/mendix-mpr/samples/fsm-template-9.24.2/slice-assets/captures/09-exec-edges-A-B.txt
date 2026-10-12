@@ -1,0 +1,13 @@
+$ mxcli exec mdl/edges-A-layout.mdl -p AssetsApp.mpr
+Connected to: AssetsApp.mpr (Mendix 11.13.0)
+Created module: FSM_Specific
+Created layout FSM_Specific.LeftMenuLayout
+exit=0 real 0.4 s
+$ mxcli exec mdl/edges-B-stubs.mdl -p AssetsApp.mpr
+Created page CustomerManagement.ContactPerson_View
+  access: granted to auto-created role CustomerManagement.User (the module has no other roles; a later grant adds to it — revoke it to narrow access)
+Created page RosterManagement.Roster_NewEdit
+  access: granted to auto-created role RosterManagement.User (the module has no other roles; a later grant adds to it — revoke it to narrow access)
+Created page TicketManagement.Ticket_View
+  access: granted to auto-created role TicketManagement.User (the module has no other roles; a later grant adds to it — revoke it to narrow access)
+exit=0 real 5.9 s

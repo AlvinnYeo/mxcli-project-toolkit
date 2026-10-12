@@ -1,0 +1,4 @@
+# CE0161 Scheduler.Snippet_Appointment_Scheduling grid2: XPath replaced in place, same byte length (200 bytes), 1 unit(s) patched
+# old: [\n TicketManagement._Appointment_Technician/Technician.Technician\n /Technician.TechnicianGroup_Technician/Technician.TechnicianGroup\n /Scheduler.PlannerContext_TechnicianGroup = '[%CurrentObject%]'\n]\n
+# new: [TicketManagement._Appointment_Technician/Technician.Technician] + space padding  (TechnicianGroup filter dropped, as in the seam probe)
+The app contains: 0 errors.

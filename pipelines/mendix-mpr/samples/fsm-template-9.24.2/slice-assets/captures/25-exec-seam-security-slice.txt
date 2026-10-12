@@ -1,0 +1,10 @@
+$ mxcli exec mdl/seam-security-slice.mdl -p AssetsApp.mpr
+Added module roles DataWidgets.User, AssetManagement.EditAssetAdmin, Part.EditAllAdmin, Tool.EditAll, WarehouseManagement.EditAllAdmin, CustomerManagement.User, RosterManagement.User, TicketManagement.User to user role Administrator
+Created microflow: SliceSetup.EnsureAccount
+  access: granted to auto-created role SliceSetup.User (the module has no other roles; a later grant adds to it — revoke it to narrow access)
+Created microflow: SliceSetup.ASU_EnsureAccounts
+  access: granted to auto-created role SliceSetup.User (the module has no other roles; a later grant adds to it — revoke it to narrow access)
+Updated model settings
+Set project security level to Production
+Demo users disabled
+exit=0 real 2.3 s

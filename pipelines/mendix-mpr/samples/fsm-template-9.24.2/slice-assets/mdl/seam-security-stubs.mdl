@@ -1,0 +1,22 @@
+mdl 1;
+-- stub entities shown on slice pages need read access in Production (CE2729 x278): read * to the stub module's User role, mapped to every human role
+create or modify module role Technician.User description 'CUT STUB read access';
+grant read * on entity CustomerManagement.ContactPerson to CustomerManagement.User;
+grant read * on entity CustomerManagement.Contract to CustomerManagement.User;
+grant read * on entity CustomerManagement.Customer to CustomerManagement.User;
+grant read * on entity CustomerManagement.SLA to CustomerManagement.User;
+grant read * on entity RosterManagement.Roster to RosterManagement.User;
+grant read * on entity Technician.Technician to Technician.User;
+grant read * on entity TicketManagement.Appointment to TicketManagement.User;
+grant read * on entity TicketManagement.Priority to TicketManagement.User;
+grant read * on entity TicketManagement.Ticket to TicketManagement.User;
+grant read * on entity TicketManagement.TicketType to TicketManagement.User;
+grant read * on entity TicketManagement.WorkOrder to TicketManagement.User;
+grant read * on entity TicketManagement.WorkOrderAssignment to TicketManagement.User;
+alter user role CallCenterEmployee add module roles (Technician.User);
+alter user role FunctionalAdministrator add module roles (Technician.User);
+alter user role Mechanic add module roles (Technician.User);
+alter user role ServiceDeskEmployee add module roles (Technician.User);
+alter user role ServiceRegionManager add module roles (Technician.User);
+alter user role TechnicalAdministrator add module roles (Technician.User);
+alter user role Administrator add module roles (Technician.User);

@@ -1,0 +1,31 @@
+$ mxcli exec mdl/seam-slice.mdl -p AssetsApp.mpr
+Granted access on WarehouseManagement.Warehouse to WarehouseManagement.APIConsumer
+  Result: read (WarehouseID, SystemID, "Description")
+Granted access on Tool.Tool to Tool.APIConsumer
+  Result: read (ToolID, Name, "Description", IsActive)
+Created OData service: AssetManagement.AssetsAPI
+Granted access on OData service AssetManagement.AssetsAPI to AssetManagement.APIConsumer
+Created microflow: Part.SeamAPI_UpsertPart
+Granted execute access on Part.SeamAPI_UpsertPart to Part.APIConsumer
+Granted access on Part.Part to Part.APIConsumer
+  Result: create, read (PartID, SystemID, Name, "Description", Price, IsActive, Vendor), write (PartID, SystemID, Name, "Description", Price, IsActive, Vendor)
+Created published rest service Part.SeamPartAPI
+Granted access on published rest service Part.SeamPartAPI to Part.APIConsumer
+exit=0 real 2.4 s
+$ mxcli exec mdl/seam-slice.mdl -p AssetsApp.mpr   # rerun: "Description" quoted in expose was stored with its quotes (4x CE1613); now bare
+All specified roles already have execute access on Part.SeamAPI_UpsertPart
+All specified roles already have access on published rest service Part.SeamPartAPI
+12 documents already in sync (unchanged, not listed)
+exit=0
+$ mxcli exec mdl/seam-slice.mdl -p AssetsApp.mpr   # rerun: CE6585 x5 "must have a key defined" (mxcli check passed with no KEY)
+Modified OData service: AssetManagement.AssetsAPI
+All specified roles already have access on OData service AssetManagement.AssetsAPI
+exit=0
+$ mxcli exec mdl/seam-slice.mdl -p AssetsApp.mpr   # rerun: CE6624 unique rule on keys; Tool dropped from OData
+      → Rewrite the message keyword as `error message`: `not null error '…'` (and after `unique` or `required`), a validation rule's `feedback '…'`, and `error_message` / `errormessage`. One keyword for the text a user sees when a rule refuses a change.
+  ⚠ line 12: `error '…' / feedback '…' / error_message '…'` (error -> error message) is deprecated; write `error message '…'` — same meaning. Refused from `mdl 2`. (mxcli help MDL-DEPR021) [MDL-DEPR021]
+      → Rewrite the message keyword as `error message`: `not null error '…'` (and after `unique` or `required`), a validation rule's `feedback '…'`, and `error_message` / `errormessage`. One keyword for the text a user sees when a rule refuses a change.
+4 issues: 0 errors, 4 warnings, 0 info
+Modified OData service: AssetManagement.AssetsAPI
+All specified roles already have access on OData service AssetManagement.AssetsAPI
+exit=0

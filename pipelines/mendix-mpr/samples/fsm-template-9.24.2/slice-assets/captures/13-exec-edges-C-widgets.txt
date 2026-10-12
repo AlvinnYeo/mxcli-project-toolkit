@@ -1,0 +1,21 @@
+$ mxcli exec mdl/edges-C-widgets.mdl -p AssetsApp.mpr   # 3rd run on restored bak: run 1 refused Attribute: $Asset.Asset_Customer (check passed), run 2 gave 9x CE7007 for param-bound combo boxes
+Connected to: AssetsApp.mpr (Mendix 11.13.0)
+Altered page AssetManagement.Asset_AssetPart_AddToBOM
+Altered page AssetManagement.Asset_Overview
+Altered page AssetManagement.Asset_Select_Multi
+Altered page AssetManagement.Asset_Select_Single
+Altered page AssetManagement.Dossier_Select_Multi
+Altered snippet AssetManagement.Snippet_Asset_DataTabs
+Altered snippet AssetManagement.Snippet_Asset_Details
+Altered page Part.Part_Overview
+Altered page Part.Part_View
+Altered snippet Part.Snippet_Part_Details
+Altered page Part.SuggestedPart_NewEdit
+Altered page Part.UnitOfMeasure_Overview
+Altered page Tool.SelectedTool_NewEdit
+Altered page Tool.Tool_Overview
+Altered page WarehouseManagement.Inventory_NewEdit
+Altered page WarehouseManagement.Inventory_View
+Altered snippet WarehouseManagement.Snippet_Warehouse_DataTabs
+Altered page WarehouseManagement.Warehouse_Overview
+exit=0 real 5.3 s

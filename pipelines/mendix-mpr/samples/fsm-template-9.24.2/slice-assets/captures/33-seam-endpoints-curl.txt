@@ -1,0 +1,13 @@
+# seam endpoints on the running slice (Mendix 11.13, port 8480); the API password comes from the machine-local constant store and is not shown
+$ curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8480/odata/assets/v1/$metadata          # no credentials
+401
+$ curl -s -o /dev/null -w "%{http_code}" -u fsm_monolith:WRONG http://127.0.0.1:8480/odata/assets/v1/Parts
+401
+$ curl -s -u fsm_monolith:*** "http://127.0.0.1:8480/odata/assets/v1/Parts?$select=PartID,Name&$orderby=PartID"
+{"@odata.context":"http://127.0.0.1:8480/odata/assets/v1/$metadata#Parts(PartID,Name)","value":[{"PartID":"P-SEAM-1","Name":"Seam bolt"},{"PartID":"PW-261012093507","Name":"Journey part 261012093507"},{"PartID":"PW-261012093558","Name":"Journey part 261012093558"},{"PartID":"PW-261012093950","Name":"Journey part 261012093950"}]}
+$ curl -s -o /dev/null -w "%{http_code}" -X POST "http://127.0.0.1:8480/rest/assets/v1/parts?PartID=P-SEAM-2&Name=x&Description=y&Price=1&Vendor=z"   # no credentials
+401
+$ curl -s -u fsm_monolith:*** -X POST "http://127.0.0.1:8480/rest/assets/v1/parts?PartID=P-SEAM-1&Name=Seam%20bolt&Description=probe%202&Price=1.75&Vendor=ACME"
+updated P-SEAM-1
+$ curl -s -u journey_fnadm:*** -o /dev/null -w "%{http_code}" http://127.0.0.1:8480/odata/assets/v1/Parts   # a human role without the API module role
+404

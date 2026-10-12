@@ -1,0 +1,81 @@
+mdl 1;
+-- Increment 5 seam, slice side (AssetsApp, Mendix 11.13): what the monolith reads goes over a published OData
+-- service (external entities on the consumer); what the monolith writes goes over a published REST action.
+-- Both require basic authentication with a dedicated API user role.
+
+-- OData keys need a unique validation rule (CE6624): SystemID is a CommunityCommons.RandomHash on every
+-- create path of these four entities (Asset_Create, Part create x2, Warehouse create), so the rule adds no new
+-- failure mode. Tool has no attribute that is ever written uniquely (ToolID is never set): Tool is not published.
+alter entity AssetManagement.Asset modify attribute SystemID: String(200) unique error 'SystemID must be unique';
+alter entity Part.Part modify attribute SystemID: String(200) unique error 'SystemID must be unique';
+alter entity Part.UnitOfMeasure modify attribute SystemID: String(200) unique error 'SystemID must be unique';
+alter entity WarehouseManagement.Warehouse modify attribute SystemID: String(200) unique error 'SystemID must be unique';
+
+-- API module roles, read-only on what is published
+create or modify module role AssetManagement.APIConsumer description 'Monolith (FSM) reading assets over OData';
+create or modify module role Part.APIConsumer description 'Monolith (FSM) reading and upserting parts';
+create or modify module role WarehouseManagement.APIConsumer description 'Monolith (FSM) reading warehouses over OData';
+create or modify module role Tool.APIConsumer description 'Monolith (FSM) reading tools over OData';
+grant read (AssetID, SystemID, "Description", Address, ZipCode, City) on entity AssetManagement.Asset to AssetManagement.APIConsumer;
+grant read (PartID, SystemID, Name, "Description", Price, Vendor, IsActive) on entity Part.Part to Part.APIConsumer;
+grant read (SystemID, UnitName, Abbreviation) on entity Part.UnitOfMeasure to Part.APIConsumer;
+grant read (WarehouseID, SystemID, "Description") on entity WarehouseManagement.Warehouse to WarehouseManagement.APIConsumer;
+grant read (ToolID, Name, "Description", IsActive) on entity Tool.Tool to Tool.APIConsumer;
+
+create or modify published odata service AssetManagement.AssetsAPI (
+  path: 'odata/assets/v1/',
+  version: '1.0.0',
+  ODataVersion: OData4,
+  namespace: 'FSM.Assets',
+  ServiceName: 'AssetsAPI',
+  PublishAssociations: Yes,
+  Authentication: (basic)
+)
+{
+  publish entity AssetManagement.Asset as 'Assets' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (SystemID (KEY, Filterable), AssetID (Filterable, Sortable), Description (Filterable, Sortable), Address, ZipCode, City (Filterable));
+  publish entity Part.Part as 'Parts' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (SystemID (KEY, Filterable), PartID (Filterable, Sortable), Name (Filterable, Sortable), Description, Price (Filterable, Sortable), Vendor (Filterable), IsActive (Filterable));
+  publish entity Part.UnitOfMeasure as 'UnitsOfMeasure' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported)
+  expose (SystemID (KEY, Filterable), UnitName (Filterable, Sortable), Abbreviation);
+  publish entity WarehouseManagement.Warehouse as 'Warehouses' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported)
+  expose (SystemID (KEY, Filterable), WarehouseID (Filterable, Sortable), Description (Filterable, Sortable));
+};
+grant access on published odata service AssetManagement.AssetsAPI to AssetManagement.APIConsumer;
+
+-- Write seam: the monolith's part admin (MasterData.ACT_Part_Save_MxAdmin) upserts the part here
+create or modify microflow Part.SeamAPI_UpsertPart (
+  $PartID: String,
+  $Name: String,
+  $Description: String,
+  $Price: Decimal,
+  $Vendor: String
+) returns String
+begin
+  retrieve $Existing from Part.Part where [PartID = $PartID] first;
+  if $Existing = empty then
+    $New = create Part.Part (PartID = $PartID, SystemID = $PartID, IsActive = true);
+    change $New (Name = $Name, Description = $Description, Price = $Price, Vendor = $Vendor);
+    commit $New;
+    return 'created ' + $PartID;
+  else
+    change $Existing (Name = $Name, Description = $Description, Price = $Price, Vendor = $Vendor);
+    commit $Existing;
+    return 'updated ' + $PartID;
+  end if;
+end;
+grant execute on microflow Part.SeamAPI_UpsertPart to Part.APIConsumer;
+grant create, read (PartID, SystemID, Name, "Description", Price, Vendor, IsActive), write (PartID, SystemID, Name, "Description", Price, Vendor, IsActive) on entity Part.Part to Part.APIConsumer;
+
+create or modify published rest service Part.SeamPartAPI (
+  Path: 'rest/assets/v1',
+  Version: '1.0.0',
+  ServiceName: 'Assets seam (writes)',
+  Authentication: (basic)
+)
+{
+  resource 'parts' {
+    post '' microflow Part.SeamAPI_UpsertPart;
+  }
+};
+grant access on published rest service Part.SeamPartAPI to Part.APIConsumer;

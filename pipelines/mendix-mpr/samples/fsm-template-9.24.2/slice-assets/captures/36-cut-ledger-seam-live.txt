@@ -1,0 +1,9 @@
+$ bin/cut-ledger.sh --refs crossing-refs.tsv --slice slice.txt --rules cut-rules.tsv --check-log captures/08-mxcheck-after-install.txt --extra cut-extra.tsv -o cut-ledger.tsv   # after the seam (rules for the rewired in-edges added)
+cut-ledger: 811 crossing refs -> 703 ledger rows (155 out, 536 in from the catalog; 7 check-only; 5 extra) -> <lab>/web-assets/cut-ledger.tsv
+  by resolution: handoff 500, platform 6, resolved 41, retire 36, stub 120
+exit=0 real 0.1 s
+$ bin/cut-ledger.sh --refs crossing-refs.tsv --slice slice.txt --rules cut-rules.tsv --check-log captures/08-mxcheck-after-install.txt --extra cut-extra.tsv -o cut-ledger.tsv   # final (security row resolved)
+cut-ledger: 811 crossing refs -> 703 ledger rows (155 out, 536 in from the catalog; 7 check-only; 5 extra) -> <lab>/web-assets/cut-ledger.tsv
+  by resolution: handoff 499, platform 6, resolved 42, retire 36, stub 120
+exit=0
+# --catalog run on the 9.24 copy's catalog gives a byte-identical ledger (cmp)

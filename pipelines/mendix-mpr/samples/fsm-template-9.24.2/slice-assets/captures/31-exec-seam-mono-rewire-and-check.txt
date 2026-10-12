@@ -1,0 +1,39 @@
+$ mxcli exec mdl/seam-mono-rewire.mdl -p fsm.mpr   (10.24 copy; mpr backed up first)
+  Result: read *
+2026/10/12 09:30:09 info: user definition "barcodescanner.def.json" overrides built-in barcodescanner (widgetId: com.mendix.widget.web.barcodescanner.BarcodeScanner → com.mendix.widget.native.barcodescanner.BarcodeScanner)
+2026/10/12 09:30:09 info: user definition "gallery.def.json" overrides built-in gallery (widgetId: com.mendix.widget.web.gallery.Gallery → com.mendix.widget.native.gallery.Gallery)
+2026/10/12 09:30:09 info: user definition "image.def.json" overrides built-in image (widgetId: com.mendix.widget.web.image.Image → com.mendix.widget.native.image.Image)
+Created page AssetsSeam.Parts_FromSlice
+Granted view access on AssetsSeam.Parts_FromSlice to AssetsSeam.User
+Added module roles AssetsSeam.User to user role FunctionalAdministrator
+Added module roles AssetsSeam.User to user role TechnicalAdministrator
+Added module roles AssetsSeam.User to user role ServiceDeskEmployee
+Added module roles AssetsSeam.User to user role CallCenterEmployee
+Added module roles AssetsSeam.User to user role ServiceRegionManager
+Modified microflow: MasterData.ACT_Part_Save_MxAdmin (spliced: 1 inserted)
+All specified roles already have execute access on MasterData.ACT_Part_Save_MxAdmin
+Created microflow: AssetsSeam.EnsureJourneyAccount
+Altered microflow General.ASU_General
+exit=0 real 16.8 s
+$ mx(10.24) check fsm.mpr
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app" at Data grid 2 'partsGrid'
+The app contains: 1 errors.
+$ mxcli fix widgets -p fsm.mpr   # CE0463 on the new Data grid 2
+Updating widget definitions in fsm.mpr (Mendix 10.24.0.73019)...
+
+Updated widget definitions. The project is MPR v1, which this tool writes natively.
+$ mx(10.24) check fsm.mpr
+The app contains: 0 errors.
+$ (restored fsm.mpr from the pre-rewire backup; second account journey_techadm added to the script)
+$ mxcli exec mdl/seam-mono-rewire.mdl -p fsm.mpr
+Added module roles AssetsSeam.User to user role ServiceRegionManager
+Modified microflow: MasterData.ACT_Part_Save_MxAdmin (spliced: 1 inserted)
+All specified roles already have execute access on MasterData.ACT_Part_Save_MxAdmin
+Created microflow: AssetsSeam.EnsureJourneyAccount
+Created microflow: AssetsSeam.ASU_EnsureJourneyAccounts
+Altered microflow General.ASU_General
+exit=0 real 19.5 s
+$ mxcli fix widgets -p fsm.mpr
+Updated widget definitions. The project is MPR v1, which this tool writes natively.
+$ mx(10.24) check fsm.mpr
+The app contains: 0 errors.

@@ -1,0 +1,14 @@
+$ mxcli exec mdl/seam-mono.mdl -p fsm.mpr   (10.24 copy)
+Created constant: AssetsSeam.ODataServiceUrl
+Created constant: AssetsSeam.APIUserName
+Created constant: AssetsSeam.APIUserPassword
+Created constant: AssetsSeam.JourneyUserName
+Created constant: AssetsSeam.JourneyUserPassword
+Created module role: AssetsSeam.User
+Created microflow: AssetsSeam.GetAuthHeaders
+Created OData client: AssetsSeam.AssetsAPI
+  Cached $metadata: 4 entity types, 0 actions
+Skipped primitive-collection NPEs (OData primitive collections require Mendix 11.0+; project is 10.24.0.73019)
+
+From AssetsSeam.AssetsAPI into AssetsSeam: 4 created, 0 updated, 0 skipped, 0 failed
+exit=0 real 5.8 s

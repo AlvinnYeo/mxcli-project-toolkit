@@ -1,0 +1,4 @@
+$ bin/cut-ledger.sh --catalog <lab>/web-assets/mono924ro/.mxcli/catalog.db --slice slice.txt --rules cut-rules.tsv --check-log captures/08-mxcheck-after-install.txt --extra cut-extra.tsv --dump-refs crossing-refs.tsv -o cut-ledger.tsv
+cut-ledger: 811 crossing refs -> 703 ledger rows (155 out, 536 in from the catalog; 7 check-only; 5 extra) -> <lab>/web-assets/cut-ledger.tsv
+  by resolution: handoff 501, platform 6, resolved 40, retire 36, stub 120
+exit=0 real 0.14 s

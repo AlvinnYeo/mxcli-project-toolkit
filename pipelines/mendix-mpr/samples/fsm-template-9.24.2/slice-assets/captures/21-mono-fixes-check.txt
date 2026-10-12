@@ -1,0 +1,42 @@
+$ mx(10.24) update-widgets fsm.mpr
+   at Mendix.MxToolset.MxToolset.ProcessArguments(String[] commandLineArgs) in Mendix.MxToolset\MxToolset.cs:line 167
+   at Mendix.MxToolset.Program.<>c__DisplayClass0_0.<Main>b__0(IMxToolset mxToolset) in Mendix.MxToolset\Program.cs:line 11
+   at Mendix.CommandLine.Shared.ProgramHelper.InitializeAndRun[T](Func`2 program, Assembly[] extraAssemblies) in Mendix.CommandLine.Shared\ProgramHelper.cs:line 24
+$ mxcli -c "alter settings runtime ( JavaVersion: '21' )"
+Updated model settings
+$ rm theme/web/index.html
+$ mx(10.24) check fsm.mpr
+[error] [CE0161] "Error(s) in XPath constraint." at Data grid 'grid2'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app" at Image 'image6'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app" at Image 'image5'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app" at Image 'image4'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app" at Image 'image3'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app" at Image 'image2'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app" at Image 'image7'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app" at Image 'image8'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app" at Image 'image9'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app" at Image 'image10'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app" at Image 'image119'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app" at Image 'image12'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app" at Image 'image11'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app" at Image 'image13'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app" at Image 'image14'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app" at Image 'image15'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app" at Pop-up menu 'pop_upMenu1'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app" at Pop-up menu 'pop_upMenu2'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app" at Pop-up menu 'pop_upMenu1'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app" at Feedback 'feedback1'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app" at Pop-up menu 'custom'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app" at Feedback 'feedback1'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app" at Pop-up menu 'pop_upMenu1'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app" at Pop-up menu 'pop_upMenu1'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app" at Image 'image1'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app" at Image 'image2'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app" at Image 'image1'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app" at Image 'image1'
+The app contains: 28 errors.
+$ mx(10.24) update-widgets fsm.mpr   # relative path -> System.ArgumentNullException: Value cannot be null. (Parameter 'path')
+$ mx(10.24) update-widgets <lab>/web-assets/mono/fsm.mpr
+$ mx(10.24) check
+[error] [CE0161] "Error(s) in XPath constraint." at Data grid 'grid2'
+The app contains: 1 errors.
