@@ -14,10 +14,25 @@ and configure the marked constants — **after** running `mxcli init`, never bef
 | `ux002_decisions_captioned.star` | UX002 — decisions (`ExclusiveSplit`) with an auto-generated caption instead of the question they answer; flows of 8+ activities with neither an annotation nor a documentation text | `ANNOTATE_FROM` |
 | `err001_error_swallowed.star` | ERR001 — an activity set to Continue / Custom / Custom-without-rollback in a flow that never logs, raises an error event, or calls a flow named like a handler (`SUB_LogError`, `ERR_…`): the error is swallowed | `HANDLER_NAME_PATTERN` if your handler flows are named differently |
 | `loop001_expensive_action_in_loop.star` | LOOP001 — a database retrieve, delete, REST call, external call or Java action inside a loop body (any depth): one round trip per row | `EXPENSIVE` if a call type is cheap in your setup |
+| `perf001_generalization_depth.star` | PERF001 — an entity more than two generalization levels deep (a System.* ancestor counts one level); every retrieve joins one table per level | `MAX_DEPTH`, `SYSTEM_ANCESTOR_LEVELS` |
+| `perf002_nested_data_widgets.star` | PERF002 — a data view / list view / data grid / gallery nested inside two or more other data widgets on the same page: re-queries per row at every level | `MAX_NESTING`, `DATA_WIDGET_CANDIDATES`, `EXCLUDE` (widget_type vocabulary: probe first) |
+| `perf004_npe_system_user_assoc.star` | PERF004 — an association between a non-persistable entity and System.User / System.Session (or an entity generalizing them), which pins session objects to the shared side | `NON_PERSISTABLE_CANDIDATES`, `SYSTEM_TARGETS` (entity_type vocabulary: probe first) |
 
 `err001` and `loop001` first field count (2026-10-12, mxcli 0.26.0, 21-module Mendix 11.12 model,
 876 microflows): ERR001 8 (3 true, 5 debatable — flows that return an error payload instead of
 logging), LOOP001 4 (4 true). Warning severity until a second project reports.
+
+`perf001`, `perf002` and `perf004` (Lint Batch 2) first field run (2026-10-12, mxcli 0.26.0,
+same 21-module Mendix 11.12 model, catalog FULL, 1.4 s, no load errors): 0 / 0 / 0 findings and
+no `_rule` blindness finding. The zeros are a null result, not a pass: the Starlark accessors
+only expose the app's own modules (271 of 4346 widgets, 9 of 356 entities), and those had no
+generalization, no data widget below depth 0 and no System.User association — while the
+marketplace modules out of scope held 41 data widgets at depth 2+. The vocabulary probe did
+land: `generalization` is `""` / `System.X` / `Module.Entity`, `entity_type` is `PERSISTENT` /
+`NON_PERSISTENT` / `VIEW`, and the widget_type spellings are now in each rule's header
+(`Forms$ListViewTemplate` was added to PERF002's EXCLUDE on that probe). Status stays `drafted`
+until a project with real inheritance and nesting reports a count
+(`tests/lint-rules/test-batch2-rules.sh`, 16 cases).
 
 `data_change_microflows` and `entity_business_key` are **repaired copies of rules `mxcli init`
 already seeds**, not new ones. Both shipped comparing `entity.entity_type` to `"PERSISTENT"`
