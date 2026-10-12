@@ -1,0 +1,77 @@
+{
+  "projectName": "ExampleApp",
+  "date": "2026-10-12 03:48:40",
+  "overallScore": 41.3,
+  "summary": {
+    "total": 302,
+    "errors": 0,
+    "warnings": 220,
+    "infos": 82
+  },
+  "categories": [
+    {
+      "name": "Security",
+      "score": 25,
+      "total": 41,
+      "errors": 0,
+      "warnings": 17,
+      "infos": 24,
+      "topActions": []
+    },
+    {
+      "name": "Quality",
+      "score": 26,
+      "total": 46,
+      "errors": 0,
+      "warnings": 14,
+      "infos": 32,
+      "topActions": []
+    },
+    {
+      "name": "Architecture",
+      "score": 0,
+      "total": 137,
+      "errors": 0,
+      "warnings": 137,
+      "infos": 0,
+      "topActions": []
+    },
+    {
+      "name": "Performance",
+      "score": 94,
+      "total": 2,
+      "errors": 0,
+      "warnings": 2,
+      "infos": 0,
+      "topActions": []
+    },
+    {
+      "name": "Naming",
+      "score": 88,
+      "total": 12,
+      "errors": 0,
+      "warnings": 0,
+      "infos": 12,
+      "topActions": []
+    },
+    {
+      "name": "Design",
+      "score": 70,
+      "total": 10,
+      "errors": 0,
+      "warnings": 10,
+      "infos": 0,
+      "topActions": []
+    },
+    {
+      "name": "Other",
+      "score": 0,
+      "total": 54,
+      "errors": 0,
+      "warnings": 40,
+      "infos": 14,
+      "topActions": []
+    }
+  ],
+  "violations": []
+}

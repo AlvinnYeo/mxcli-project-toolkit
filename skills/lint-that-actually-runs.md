@@ -111,6 +111,25 @@ all the same order of magnitude, and no project produced a single real error-sev
 the ratchet is the *only* mechanism available. `project-bin/lint-gate.sh` implements it
 (`--update-baseline` to accept current counts).
 
+**The ratchet remembers one number per rule; the ledger remembers every run.** Every gate run
+appends one row per rule to `.claude/loop/lint-ledger.tsv` (timestamp, verdict, rule, count,
+severity, blind), and `project-bin/lint-trend.sh` reads it back: runs a rule fired in, first and
+last count with dates, best/worst, and how many runs it was blind. That is the answer to "did
+the rule we shipped ever catch anything here, and did the count go down once people saw it" —
+the evidence `process/lint-backlog.md` asks for before a warning becomes an error. A rule that
+never appears in the ledger is clean here *or* wrong; `--rule <id>` and the blind column say
+which. Before this file existed the only history was `lint-baseline.json` in git, which records
+the count that was *accepted*, not what each run saw.
+
+**The metrics ledger is the outcome side of the same question.** `project-bin/exec.sh` appends
+one row per run to `.claude/loop/metrics-ledger.tsv` via `metrics-ledger.sh` (outcome class,
+elapsed seconds, mxbuild errors, lint total, and — after a clean build — the `mxcli report`
+overall score plus its seven category scores and violation count), and `metrics-trend.sh`
+reads it back: applied-vs-failed counts, median elapsed first half → second half, lint total
+and report score first → last. Lint counts say whether a rule fires; this says whether the app
+got better and the sessions faster while it did. `bin/harvest-learnings.sh` carries the
+trend summary (never the rows — those name scripts) into the toolkit inbox at wrap-up.
+
 ## Two false-pass bugs already designed out of `lint-gate.sh` — keep them out
 
 Both were found by testing the gate, not by reading it:

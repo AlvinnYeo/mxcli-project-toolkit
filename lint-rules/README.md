@@ -7,9 +7,17 @@ and configure the marked constants — **after** running `mxcli init`, never bef
 | Rule | What it catches | Configure? |
 |---|---|---|
 | `conv010_act_microflow_content.star` | `ACT_` page-action microflows holding business logic instead of delegating to `SUB_` | if your prefixes differ — `ACTION_PREFIX`, `DELEGATE_PREFIX` |
-| `conv020_action_user_feedback.star` | Page-triggered microflows that commit / import / delete but tell the user nothing | **yes** — `PROJECT_MODULES`, and `ACTION_PREFIX` if your prefixes differ |
+| `conv020_action_user_feedback.star` | Page-triggered microflows that commit / import / delete but tell the user nothing | no — `PROJECT_MODULES` defaults to `"*"` (all modules the lint run includes, minus `.claude/lint-vendor-modules.txt`); `ACTION_PREFIX` if your prefixes differ |
 | `data_change_microflows.star` | ARCH002 — persistent entities written from pages instead of microflows | no |
 | `entity_business_key.star` | ARCH003 — persistent entities with no UNIQUE NOT NULL business key | no |
+| `ux001_confirm_before_destructive.star` | UX001 — a button that deletes, approves, rejects, submits or archives (direct delete action, or a flow that deletes / is named so) without "Ask confirmation" | `DESTRUCTIVE_NAME_PATTERN` if your verbs differ |
+| `ux002_decisions_captioned.star` | UX002 — decisions (`ExclusiveSplit`) with an auto-generated caption instead of the question they answer; flows of 8+ activities with neither an annotation nor a documentation text | `ANNOTATE_FROM` |
+| `err001_error_swallowed.star` | ERR001 — an activity set to Continue / Custom / Custom-without-rollback in a flow that never logs, raises an error event, or calls a flow named like a handler (`SUB_LogError`, `ERR_…`): the error is swallowed | `HANDLER_NAME_PATTERN` if your handler flows are named differently |
+| `loop001_expensive_action_in_loop.star` | LOOP001 — a database retrieve, delete, REST call, external call or Java action inside a loop body (any depth): one round trip per row | `EXPENSIVE` if a call type is cheap in your setup |
+
+`err001` and `loop001` first field count (2026-10-12, mxcli 0.26.0, 21-module Mendix 11.12 model,
+876 microflows): ERR001 8 (3 true, 5 debatable — flows that return an error payload instead of
+logging), LOOP001 4 (4 true). Warning severity until a second project reports.
 
 `data_change_microflows` and `entity_business_key` are **repaired copies of rules `mxcli init`
 already seeds**, not new ones. Both shipped comparing `entity.entity_type` to `"PERSISTENT"`
@@ -24,9 +32,31 @@ while it was dead. It now carries the same `SKIP_MODULES` list, and the same pro
 are excluded at the gate (`bin/lint-gate.sh -e`, from a per-project
 `.claude/lint-vendor-modules.txt`), not hardcoded in a shared rule.
 
+`ux001` and `ux002` read widget `action_type` / `has_confirmation` and activity
+`caption` / `auto_generate_caption`, which exist from **mxcli 0.25.0** (catalog schema with
+widget actions and activity captions). On an older binary both rules emit a single `_rule`
+finding ("needs mxcli >= 0.25.0") and nothing else — `bin/lint-gate.sh` reads that as blindness,
+never as a clean pass. Their vocabulary (`Forms$DeleteClientAction`, `Forms$MicroflowAction`,
+`ExclusiveSplit`, `DeleteObjectAction`) was read from the mxcli source at 0.25.0, then field-probed
+on 2026-10-12 with mxcli 0.26.0 against a scratch copy of a 21-module Mendix 11.12 model (876
+microflows, 124 pages). That probe found two defects the unit suite could not see: the stored
+microflow-button action type is `Forms$MicroflowAction`, not the `…ClientAction` the source read
+suggested, and `auto_generate_caption` is never set on a decision — a bare decision carries its
+condition expression as its caption. Both fixed; after the fix UX002 reports every one of the
+model's 39 top-level custom decisions as bare (all were), UX001 stays at 0 there (its 4 microflow
+buttons reach no delete and match no verb). Re-probe on your own model before trusting the counts. Their *logic* is proven: `tests/lint-rules/`
+runs both under the real Starlark interpreter (`go.starlark.net` at mxcli's pinned version) over
+33 hand-written fixtures — self-checks, call depth both sides of the bound, cycles, the name
+pattern, module skips, snippet locations, start/end events not counted — plus a synthetic
+3000-flow / 20000-widget model each rule finishes in under a second. Fixtures encode the
+projection as read from the mxcli source; they are not captured output, so they prove the
+rule, not the vocabulary.
+
 `conv010` here is likewise the repaired form of the rule mxcli seeds, and supersedes the
 version this directory shipped on 11 Aug: one violation per microflow instead of one per
 activity, plus four action types allowlisted. On PROJECT-C that is 399 rows -> 51 findings.
+
+Candidates that are not rules yet, and the order they ship in: `process/lint-backlog.md`.
 
 ## A rule that matches nothing now says so
 
@@ -37,7 +67,7 @@ convention: on a project that names things differently both rules matched nothin
 nothing, and reported a clean pass.
 
 Both now emit a `_rule` finding when the prefix matches zero microflows (CONV010 guards on the
-project having any microflows at all; CONV020 on `PROJECT_MODULES` containing any). Verified by
+project having any microflows at all; CONV020 on `PROJECT_MODULES` being non-empty and containing any). Verified by
 fixture on TestCLIApp — setting `ACTION_PREFIX` to an unused string produces the finding, and
 the real prefix produces none. `bin/lint-gate.sh` treats `module == "_rule"` as blindness, so
 this turns a silent pass into a gate failure rather than a line in a report nobody reads.
@@ -149,6 +179,7 @@ If yes, it needs a self-check before it is worth installing.
 
 `CONV020` deliberately ignores retrieves, changes without commit, non-page-reachable
 microflows, and validation-only paths. It flags roughly what a reviewer would flag by hand.
+Show-page, close-page and show-home-page actions count as feedback (presence only, not order). Refresh-in-client is not visible to the Starlark API, so a flow that only refreshes is still flagged until mxcli exposes it.
 A rule that fires on everything gets switched off, and a switched-off rule catches nothing —
 which is how `CONV010` and the lint gate both ended up idle.
 
