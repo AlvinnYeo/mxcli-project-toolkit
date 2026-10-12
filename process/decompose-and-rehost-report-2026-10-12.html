@@ -106,8 +106,8 @@
   <div class="card"><h3>2. App to MDL</h3><p>A small same-version app came across almost perfectly (154 of 155 identical). A 48-module app did not: 29 of 36 modules landed and the build failed with 14 errors.</p></div>
   <div class="card"><h3>3. Rebuilt differently</h3><p>Seven plan items changed. The big one: we move modules as packages (MPK) and use MDL only for the edges, because the probe proved IDs survive.</p></div>
   <div class="card"><h3>4. Time</h3><p>Single steps take seconds to a minute. A web slice took about 2 h 10 min end to end; adding core services took about 1 h.</p></div>
-  <div class="card"><h3>5. Tokens</h3><p>3,010,761 tokens across 17 measured workers: Opus 1,907,879, Sonnet 923,951, Fable 178,931. The orchestrator itself is not counted.</p></div>
-  <div class="card"><h3>6. Proven and next</h3><p>Build-green slices and one live cross-app journey are proven. Strangling the monolith, mobile, login across apps and data migration are not.</p></div>
+  <div class="card"><h3>5. Tokens</h3><p>3,641,710 tokens across 19 measured workers: Opus 2,440,604, Sonnet 1,022,175, Fable 178,931. The orchestrator itself is not counted.</p></div>
+  <div class="card"><h3>6. Proven and next</h3><p>The full flow is proven on one slice: Assets &amp; Parts was split out, served over OData/REST, and its four modules were deleted from the monolith, with a repeatable end-to-end test across both apps passing 16/16. A Mobile partition, token login across apps and data migration are not.</p></div>
 </div>
 
 <h2>1. The approach</h2>
@@ -128,6 +128,7 @@
 <tr><td class="num">4</td><td>Seam probe</td><td><span class="pill done">one record crossed</span> monolith to slice over REST</td></tr>
 <tr><td class="num">5</td><td>Assets &amp; Parts web slice (4 modules)</td><td><span class="pill done">build-green</span> seam-live not reached; 1 journey passes</td></tr>
 <tr><td class="num">6</td><td>Monolith publishes core services</td><td><span class="pill done">seam-live</span> for the non-Mobile core; stub rows 120 to 32</td></tr>
+<tr><td class="num">7</td><td>Strangle Assets &amp; Parts</td><td><span class="pill done">strangled</span> 4 modules deleted from the monolith (61 to 56 modules); in-edge hand-offs 499 to 157, each with a reason; cross-app e2e 16/16, twice</td></tr>
 </tbody></table></div>
 
 <h3>The self-improvement loop</h3>
@@ -191,6 +192,8 @@
 <tr><td>Increment 4 (seam probe), wall clock</td><td class="num">~32 min</td></tr>
 <tr><td>Increment 5 (Assets &amp; Parts), wall clock</td><td class="num">~2 h 10 min</td></tr>
 <tr><td>Increment 6 (core services), wall clock</td><td class="num">~1 h</td></tr>
+<tr><td>Increment 7 (strangle), wall clock</td><td class="num">~1 h 40 min</td></tr>
+<tr><td>Cross-app e2e journey (16 checks, both databases)</td><td class="num">21&ndash;29 s</td></tr>
 </tbody></table></div>
 <p>Wall clock includes authoring. The machine steps are short; most time goes to one-time work such as dead ends and first-time setup.</p>
 
@@ -216,18 +219,20 @@
 <tr><td>Reduce repros group A</td><td>Sonnet</td><td class="num">159,018</td></tr>
 <tr><td>Reduce repros group B</td><td>Sonnet</td><td class="num">177,316</td></tr>
 <tr><td>Reduce repros group C</td><td>Sonnet</td><td class="num">117,053</td></tr>
+<tr><td>Increment 7: strangle Assets &amp; Parts + cross-app e2e</td><td>Opus</td><td class="num">532,725</td></tr>
+<tr><td>This report (first draft)</td><td>Sonnet</td><td class="num">98,224</td></tr>
 </tbody></table></div>
 <div class="tablewrap"><table>
 <thead><tr><th>Model</th><th>Workers</th><th>Tokens</th><th>Share</th></tr></thead>
 <tbody>
-<tr><td>Opus</td><td class="num">8</td><td class="num">1,907,879</td><td class="num">63.4%</td></tr>
-<tr><td>Sonnet</td><td class="num">8</td><td class="num">923,951</td><td class="num">30.7%</td></tr>
-<tr><td>Fable</td><td class="num">1</td><td class="num">178,931</td><td class="num">5.9%</td></tr>
-<tr><td><strong>Total</strong></td><td class="num"><strong>17</strong></td><td class="num"><strong>3,010,761</strong></td><td class="num">100%</td></tr>
+<tr><td>Opus</td><td class="num">9</td><td class="num">2,440,604</td><td class="num">67.0%</td></tr>
+<tr><td>Sonnet</td><td class="num">9</td><td class="num">1,022,175</td><td class="num">28.1%</td></tr>
+<tr><td>Fable</td><td class="num">1</td><td class="num">178,931</td><td class="num">4.9%</td></tr>
+<tr><td><strong>Total</strong></td><td class="num"><strong>19</strong></td><td class="num"><strong>3,641,710</strong></td><td class="num">100%</td></tr>
 </tbody></table></div>
 <div class="callout">
-<p><strong>Not counted:</strong> the orchestrator session itself; increments 1a and 1b and the first FSM cut-score worker (they ran before measurement began); the stopped Dispatch run; the strangling run still in progress. The real total is higher.</p>
-<p><strong>Routing decision:</strong> after the first worker ran on Fable, the most expensive model, we moved work off it mid-session: Opus for hard work, Sonnet for recipe work. Fable's share fell to under 6%.</p>
+<p><strong>Not counted:</strong> the orchestrator session itself; increments 1a and 1b and the first FSM cut-score worker (they ran before measurement began); the Dispatch run, stopped after a few minutes in favour of strangling. The real total is higher.</p>
+<p><strong>Routing decision:</strong> after the first worker ran on Fable, the most expensive model, we moved work off it mid-session: Opus for hard work, Sonnet for recipe work. Fable's share fell to under 5%.</p>
 </div>
 
 <h2>6. Proven, not proven, and next</h2>
@@ -236,13 +241,15 @@
 <tbody>
 <tr><td>A small same-version app rehosts essentially losslessly (154 of 155 documents identical).</td><td>A large rehost reaching build-green. GenAI stopped at 14 errors and a failed build.</td></tr>
 <tr><td>A Mendix 9 app can be read, upgraded on a copy and its modules moved to Mendix 11 by package.</td><td>Regression parity of a rehosted app. It is not reachable headlessly and needs a human-run level.</td></tr>
-<tr><td>Two slices reach build-green (<code>mx check</code> 0, build succeeded, 0 unresolved ledger rows).</td><td>Strangling: rewiring the monolith's calls (only 1 of 536 in-edges rewired in increment 5) and deleting the module.</td></tr>
+<tr><td>Strangling works end to end: four modules deleted from the monolith, both apps build, and a repeatable test crosses both apps in both directions (16/16, twice).</td><td>One journey per crossing edge: 2 journeys cover the 5 crossing kinds, not each of the 536 references.</td></tr>
+<tr><td>Two slices reach build-green (<code>mx check</code> 0, build succeeded, 0 unresolved ledger rows).</td><td>Monolith-side UI over the moved data (tickets, work orders, appointments) at runtime: the test database held none. Slice-to-device push of used parts. Behaviour with the slice down.</td></tr>
 <tr><td>A live seam: one record crossed in increment 4; a journey slice to monolith to slice passed 9/9 in increment 6.</td><td>Mobile: 31 stub rows remain, and offline sync needs REST-fed copies.</td></tr>
 <tr><td>Stub rows fell 120 to 32 by publishing core services.</td><td>Login across apps, and data migration. A monolith outage makes the slice's asset page unusable (measured).</td></tr>
 </tbody></table></div>
 <h3>Next</h3>
 <ul class="tight">
-<li><span class="pill run">in progress</span> Strangled Assets &amp; Parts, plus a cross-app end-to-end test.</li>
+<li><span class="pill done">done</span> Strangled Assets &amp; Parts: four modules deleted from the monolith, cross-app end-to-end test 16/16 on two consecutive runs. 157 in-edges remain as reasoned hand-offs.</li>
+<li><span class="pill next">next</span> Fold the level-3 lessons into the skills: a "strangle" recipe, one journey per crossing kind, key read rights on AutoNumber keys, key copies instead of a mirror.</li>
 <li><span class="pill next">next</span> Dispatch &amp; Workforce. It has about 1.8 times the no-lane calls of Assets &amp; Parts (126 vs 69), so it follows once the pattern works.</li>
 <li><span class="pill next">next</span> The Mobile partition (offline sync, REST-fed copies).</li>
 <li><span class="pill open">open</span> Token authentication between apps (today a machine role with basic auth).</li>
