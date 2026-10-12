@@ -1,0 +1,4 @@
+# mxcli exec mdl/mono-consume.mdl -p FSM.mpr (9.24.2), rc=1 — the constant was written before the refusal (exec not atomic)
+1 issues: 0 errors, 1 warnings, 0 info
+Created constant: Synchronization.NoteSliceBaseUrl
+Error: failed to save altered microflow: unit fae0f1dd-00ff-41fa-88d8-8cedb938849f: this Mendix 9.24.2 project cannot store Microflows$SequenceFlow.CaseValues (Mendix 10.15.0+): the property did not exist yet in this version, and Studio Pro cannot open a document that holds one. Remove what needs it from the statement, or upgrade the project

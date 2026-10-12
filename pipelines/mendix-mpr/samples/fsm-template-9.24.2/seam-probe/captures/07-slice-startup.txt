@@ -1,0 +1,5 @@
+# mxcli run --local --detach --db-type hsqldb --app-port 8280 --admin-port 8290 -p NoteSlice.mpr (86 s, rc=0)
+running: http://127.0.0.1:8280/ (pid 1555, no watch, log slice/.mxcli/run.log)
+2026-10-12 08:29:21.414 INFO - Core: Mendix Runtime 11.13.0 (build 11.13.0). Copyright © 2003-2026 Mendix Technology B.V. All rights reserved.
+2026-10-12 08:29:21.898 INFO - Core: Using runtime version '11.13.0' for model version '11.13.0'
+2026-10-12 08:29:28.690 INFO - Core: Mendix Runtime successfully started, the application is now available.

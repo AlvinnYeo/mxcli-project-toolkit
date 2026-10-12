@@ -1,0 +1,22 @@
+# mxcli oql --direct --port 8290 -p NoteSlice.mpr "SELECT SystemID, Title, Description, NrOfPictures, ShouldBeSynced FROM NativeNote.NativeNote WHERE SystemID LIKE 'seam-%'"   (slice, 11.13)
+| Description                 | ShouldBeSynced | SystemID            | Title           | NrOfPictures |
+|-----------------------------|----------------|---------------------|-----------------|--------------|
+| created in the FSM monolith | true           | seam-20261012084355 | Seam probe note | 0            |
+(1 rows)
+
+# mxcli oql --direct --port 8190 -p fsm.mpr "SELECT SystemID, Title, Description FROM Note.Note WHERE SystemID LIKE 'seam-%'"   (monolith, 10.24)
+| Description                 | SystemID            | Title           |
+|-----------------------------|---------------------|-----------------|
+| created in the FSM monolith | seam-20261012084355 | Seam probe note |
+(1 rows)
+
+# mxcli oql --direct --port 8190 -p fsm.mpr "SELECT SystemID, Title FROM NativeNote.NativeNote"   (monolith no longer writes NativeNote)
+(0 rows)
+
+# upsert, second call same SystemID (curl POST .../rest/seam/v1/notes?SystemID=seam-20261012084355&...)
+updated seam-20261012084355| n |
+|---|
+| 1 |
+(1 rows)
+
+# direct smoke test before the monolith ran: curl -X POST ...?SystemID=probe-0&Title=direct&Description=curl&NrOfPictures=0 -> HTTP/1.1 200 OK, body 'created probe-0'

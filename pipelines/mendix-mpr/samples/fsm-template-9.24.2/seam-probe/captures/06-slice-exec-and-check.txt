@@ -1,0 +1,7 @@
+# first exec of mdl/slice-publish.mdl used 'retrieve ... limit 1' (mxcli check: passed) -> mx check 11.13:
+[error] [CE1613] "The selected attribute 'List of NativeNote.NativeNote.Description' no longer exists." at Change object activity ...  (4 errors)
+# fixed to 'first', re-exec as create or modify -> 'spliced: 1 replaced' -> mx check still 4 errors; drop + create -> :
+1 info note not shown — run `mxcli check mdl/slice-publish.mdl` to see them (or pass --verbose)
+Created microflow: NativeNote.SeamAPI_UpsertNote
+Created published rest service NativeNote.SeamNoteAPI
+The app contains: 0 errors.

@@ -1,0 +1,31 @@
+# mxcli run --local --db-type hsqldb on the Mendix 9.24.2 copy (77 s, rc=1)
+WARNING: This is a vibe-coded PoC, alpha quality, use with caution.
+failed: initial build failed: An error occurred while cleaning the deployment directory.
+  last lines of mono9/.mxcli/run.log:
+    Building (first build is cold, ~10-15s)...
+    Error: initial build failed: An error occurred while cleaning the deployment directory.
+    {
+      "problems": {
+        "errors": [
+          {
+            "message": "An error occurred while cleaning the deployment directory.",
+          }
+        ],
+        "problems": []
+      },
+      "status": "Failure",
+      "message": "An error occurred while cleaning the deployment directory."
+    }
+
+# the error's details field, from <lab>/seam/mono9/.mxcli/run.log
+Starting a Gradle Daemon, 2 incompatible and 1 stopped Daemons could not be reused, use --status for details
+FAILURE: Build failed with an exception.
+* Where:
+Build file '<lab>/seam/mono9/deployment/build.gradle' line: 3
+* What went wrong:
+A problem occurred evaluating root project 'deployment'.
+> Could not open dsl generic class cache for script '<lab>/seam/mono9/deployment/variables.gradle' (<home>/.gradle/caches/7.6/scripts/8tcs1o335r605umw52tv755h3).
+   > BUG! exception in phase 'semantic analysis' in source unit '_BuildScript_' Unsupported class file major version 65
+BUILD FAILED in 14s
+
+# project setting: alter settings runtime ( JavaVersion: '17' ); -> 'Unchanged model settings' (the property does not exist in a 9.24 model)

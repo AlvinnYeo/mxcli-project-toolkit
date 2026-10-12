@@ -1,0 +1,14 @@
+# manual M2EE start of the 9.24.2 runtime (runtimelauncher.jar + admin API, see ../mdl/m2ee-start.py)
+## attempt 1, JDK 17:
+[rtlauncher:main$] ERROR Incompatible java version: 17.0.20.1, jvm name: OpenJDK 64-Bit Server VM, Java 11 is required.
+## attempt 2, JDK 11 (apt openjdk-11-jre-headless, 8 s), missing constant:
+ERROR - Module: An error occurred while initializing modules
+Caused by: com.mendix.systemwideinterfaces.MendixRuntimeException: Could not find value for constant 'MendixSSO.TokenEncryptionKey'
+## attempt 3, JDK 11 + all 47 constants from model/metadata.json (TokenEncryptionKey: random per run):
+update_appcontainer_configuration -> {"feedback":{},"result":0}
+update_configuration -> {"feedback":{},"result":0}
+start -> {"feedback":{},"result":0}   (first boot before that: result 3 'The database has to be updated.' numberofcommands 2378 -> execute_ddl_commands)
+2026-10-12 08:46:46.241 INFO - Core: Mendix Runtime 9.24.2.6130 (build 9.24.2.6130). Copyright © 2003-2023 Mendix bv. All rights reserved.
+2026-10-12 08:46:46.269 INFO - M2EE: Runtime server started.
+2026-10-12 08:46:52.127 WARNING - Core: The runtime has been started using a trial license, the framework will be terminated when the maximum time is exceeded!
+2026-10-12 08:46:56.673 INFO - Core: Mendix Runtime successfully started, the application is now available.

@@ -1,0 +1,2 @@
+# mxcli -p FSM.mpr (9.24.2) -c "create microflow Synchronization.SeamProbe_Trivial () begin return; end;"
+Error: failed to create microflow: unit 7cae3179-2989-4aa1-b80d-bc9bd49d27d2: this Mendix 9.24.2 project cannot store Microflows$Microflow.StableId (Mendix 10.2.0+); Microflows$SequenceFlow.CaseValues (Mendix 10.15.0+): the properties did not exist yet in this version, and Studio Pro cannot open a document that holds one. Remove what needs it from the statement, or upgrade the project

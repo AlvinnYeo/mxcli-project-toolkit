@@ -1,0 +1,19 @@
+# fixes to get the 10.24 copy to build and boot (none touches the seam)
+marketplace update 109515 --to 5.2.1 (NanoflowCommons 3.0.0 -> 5.2.1, 41 s) and 109513 --to 10.1.17 (NativeMobileResources 4.0.1 -> 10.1.17, 52 s); both warn:
+2026/10/12 08:35:30 warning: skipping com.mendix.widget.web.PopupMenu.mpk: package.xml: zip: checksum error
+mx update-widgets -> clears 27x CE0463 introduced by the updates
+CE0161 Scheduler.Snippet_Appointment_Scheduling grid2: XPath patched in place (sqlite, same-length bytes) — mxcli describes grid2 as 'NOT re-executable: mxcli cannot author this widget'
+alter settings runtime ( JavaVersion: '21' );  -> clears CE2513 'Java 11 is not supported.'
+theme/web/index.html removed (CE6911 cachebust)
+mx check -> The app contains: 0 errors.
+
+# mxcli run attempt 1 (79 s): An error occurred while compiling Java actions
+<lab>/seam/mono10/javasource/objecthandling/actions/deepClone.java:73: error: cannot assign a value to final variable membersToSkip
+# attempt 2 (58 s):
+<lab>/seam/mono10/javasource/objecthandling/XPath.java:340: error: cannot find symbol  (rollbackTransAction)
+<lab>/seam/mono10/javasource/communitycommons/actions/DeepClone.java:73: error: cannot assign a value to final variable membersToSkip
+# attempt 3 (74 s), rc=0:
+running: http://127.0.0.1:8180/ (pid 4201, no watch, log mono10/.mxcli/run.log)
+2026-10-12 08:43:45.972 INFO - Core: Mendix Runtime 10.24.0.73019 (build 10.24.0.73019). Copyright © 2003-2025 Mendix Technology B.V. All rights reserved.
+2026-10-12 08:43:48.747 INFO - Core: Using runtime version '10.24.0.73019' for model version '10.24.0.73019'
+2026-10-12 08:43:56.794 INFO - Core: Mendix Runtime successfully started, the application is now available.

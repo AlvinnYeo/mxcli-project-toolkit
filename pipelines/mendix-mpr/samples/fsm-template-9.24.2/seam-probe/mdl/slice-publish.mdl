@@ -1,0 +1,33 @@
+mdl 1;
+-- Seam probe: the slice owns NativeNote; the monolith pushes notes here instead of writing them itself.
+create or modify microflow NativeNote.SeamAPI_UpsertNote (
+  $SystemID: String,
+  $Title: String,
+  $Description: String,
+  $NrOfPictures: Integer
+) returns String
+begin
+  retrieve $Existing from NativeNote.NativeNote where [SystemID = $SystemID] first;
+  if $Existing = empty then
+    $New = create NativeNote.NativeNote (SystemID = $SystemID, CreatedOn = [%CurrentDateTime%]);
+    change $New (Title = $Title, Description = $Description, NrOfPictures = $NrOfPictures, ShouldBeSynced = true);
+    commit $New;
+    return 'created ' + $SystemID;
+  else
+    change $Existing (Title = $Title, Description = $Description, NrOfPictures = $NrOfPictures, ShouldBeSynced = true);
+    commit $Existing;
+    return 'updated ' + $SystemID;
+  end if;
+end;
+
+create or modify published rest service NativeNote.SeamNoteAPI (
+  Path: 'rest/seam/v1',
+  Version: '1.0.0',
+  ServiceName: 'NativeNote seam',
+  Authentication: none
+)
+{
+  resource 'notes' {
+    post '' microflow NativeNote.SeamAPI_UpsertNote;
+  }
+};

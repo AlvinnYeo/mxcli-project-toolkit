@@ -1,0 +1,30 @@
+mdl 1;
+-- Seam probe, monolith side. Written for the 9.24.2 copy, refused there (captures 04, 05: mxcli 0.26 cannot
+-- create a microflow nor add an activity in a 9.24 project); executed on the 10.24 copy. CREATE is refused
+-- for StableId (10.2+), ALTER for SequenceFlow.CaseValues (10.15+). The push is re-pointed in place
+-- with ALTER: the local NativeNote_Save becomes a REST call to the NativeNote slice.
+create constant Synchronization.NoteSliceBaseUrl type String default 'http://127.0.0.1:8280';
+
+alter microflow Synchronization.Note_ProcessUpdatingNativeNote {
+  replace call microflow NativeNote.NativeNote_Save(*) with begin
+    $SliceResponse = call rest service post '{1}/rest/seam/v1/notes?SystemID={2}&Title={3}&Description={4}&NrOfPictures={5}' with (
+      {1} = @Synchronization.NoteSliceBaseUrl,
+      {2} = urlEncode($Note/SystemID),
+      {3} = urlEncode(if $Note/Title = empty then '' else $Note/Title),
+      {4} = urlEncode(if $Note/Description = empty then '' else $Note/Description),
+      {5} = toString(if $Note/NrOfPictures = empty then 0 else $Note/NrOfPictures)
+    ) (
+      Timeout: 30,
+    ) returns String;
+    log info node 'SeamProbe' 'slice answered: {1}' with ({1} = $SliceResponse);
+  end;
+};
+
+-- Probe trigger only (not part of the seam): at startup create one monolith Note and commit it
+-- through the existing Note.Note_Commit -> Synchronization.Note_UpdateNativeNote chain.
+alter microflow General.ASU_General {
+  insert before return true begin
+    $SeamProbeNote = create Note.Note (SystemID = 'seam-' + formatDateTime([%CurrentDateTime%], 'yyyyMMddHHmmss'), Title = 'Seam probe note', Description = 'created in the FSM monolith', CreatedOn = [%CurrentDateTime%], NrOfPictures = 0);
+    call microflow Note.Note_Commit(Note = $SeamProbeNote);
+  end;
+};
