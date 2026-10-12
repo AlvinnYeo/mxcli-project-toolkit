@@ -33,7 +33,11 @@ def split_statements(text):
                 if ln.startswith('*/', i): state = 'code'; i += 1
             i += 1
         cur.append(ln)
-        if start == 'code' and state == 'code' and ln and not ln[0].isspace() and ln.rstrip().endswith(';'):
+        # the line may START inside a $$ body: java/javascript actions end with a column-0 `$$;`
+        # (GenAI Showcase: 15 java actions of GenAICommons merged into one "statement", and check's
+        # statement numbers no longer matched ours). The opener lookahead above still guards the
+        # multi-line-literal case.
+        if state == 'code' and ln and not ln[0].isspace() and ln.rstrip().endswith(';'):
             pending = True
     if pending and cur: stmts.append('\n'.join(cur)); cur = []
     return stmts, '\n'.join(cur)

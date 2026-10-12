@@ -17,29 +17,41 @@ stmts, tail = split_statements(open(sys.argv[1], encoding='utf-8', newline='').r
 QN = r'[A-Za-z0-9_]+\.[A-Za-z0-9_]+'
 head_re = re.compile(r'^(?:@[^\n]*\n|/\*\*.*?\*/\s*)*create or modify ([a-z][a-z -]*?) (' + QN + r')\b', re.M | re.S)
 grant_re = re.compile(r'^grant .*? on (?:[a-z ]+?) (' + QN + r')\b', re.M)
-# a unit = a create statement + the `grant … on <same name>` statements right after it
-units, i = [], 0
-while i < len(stmts):
-    m = head_re.search(stmts[i])
-    if m and m.group(1) != 'module':
-        name, j = m.group(2), i + 1
-        while j < len(stmts):
-            g = grant_re.search(stmts[j].strip())
-            if g and g.group(1) == name: j += 1
-            else: break
-        units.append(('\n'.join(stmts[i:j]), name)); i = j
+# a unit = a create statement; a `grant … on <Q.Name>` statement is a unit of its own that depends on
+# that document AND on every association of the module its member list names (bare member names:
+# `grant read (Name, Credentials_Configuration) on entity M.Credentials` — exec rejects the grant when
+# the association does not exist yet: "entity M.Credentials has no member(s) Credentials_Configuration",
+# GenAI Showcase EchoConnector 2026-10-12; attaching grants to the entity put them before the association).
+units = []
+for st in stmts:
+    m = head_re.search(st)
+    if m and m.group(1) != 'module': units.append((st, m.group(2), None))
     else:
-        units.append((stmts[i], None)); i += 1
+        g = grant_re.search(st.strip())
+        units.append((st, None, g.group(1) if g else None))
 stmts = [u[0] for u in units]
 idx_of = {}                                   # name -> [unit indexes] (a name may carry two documents)
 for k, u in enumerate(units):
     if u[1]: idx_of.setdefault(u[1], []).append(k)
+# a name carrying two documents (GenAI Showcase: microflow GenAICommons.ConsumedKnowledgeBase_GetCollectionOptions
+# wraps a java action of the same name) must create the java/javascript action first — exec resolves
+# the call in statement order and a flow created first makes the action "not found", so the flow is refused
+LATE = ('microflow', 'nanoflow', 'page', 'snippet', 'layout')
+for n, ks in idx_of.items():
+    if len(ks) > 1: ks.sort(key=lambda k: (head_re.search(units[k][0]).group(1) in LATE, k))
+grant_units = [k for k, u in enumerate(units) if u[2]]
+for k in grant_units: idx_of['grant#%d' % k] = [k]
 movable = sorted(k for ks in idx_of.values() for k in ks)
-pat = {n: re.compile(r'\b' + re.escape(n) + r'\b') for n in idx_of}
+pat = {n: re.compile(r'\b' + re.escape(n) + r'\b') for n in idx_of if not n.startswith('grant#')}
 deps = {}
 for n, ks in idx_of.items():
     body = '\n'.join(stmts[k] for k in ks)
-    deps[n] = {o for o in idx_of if o != n and pat[o].search(body)}
+    deps[n] = {o for o in pat if o != n and pat[o].search(body)}
+    if n.startswith('grant#'):
+        on = units[ks[0]][2]; mod = on.split('.')[0]
+        deps[n] |= {on} if on in idx_of else set()
+        deps[n] |= {mod + '.' + w for w in re.findall(r'[A-Za-z_][A-Za-z0-9_]*', body) if (mod + '.' + w) in idx_of and (mod + '.' + w) != on}
+movable = sorted(k for ks in idx_of.values() for k in ks)
 # Kahn, stable on original order. A cycle (mutual recursion; an entity whose access rule names an
 # association that names the entity) is broken by forcing the earliest remaining unit in original
 # order and carrying on — never by abandoning the order of everything after it (that regressed the

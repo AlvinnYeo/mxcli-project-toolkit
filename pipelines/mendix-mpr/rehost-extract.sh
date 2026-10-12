@@ -69,7 +69,8 @@ done
 # the target, so both sides carry the same document set.
 describe_module() {
   local mpr="$1" M="$2" out="$3"
-  "$MXCLI" -p "$mpr" -c "describe module $M with all" 2>/dev/null | grep -v 'vibe-coded PoC' > "$out"
+  # `|| true`: on the target side the module may not exist at all (its check failed) — the ledger says so
+  "$MXCLI" -p "$mpr" -c "describe module $M with all" 2>/dev/null | grep -v 'vibe-coded PoC' > "$out" || true
   # 0.26.0 cuts `-c` output at 10 000 lines without saying so (AgentCommons and ConversationalUI on the
   # GenAI Showcase both ended mid-page at line 10 001). Keep only complete statements; the tree fill-in
   # below then describes every document the cut swallowed, one by one.
@@ -103,9 +104,14 @@ now() { date +%s.%N; }
 TIMES="$OUT/captures/timings.tsv"
 printf 'module\tdescribe_s\ttopo_s\tcheck_s\texec_s\tdescribe_target_s\n' > "$TIMES"
 declare -A T_DESC T_TOPO T_CHECK T_EXEC T_TDESC
+# REHOST_REUSE_MDL=1 skips the source describes when <out>/mdl/<M>.mdl already exists (a rerun after
+# fixing the check/exec side; the describes are the slow part — 36 modules took 30 min on the GenAI Showcase).
 for M in "${MODULES[@]}"; do
-  t0=$(now); describe_module "$SRC" "$M" "$OUT/mdl/$M.mdl"; t1=$(now)
+  t0=$(now)
+  if [ "${REHOST_REUSE_MDL:-0}" = 1 ] && [ -s "$OUT/mdl/$M.mdl" ]; then log "reusing mdl/$M.mdl"; else describe_module "$SRC" "$M" "$OUT/mdl/$M.mdl"; fi
+  t1=$(now)
   "$PY" -I "$HERE/lib/topo-order-mdl.py" "$OUT/mdl/$M.mdl" "$OUT/mdl/$M.ordered.mdl" 2>>"$OUT/captures/describe-$M.stderr"
+  "$PY" -I "$HERE/lib/fix-describe-output.py" "$OUT/mdl/$M.ordered.mdl" "$OUT/mdl/$M.ordered.mdl" 2>>"$OUT/captures/describe-$M.stderr"
   T_DESC[$M]=$(echo "$t1-$t0" | bc); T_TOPO[$M]=$(echo "$(now)-$t1" | bc)
 done
 # module order: replay the modules so that each is created after every listed module it references
@@ -137,17 +143,56 @@ awk -F'|' 'NR>3 && NF>3 { gsub(/ /,"",$2); if ($2!="") print $2 }' "$OUT/capture
 done
 
 # ---- 3. check, then exec into the target (modules in replay order) ---------------------------
+# check is all-or-nothing per file, so a statement it rejects is moved to mdl/<M>.deferred.mdl
+# (lib/quarantine-mdl.py) and the rest of the module is executed; the deferred statements are retried
+# below until no retry makes progress, because most rejections are forward references into a module
+# that is created later (cross-module cycles) or into a statement deferred for a syntax error.
 status=0
+check_exec() {   # check_exec <label> <script.mdl> <deferred.mdl>  — returns 0 when something was executed
+  local L="$1" f="$2" d="$3" round moved
+  : >> "$d"
+  for round in $(seq 1 40); do
+    if mx check -p "$TGT" "$f" > "$OUT/captures/check-$L.txt"; then
+      if mx exec -p "$TGT" "$f" > "$OUT/captures/exec-$L.txt"; then return 0; fi
+      # exec stops at the first statement it cannot write: defer that one, keep going with the rest
+      cp "$OUT/captures/exec-$L.txt" "$OUT/captures/exec-$L.round$round.txt"
+      moved=$("$PY" -I "$HERE/lib/exec-resume.py" "$f" "$OUT/captures/exec-$L.txt" "$d")
+      [ "$moved" -gt 0 ] || { log "exec $L FAILED — see captures/exec-$L.txt"; return 1; }
+      log "exec $L: 1 statement deferred, resuming after it (round $round)"
+      [ "$(grep -c '^create\|^grant\|^revoke\|^alter' "$f")" -gt 0 ] || return 0
+      continue
+    fi
+    cp "$OUT/captures/check-$L.txt" "$OUT/captures/check-$L.round$round.txt"
+    moved=$("$PY" -I "$HERE/lib/quarantine-mdl.py" "$f" "$OUT/captures/check-$L.txt" "$d")
+    [ "$moved" -gt 0 ] || { log "check $L FAILED and no statement could be quarantined — see captures/check-$L.txt"; return 1; }
+    log "check $L: $moved statement(s) deferred (round $round)"
+    [ "$(grep -c '^create\|^grant\|^revoke\|^alter' "$f")" -gt 0 ] || { log "check $L: nothing left to execute"; return 1; }
+  done
+  log "check $L FAILED after $round rounds — see captures/check-$L.txt"; return 1
+}
 for M in "${MODULES[@]}"; do
-  t0=$(now)
-  if mx check -p "$TGT" "$OUT/mdl/$M.ordered.mdl" > "$OUT/captures/check-$M.txt"; then
-    T_CHECK[$M]=$(echo "$(now)-$t0" | bc); t0=$(now)
-    mx exec -p "$TGT" "$OUT/mdl/$M.ordered.mdl" > "$OUT/captures/exec-$M.txt" || { log "exec $M FAILED — see captures/exec-$M.txt"; status=1; }
-    T_EXEC[$M]=$(echo "$(now)-$t0" | bc)
-  else
-    T_CHECK[$M]=$(echo "$(now)-$t0" | bc); T_EXEC[$M]=skipped
-    log "check $M FAILED — see captures/check-$M.txt (nothing executed for $M)"; status=1
-  fi
+  t0=$(now); : > "$OUT/mdl/$M.deferred.mdl"
+  check_exec "$M" "$OUT/mdl/$M.ordered.mdl" "$OUT/mdl/$M.deferred.mdl" || status=1
+  T_CHECK[$M]=$(echo "$(now)-$t0" | bc); T_EXEC[$M]=in_check
+done
+# retry the deferred statements until a full pass defers everything it tried again
+for pass in 1 2 3 4 5 6; do
+  progress=0
+  for M in "${MODULES[@]}"; do
+    d="$OUT/mdl/$M.deferred.mdl"
+    [ "$(grep -c '^create\|^grant\|^revoke\|^alter' "$d")" -gt 0 ] || continue
+    mv "$d" "$OUT/mdl/$M.retry.mdl"; : > "$d"
+    before=$(grep -c '^create\|^grant\|^revoke\|^alter' "$OUT/mdl/$M.retry.mdl")
+    check_exec "$M.retry$pass" "$OUT/mdl/$M.retry.mdl" "$d" && progress=1
+    after=$(grep -c '^create\|^grant\|^revoke\|^alter' "$d" || true)
+    [ "$after" -lt "$before" ] && progress=1
+    log "deferred $M: $before tried, $after still deferred (pass $pass)"
+  done
+  [ "$progress" = 1 ] || break
+done
+for M in "${MODULES[@]}"; do
+  n=$(grep -c '^-- deferred:' "$OUT/mdl/$M.deferred.mdl" || true)
+  [ "$n" -gt 0 ] && { log "$M: $n statement(s) never executed — mdl/$M.deferred.mdl"; status=1; }
 done
 mx exec -p "$TGT" "$OUT/mdl/_settings.mdl"  > "$OUT/captures/exec-_settings.txt"  || status=1
 mx exec -p "$TGT" "$OUT/mdl/_userroles.mdl" > "$OUT/captures/exec-_userroles.txt" || status=1
