@@ -1,0 +1,164 @@
+# Mendix Service Seam — OData and REST Between Two Mendix Apps
+
+**Applies to:** any mxcli project where one Mendix app publishes a service another Mendix app
+consumes — usually after a split (`decompose-app.md` Stage 5), also any app-to-app seam.
+**Purpose:** Patterns that worked, and the concrete failure each one prevents, for publishing
+OData/REST from one Mendix app and consuming it as external entities and REST calls in another.
+**Evidence:** FSM template increment 6. `<core>` below is
+`pipelines/mendix-mpr/samples/fsm-template-9.24.2/slice-assets-core/` (`FINDINGS.md`,
+`captures/NN-*.txt`, `mdl/*.mdl`).
+
+**Not this skill:** a third-party REST API with JSON structures and mappings →
+`rest-integration-first-time-right.md`. Where to cut an app → `decompose-app.md`.
+
+---
+
+## Patterns
+
+Each: do this → the failure it prevents → where it was captured.
+
+**P1 Key: add `PublicID: AutoNumber default 1`.**
+`alter entity M.E add attribute if not exists PublicID: AutoNumber default 1;` — accepted as the
+OData key without a unique rule and never fails a commit (`<core>/mdl/mono-core-publish.mdl`,
+`captures/02`). `default 1` is mandatory (MDL023/CE7247). Put a unique rule on an existing
+attribute only when every create path fills it.
+*Anti:* a key with no unique rule passes `check`, then `CE6624`; no key at all →
+`CE6585 "Published entity '…' must have a key defined."` (`slice-assets/FINDINGS.md`). A unique
+rule on an attribute some flow leaves empty fails that flow's commit at runtime.
+
+**P2 Machine role only, on both services.** One machine user role (here `CoreAPIClient`) with one
+read-only module role per published module, granted exactly the published members; create/delete
+only where a REST action writes. Measure all three:
+```
+GET odata/core/v1/Technician (machine role)      HTTP 200
+GET odata/core/v1/Technician (no credentials)    HTTP 401
+GET odata/core/v1/Technician (human role)        HTTP 404
+```
+(`<core>/captures/19`). 401 = no or bad credentials; 404 = authenticated but the role has no access
+to the service. *Anti:* a human role on the service exposes the API to every user login.
+
+**P3 REST action: primitive query params, String result, no mappings.** Behaviour-carrying writes
+go to a published REST action backed by an upsert microflow:
+`call rest service post '{1}/rest/core/v1/rosters?AssetSystemID={2}&…' … returns String`
+(`<core>/mdl/slice-core-rewire.mdl`). Between Mendix apps no JSON structure or import mapping is
+needed. Base URL in a per-environment constant.
+
+**P4 Every REST call has an error handler.** `on error without rollback` + log + user message.
+*Anti 1:* the first seam call had none, so a far-side outage rolled back the caller's own commit
+(`seam-probe/FINDINGS.md` → "Failure coupling").
+*Anti 2:* **OData-backed widgets have no error path.** With the owner stopped, opening an asset
+raised `Exception while retrieving data for 'AssetManagement.Snippet_Asset_DataTabs…'` dialogs and
+the page was unusable (`<core>/captures/21`). Mitigate with lazy tabs, or REST-fed local copies for
+pages that must survive an outage — otherwise record an availability-coupling hand-off.
+
+**P5 Cross-app join via a published mirror** — see recipe B.
+*Anti:* XPath over local ↔ external: `[CE0161] "Error(s) in XPath constraint."`
+(`<core>/captures/08`); database-grid columns over the same path pass `mx check` silently.
+
+**P6 One consumer module per service where navigations are needed.** `create external entities`
+creates navigation associations only inside one target module (`Created 8 navigation
+associations`, `<core>/captures/09`). *Anti:* the same remote set in a second module passes mxcli,
+then `[CE6609] "External entity with the same remote source already exists."` (`captures/08`).
+
+**P7 Delete through the owner's own delete flow** (a REST action calling e.g. `Roster_Delete`), so
+its cascades and side effects still run. *Anti:* a raw delete skips them. Never delete-and-recreate
+under the same key; soft-delete instead.
+
+**P8 Enumerations arrive as `Edm.String`.** Consumers compare strings, not enum values.
+
+**P9 DateTime as UTC ISO** (`2026-10-11T22:00:00.000Z`), or an agreed date-only convention.
+*Anti:* a zone-less `yyyy-MM-dd` string was shifted by the runtime timezone and landed a day early
+(`<core>/captures/19`).
+
+**P10 Version the path.** A new or changed published member is a contract change: publish
+`…/v2/`, keep `v1` until every consumer moved.
+
+**P11 Secrets.** Basic-auth password only in each app's machine-local constant store (one secret,
+two stores); model default `__SET_ME__` plus a guard wherever code acts on it; the API account
+password meets the Mendix password policy (`learned-constants-and-secrets.md`).
+*Anti:* a generated password with no symbol failed inside the after-startup account create —
+`This requires the password to contain non-alphanumeric characters` →
+`M2EE: Starting Mendix Runtime failed.` (`<core>/captures/03`).
+
+**P12 Consumer auth on 11.x: `HeadersMicroflow:`, not `ConfigurationMicroflow:`.**
+*Anti:* `[CE6808] "The microflow that configures a consumed OData service should return a
+System.ConsumedODataConfiguration"` (`<core>/captures/08`; passed on 10.24). The slot cannot be
+cleared afterwards, and `set (ConfigurationMicroflow: none)` stores a microflow named `none` that
+crashes `mx check`. Fix: drop the consumed service and recreate it with `HeadersMicroflow:` only —
+external entities survive.
+
+**P13 Ownership.** A slice-owned association to an external entity loses the owner's delete
+cascade: when the far side deletes, local rows orphan. Record it as a hand-off row. A local save
+next to a REST write is a dual write — a hand-off until one side goes.
+
+---
+
+## External-entity limits
+
+What re-pointing a consumer at an external entity costs — `mx check` will not tell you all of it:
+
+- **Associations:** local → external only with the **local entity as owner**. An external entity
+  cannot own an association to a local entity (that edge stays a hand-off).
+- **XPath:** cannot traverse local ↔ external — retrieves, access rules, pages and nanoflows using
+  one break. Access-rule disjuncts that walk such a path become `[false()]` or need a local owner
+  entity (recipe B, P5).
+- **Writes:** Commit/Change/Delete on an external entity do not work — rewrite to Send External
+  Object (Insertable/Updatable/Deletable publish) or a REST action (P3). The consumer cannot create
+  an external object: post a non-persistent draft.
+- **Aggregates:** count works; sum/avg/min/max run in memory or not at all; no OQL or datasets.
+  Totals need a published aggregate or a local copy.
+- **Offline:** native offline profiles cannot hold external entities — REST-fed local copies.
+- **Security:** external entities need read grants to a consumer module role. Granting a module
+  role of one module on another module's entity → `[CE0007] "Please re-select module roles."`
+  (`<core>/captures/08`).
+
+Source: https://docs.mendix.com/refguide/external-entities/ and `published-odata-entity/`.
+
+---
+
+## Recipe A — Replace a stub by an external entity
+
+Pages and flows rebind by qualified name, so the external entity takes the stub's name. Order
+matters because `drop entity` silently deletes every cross-module association pointing at it
+(and their member rights), and navigations exist only within one module (P6):
+
+1. Record every association the stub had (`describe entity`), and which side owned it.
+2. Drop the stub's owned associations.
+3. Drop the stub entities.
+4. `create external entities` for the whole service into **one** consumer module.
+5. Re-create the slice-owned associations (local entity as owner).
+6. Rewire consumers by name; `mx check` after every exec.
+
+Worked script: `<core>/mdl/slice-core-regroup.mdl`.
+
+## Recipe B — Cross-app join via a published mirror
+
+The consumer needs "tickets of this asset" but the asset lives in the consumer and the tickets in
+the owner.
+
+1. The owner keeps (or upserts) a mirror of the consumer entity keyed by the **consumer's** key —
+   `MonoAsset` keyed `SystemID` with a unique rule — and publishes it.
+2. The consumer filters on the key, not on an association across apps:
+   `[Ticket_Asset/MonoAsset/SystemID = $Asset/SystemID]`
+   (`<core>/captures/19`, "filtered over the navigation").
+3. Consumer writes reach the owner via REST, which upserts the mirror (dual owner — hand-off row).
+4. Where an access rule must walk the join, a local owner entity carries it
+   (`CoreSeam.TechnicianLink`, names copied from OData at link time).
+
+---
+
+## Completion criteria
+
+Bound for a seam: every line below holds, each with its count stated.
+
+- Every published service grants **exactly one** machine role, measured 200 / 401 / 404 per
+  service (N of N services captured).
+- Every published key is `PublicID` AutoNumber or an attribute with a unique rule filled by every
+  create path (N of N keys named with their kind).
+- Every `call rest service` has `on error` (0 calls without; grep the MDL).
+- Every external entity on a page is listed with its outage behaviour — lazy tab, local copy, or
+  availability-coupling hand-off (N of N pages; "not probed" is legal, silence is not).
+- Every external entity has a read grant; `mx check` 0 on both apps.
+- Every slice-owned association to an external entity has an orphan hand-off row or a reason
+  it cannot orphan.
+- Every DateTime crossing the seam is UTC ISO or under a written date-only convention.
