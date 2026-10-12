@@ -226,6 +226,25 @@ else
 fi
 rm -f "$TMP"
 
+# ---- 4. Build metrics, anonymised ----------------------------------------------------------
+# The ledger `project-bin/exec.sh` keeps via `metrics-ledger.sh` (one row per exec: outcome,
+# elapsed, lint total, `mxcli report` score). Only the `metrics-trend.sh` summary travels —
+# it names no script, module or entity — so the numbers can sit in a public inbox.
+METRICS_LEDGER="$PROJECT_DIR/.claude/loop/metrics-ledger.tsv"
+METRICS_OUT="$INBOX/$STAMP-$PROJECT_NAME-metrics.md"
+if [ -s "$METRICS_LEDGER" ]; then
+  TREND="$PROJECT_DIR/bin/metrics-trend.sh"
+  [ -x "$TREND" ] || TREND="$TOOLKIT_ROOT/project-bin/metrics-trend.sh"
+  { front_matter "metrics" "metrics-ledger.tsv from $PROJECT_NAME: $(($(wc -l < "$METRICS_LEDGER") - 1)) exec rows; summary only, no script names"
+    echo '```'
+    MXTK_METRICS_LEDGER="$METRICS_LEDGER" bash "$TREND" 2>&1
+    echo '```'; } > "$METRICS_OUT"
+  WROTE=$((WROTE + 1))
+  echo "  wrote ${METRICS_OUT#$TOOLKIT_ROOT/}"
+else
+  echo "  metrics: no .claude/loop/metrics-ledger.tsv (project predates the metrics ledger, or exec.sh never ran)"
+fi
+
 echo ""
 if [ "$WROTE" -gt 0 ]; then
   echo "$WROTE inbox file(s) drafted in $INBOX."
