@@ -5,6 +5,11 @@
 a crossing edge becomes OData or REST or it blocks. The FSM template reads on Mendix 9.24.2 (MPR v1).
 **Decisions already taken in the conversation that produced it:** Mendix version upgrades are
 out of scope (apps on Mendix 9 and above only; the upgrade hop itself is the customer's job).
+**Amended 2026-10-12 (CONFIRMED, user):** for Decompose, a Mendix 9 monolith is upgraded to 10.24 as the
+first stage, on a copy, as a means and not a deliverable. Reason (increment 4 seam probe): mxcli 0.26 cannot
+create or alter microflows in a 9.x project and `mxcli run` cannot run 9.x apps, so the monolith side of every
+seam needs 10.x. Mendix also refuses a 9.x package into 11.x, so the MPK mover already hops through 10.24.
+Expect one-time fixes per monolith (marketplace updates, widget updates, Mendix 9 Java API edits).
 Two tracks remain and run in parallel: **Decompose** (split one app into several) and
 **Rehost** (read an existing `.mpr`, regenerate it as MDL into a fresh Mendix 11 app).
 
