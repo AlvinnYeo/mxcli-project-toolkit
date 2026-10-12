@@ -15,6 +15,10 @@ and configure the marked constants — **after** running `mxcli init`, never bef
 | `err001_error_swallowed.star` | ERR001 — an activity set to Continue / Custom / Custom-without-rollback in a flow that never logs, raises an error event, or calls a flow named like a handler (`SUB_LogError`, `ERR_…`): the error is swallowed | `HANDLER_NAME_PATTERN` if your handler flows are named differently |
 | `loop001_expensive_action_in_loop.star` | LOOP001 — a database retrieve, delete, REST call, external call or Java action inside a loop body (any depth): one round trip per row | `EXPENSIVE` if a call type is cheap in your setup |
 
+`err001` and `loop001` first field count (2026-10-12, mxcli 0.26.0, 21-module Mendix 11.12 model,
+876 microflows): ERR001 8 (3 true, 5 debatable — flows that return an error payload instead of
+logging), LOOP001 4 (4 true). Warning severity until a second project reports.
+
 `data_change_microflows` and `entity_business_key` are **repaired copies of rules `mxcli init`
 already seeds**, not new ones. Both shipped comparing `entity.entity_type` to `"PERSISTENT"`
 while the model returns `"Persistent"`, so both skipped every entity and reported a clean pass
