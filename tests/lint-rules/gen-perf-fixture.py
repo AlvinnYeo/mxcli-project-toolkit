@@ -52,7 +52,7 @@ for j in range(a.widgets):
     d = dict(id="w%d" % j, name="w%d" % j, widget_type="ACTIONBUTTON", container_id="p%d" % (j // 20),
              container_qualified_name=cont, container_type="PAGE", module_name=mod)
     if j % 10 == 0:
-        d.update(action_type="Forms$MicroflowClientAction", has_confirmation=False,
+        d.update(action_type="Forms$MicroflowAction", has_confirmation=False,
                  microflow_ref=q(rnd.randrange(a.flows)))
     elif j % 10 < 6:
         d.update(action_type="Forms$ShowPageClientAction", page_ref="Sales.Order_Edit")

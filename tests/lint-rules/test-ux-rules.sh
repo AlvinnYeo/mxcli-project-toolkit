@@ -143,6 +143,8 @@ run "$R2" ux002-o-events-not-counted
 check "o 7 activities + start/end events -> 0 findings (events are not activities)" 'len(v)==0'
 run "$R2" ux002-p-strip-no-decision auto_generate_caption
 check "p stripped projection, flow with no decision -> still 1 _rule finding" 'len(v)==1 and v[0]["module"]=="_rule" and "0.25.0" in v[0]["message"]'
+run "$R2" ux002-q-caption-is-condition
+check "q caption equal to condition_expression (auto flag false, as on 0.26.0) -> 1 finding '1 decision(s)'" 'len(v)==1 and "1 decision(s)" in v[0]["message"]'
 
 echo "== performance (synthetic, 3000 flows / 20000 widgets) =="
 PF="$W/perf.json"

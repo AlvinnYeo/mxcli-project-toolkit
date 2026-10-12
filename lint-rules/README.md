@@ -32,10 +32,15 @@ are excluded at the gate (`bin/lint-gate.sh -e`, from a per-project
 `caption` / `auto_generate_caption`, which exist from **mxcli 0.25.0** (catalog schema with
 widget actions and activity captions). On an older binary both rules emit a single `_rule`
 finding ("needs mxcli >= 0.25.0") and nothing else — `bin/lint-gate.sh` reads that as blindness,
-never as a clean pass. Their vocabulary (`Forms$DeleteClientAction`, `ExclusiveSplit`,
-`DeleteObjectAction`) was read from the mxcli source at 0.25.0, not from `write-lint-rules.md`;
-the first field calibration is still owed — run both on a scratch copy of a real model and
-record the counts here before trusting the numbers. Their *logic* is proven: `tests/lint-rules/`
+never as a clean pass. Their vocabulary (`Forms$DeleteClientAction`, `Forms$MicroflowAction`,
+`ExclusiveSplit`, `DeleteObjectAction`) was read from the mxcli source at 0.25.0, then field-probed
+on 2026-10-12 with mxcli 0.26.0 against a scratch copy of a 21-module Mendix 11.12 model (876
+microflows, 124 pages). That probe found two defects the unit suite could not see: the stored
+microflow-button action type is `Forms$MicroflowAction`, not the `…ClientAction` the source read
+suggested, and `auto_generate_caption` is never set on a decision — a bare decision carries its
+condition expression as its caption. Both fixed; after the fix UX002 reports every one of the
+model's 39 top-level custom decisions as bare (all were), UX001 stays at 0 there (its 4 microflow
+buttons reach no delete and match no verb). Re-probe on your own model before trusting the counts. Their *logic* is proven: `tests/lint-rules/`
 runs both under the real Starlark interpreter (`go.starlark.net` at mxcli's pinned version) over
 33 hand-written fixtures — self-checks, call depth both sides of the bound, cycles, the name
 pattern, module skips, snippet locations, start/end events not counted — plus a synthetic
