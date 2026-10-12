@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decompose &amp; Rehost Report</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: one reading column, status rail of cards, a loop diagram, numbered only where order is real (stages, increments). */
+  :root {
+    --ground: #f5f7fa;
+    --surface: #ffffff;
+    --surface-2: #eaeff5;
+    --ink: #17202b;
+    --ink-2: #3b4a5c;
+    --muted: #66778c;
+    --line: #d9e0e8;
+    --line-strong: #b9c5d3;
+    --accent: #0f4c81;
+    --accent-soft: #dce9f6;
+    --pass: #166534; --pass-soft: #dcfce7;
+    --warn: #92400e; --warn-soft: #fef3c7;
+    --fail: #991b1b; --fail-soft: #fee2e2;
+    --sans: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0f141a; --surface: #161d26; --surface-2: #1d2733;
+      --ink: #e6ecf3; --ink-2: #c0cbd8; --muted: #8796a8;
+      --line: #273342; --line-strong: #364659;
+      --accent: #6fb1ea; --accent-soft: #15314a;
+      --pass: #86efac; --pass-soft: #14321f;
+      --warn: #fcd34d; --warn-soft: #3a2a08;
+      --fail: #fca5a5; --fail-soft: #3b1414;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0f141a; --surface: #161d26; --surface-2: #1d2733;
+    --ink: #e6ecf3; --ink-2: #c0cbd8; --muted: #8796a8;
+    --line: #273342; --line-strong: #364659;
+    --accent: #6fb1ea; --accent-soft: #15314a;
+    --pass: #86efac; --pass-soft: #14321f;
+    --warn: #fcd34d; --warn-soft: #3a2a08;
+    --fail: #fca5a5; --fail-soft: #3b1414;
+    color-scheme: dark;
+  }
+  body { background: var(--ground); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.55; }
+  .wrap { max-width: 980px; margin: 0 auto; padding-block: 40px 72px; padding-inline: 20px; }
+  header.top { border-bottom: 1px solid var(--line); padding-bottom: 24px; margin-bottom: 36px; }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  h1 { font-size: clamp(30px, 4.5vw, 42px); line-height: 1.1; margin: 8px 0 12px; text-wrap: balance; font-weight: 700; letter-spacing: -.01em; }
+  h2 { font-size: 24px; margin: 48px 0 12px; letter-spacing: -.01em; text-wrap: balance; }
+  h3 { font-size: 17px; margin: 24px 0 8px; }
+  p { max-width: 70ch; margin: 0 0 12px; color: var(--ink-2); }
+  p.lead { font-size: 18px; color: var(--ink); }
+  code { font-family: var(--mono); font-size: .88em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+  .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin: 16px 0 8px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; min-width: 0; }
+  .card h3 { margin: 0 0 6px; font-size: 16px; }
+  .card p { font-size: 15px; margin-bottom: 8px; }
+  .card p:last-child { margin-bottom: 0; }
+  .pill { display: inline-block; font-family: var(--mono); font-size: 11.5px; letter-spacing: .04em; padding: 2px 8px; border-radius: 999px; border: 1px solid transparent; vertical-align: middle; }
+  .pill.done { background: var(--pass-soft); color: var(--pass); }
+  .pill.run { background: var(--warn-soft); color: var(--warn); }
+  .pill.next { background: var(--accent-soft); color: var(--accent); }
+  .pill.open { background: var(--fail-soft); color: var(--fail); }
+  .tablewrap { overflow-x: auto; margin: 14px 0 6px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-family: var(--mono); font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); font-weight: 500; background: var(--surface-2); }
+  tr:last-child td { border-bottom: 0; }
+  td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  ol.stages { counter-reset: s; list-style: none; padding: 0; margin: 12px 0; display: grid; gap: 10px; }
+  ol.stages li { display: grid; grid-template-columns: 44px 1fr; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; min-width: 0; }
+  ol.stages li::before { counter-increment: s; content: counter(s); font-family: var(--mono); font-size: 20px; color: var(--accent); font-weight: 500; line-height: 1.2; }
+  ol.stages li strong { display: block; margin-bottom: 2px; }
+  ol.stages li span { color: var(--ink-2); font-size: 15px; }
+  .loop { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 8px; overflow-x: auto; margin: 16px 0; }
+  .loop pre.mermaid { margin: 0; min-width: 620px; }
+  .callout { border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 18px 0; }
+  .callout p { color: var(--ink); margin-bottom: 6px; }
+  .callout p:last-child { margin-bottom: 0; }
+  ul.tight { margin: 8px 0 12px; padding-left: 20px; color: var(--ink-2); max-width: 75ch; }
+  ul.tight li { margin-bottom: 6px; }
+  .kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; font-size: 15px; margin: 10px 0 16px; }
+  .kv dt { font-family: var(--mono); font-size: 12.5px; color: var(--muted); padding-top: 2px; }
+  .kv dd { margin: 0; color: var(--ink-2); min-width: 0; }
+  footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 13.5px; color: var(--muted); }
+  @media (max-width: 480px) { .kv { grid-template-columns: 1fr; } .kv dt { padding-top: 8px; } }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">Report &middot; 2026-10-12 &middot; one day of field work</div>
+  <h1>Decompose &amp; Rehost: what we did, what it cost, what holds</h1>
+  <p class="lead">For a product head who knows Mendix and did not watch the work. Six questions, answered first; the detail follows.</p>
+</header>
+
+<h2>The six answers</h2>
+<div class="grid">
+  <div class="card"><h3>1. Approach</h3><p>Two tracks. <strong>Rehost</strong> regenerates a whole app as text (MDL) into a fresh project. <strong>Decompose</strong> splits one app into several, one slice at a time, with the old app staying live.</p></div>
+  <div class="card"><h3>2. App to MDL</h3><p>A small same-version app came across almost perfectly (154 of 155 identical). A 48-module app did not: 29 of 36 modules landed and the build failed with 14 errors.</p></div>
+  <div class="card"><h3>3. Rebuilt differently</h3><p>Seven plan items changed. The big one: we move modules as packages (MPK) and use MDL only for the edges, because the probe proved IDs survive.</p></div>
+  <div class="card"><h3>4. Time</h3><p>Single steps take seconds to a minute. A web slice took about 2 h 10 min end to end; adding core services took about 1 h.</p></div>
+  <div class="card"><h3>5. Tokens</h3><p>3,010,761 tokens across 17 measured workers: Opus 1,907,879, Sonnet 923,951, Fable 178,931. The orchestrator itself is not counted.</p></div>
+  <div class="card"><h3>6. Proven and next</h3><p>Build-green slices and one live cross-app journey are proven. Strangling the monolith, mobile, login across apps and data migration are not.</p></div>
+</div>
+
+<h2>1. The approach</h2>
+<p>Two plain terms first. <strong>MDL</strong> is Mendix's text language for describing a model; <code>mxcli</code> is the command-line tool that reads and writes it. <strong>MPK</strong> is Mendix's own module package file. A <strong>slice</strong> is the part of an app we cut out and move.</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Track</th><th>What it does</th><th>Done means</th></tr></thead>
+<tbody>
+<tr><td><strong>Rehost</strong></td><td>Reads an existing app, regenerates every module as MDL, runs it into a fresh Mendix 11 project. Checks and repairs in a loop.</td><td>Build-green with hand-offs (below)</td></tr>
+<tr><td><strong>Decompose</strong></td><td>Scores where to cut, moves a slice, accounts for every call that crosses the cut, builds the link between the apps.</td><td>Three levels: build-green, seam-live, strangled</td></tr>
+</tbody></table></div>
+<p>Decompose ran as six increments. Each one was small, ran in a cloud container, and left captured evidence.</p>
+<div class="tablewrap"><table>
+<thead><tr><th>#</th><th>Target</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td class="num">1</td><td>Small synthetic app, 4 modules</td><td><span class="pill done">done</span> cut-scoring script and 56 checks</td></tr>
+<tr><td class="num">2</td><td>Siemens FSM template (Mendix 9.24.2)</td><td><span class="pill done">done</span> read probe passed; 45 own modules; cut scored</td></tr>
+<tr><td class="num">3</td><td>NativeNote slice to Mendix 11</td><td><span class="pill done">build-green</span> 308-row ledger, 0 unresolved</td></tr>
+<tr><td class="num">4</td><td>Seam probe</td><td><span class="pill done">one record crossed</span> monolith to slice over REST</td></tr>
+<tr><td class="num">5</td><td>Assets &amp; Parts web slice (4 modules)</td><td><span class="pill done">build-green</span> seam-live not reached; 1 journey passes</td></tr>
+<tr><td class="num">6</td><td>Monolith publishes core services</td><td><span class="pill done">seam-live</span> for the non-Mobile core; stub rows 120 to 32</td></tr>
+</tbody></table></div>
+
+<h3>The self-improvement loop</h3>
+<ul class="tight">
+<li>Workers drop findings into an inbox. Triage promotes them into the bug ledger or into skills.</li>
+<li>Every user-visible change adds a <code>CHANGELOG.md</code> line in the same commit, crediting the source project.</li>
+<li>Skills were written from the field runs, then corrected by their first real use. Example: the decompose skill was checked against Mendix's own documentation after it was drafted.</li>
+<li>mxcli defects found along the way were drafted as an upstream report: 53 drafted, 3 later withdrawn, 47 ready to file. The staged files live in the separate personal-toolkit repo. Nothing has been filed yet.</li>
+</ul>
+<h3>Which model did what</h3>
+<p>Opus took the hard work: probes, slice builds, gate analysis, and writing the skills. Sonnet took recipe work: candidate tables, bug hunts, report drafting, shrinking bug repros. Fable ran one early extraction. The orchestrator coordinated the workers and merged their output.</p>
+
+<h2>2. How the app-to-MDL rebuild went</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>App</th><th>Size</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>Banking (Mendix 11.13, same version as target)</td><td>155 documents</td><td>155 emitted, 154 identical (1 doc-comment drift). <code>mx check</code> 0 errors, build succeeded, structural diff empty. 35 s. Essentially lossless.</td></tr>
+<tr><td>GenAI Showcase (Mendix 11.12)</td><td>48 modules; 36 regenerated; 2,776 catalog documents</td><td>29 of 36 modules landed. 579 identical, 271 drift, 1,993 failed to execute. After repair, <code>mx check</code> 14 errors, build FAILED.</td></tr>
+</tbody></table></div>
+<p>The small app shows the idea works. The large app shows a long tail of defects in mxcli's own text output. Much of the loss was our extractor's fault, not the tool's: 7 whole modules (1,520 of the 1,993 failures) were silently dropped when our quarantine step could not map an error. That is the next fix.</p>
+<h3>The repair loop we built</h3>
+<ol class="stages">
+<li><strong>Check</strong><span>Validate each module's script. The check is all-or-nothing per file.</span></li>
+<li><strong>Quarantine</strong><span>Move the statements the check rejects into a deferred file, with the statements that depend on them.</span></li>
+<li><strong>Execute</strong><span>Run the rest. Execution stops at the first statement it cannot write.</span></li>
+<li><strong>Resume</strong><span>Defer that statement with the exact error and keep going. Retry deferred ones in passes.</span></li>
+</ol>
+<p>Why it exists: the first full run executed 1 of 36 modules, because one defect sank the other 35.</p>
+<div class="callout">
+<p><strong>Done-criterion, confirmed by the user: "build-green with hand-offs".</strong> <code>mx check</code> 0 errors, build succeeded, and every document either landed or is a named hand-off with a reason. The hand-off count is the progress measure. The build decides, not describe-identity: one attribute sort was describe-identical and still failed the build.</p>
+<p><strong>Correction:</strong> we first wrote that message definitions cannot be expressed. They turned out to be expressible, so that item moved off the hand-off list.</p>
+</div>
+
+<h2>3. What we rebuilt differently than planned</h2>
+<p>This matters most. Each row is a plan item the field work overturned.</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Planned</th><th>What we did</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>Cut by regenerating the slice as MDL</td><td><strong>MPK moves the module; MDL only for the edges</strong></td><td>The export probe proved entity and unit IDs survive 9.24 to 11.13. Package install is faster and keeps Java bodies byte-identical.</td></tr>
+<tr><td>Mendix 9 monolith stays on 9</td><td><strong>Upgrade a copy to 10.24 first</strong> (<code>mx convert</code>)</td><td>mxcli 0.26 cannot create or alter microflows in a 9.x project, and cannot run one. Mendix also refuses a 9.x package into 11.x.</td></tr>
+<tr><td>Create slice apps with <code>mxcli new</code></td><td><strong>Marketplace native starter</strong> for native slices</td><td><code>mxcli new</code> has no native profile.</td></tr>
+<tr><td>Legacy widgets regenerated as MDL</td><td><strong>Our own generator, from a BSON dump</strong></td><td>No headless route from legacy data grids to the React client. 22 widgets hit this (CE0582).</td></tr>
+<tr><td>NativeNote first (cheapest cut)</td><td><strong>Business-fit slices</strong>: Assets &amp; Parts first, then Dispatch &amp; Workforce</td><td>NativeNote was cheap but meant little to the business. Assets &amp; Parts is mostly the acceptable lane: 335 inbound reads as OData.</td></tr>
+<tr><td>Cut a leaf slice first</td><td><strong>Monolith publishes its core first</strong></td><td>A leaf's outgoing calls need services that must exist before the cut. Increment 6 did exactly that.</td></tr>
+<tr><td>OData-only reads</td><td><strong>OData reads plus REST writes with behaviour</strong>; a mirror pattern for cross-app joins; <code>PublicID</code> AutoNumber keys</td><td>External entities cannot own associations or carry behaviour. Offline mobile cannot sync external entities. Keys are added where none exist.</td></tr>
+</tbody></table></div>
+
+<h2>4. Performance: how long things take</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>Step</th><th>Typical time</th></tr></thead>
+<tbody>
+<tr><td>Describe phase, 36 modules (GenAI)</td><td class="num">~30 min (36 min whole run)</td></tr>
+<tr><td>Banking, end to end</td><td class="num">35 s</td></tr>
+<tr><td><code>mx convert</code> 9.24 to 10.24</td><td class="num">~35 s</td></tr>
+<tr><td>MPK export</td><td class="num">&lt; 1 s per module</td></tr>
+<tr><td>MPK install</td><td class="num">~8 s per module</td></tr>
+<tr><td><code>mx check</code></td><td class="num">10&ndash;30 s</td></tr>
+<tr><td>mxbuild</td><td class="num">20&ndash;51 s</td></tr>
+<tr><td>App boot</td><td class="num">40&ndash;90 s</td></tr>
+<tr><td>Playwright journey across apps</td><td class="num">5&ndash;8 s</td></tr>
+<tr><td>Increment 4 (seam probe), wall clock</td><td class="num">~32 min</td></tr>
+<tr><td>Increment 5 (Assets &amp; Parts), wall clock</td><td class="num">~2 h 10 min</td></tr>
+<tr><td>Increment 6 (core services), wall clock</td><td class="num">~1 h</td></tr>
+</tbody></table></div>
+<p>Wall clock includes authoring. The machine steps are short; most time goes to one-time work such as dead ends and first-time setup.</p>
+
+<h2>5. Tokens: what the agent work cost</h2>
+<p>Subagent tokens as reported by the harness at each worker's completion. No prices given.</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Worker</th><th>Model</th><th>Tokens</th></tr></thead>
+<tbody>
+<tr><td>Rehost increment 2: GenAI Showcase extraction</td><td>Fable</td><td class="num">178,931</td></tr>
+<tr><td>MPK export probe</td><td>Opus</td><td class="num">237,824</td></tr>
+<tr><td>Increment 3: NativeNote slice</td><td>Opus</td><td class="num">309,133</td></tr>
+<tr><td>GenAI run 4 analysis and gates</td><td>Opus</td><td class="num">200,588</td></tr>
+<tr><td>Increment 4: seam probe (Mx9 to Mx11)</td><td>Opus</td><td class="num">180,625</td></tr>
+<tr><td>Increment 5: Assets &amp; Parts web slice</td><td>Opus</td><td class="num">364,740</td></tr>
+<tr><td>Increment 6: monolith publishes core services</td><td>Opus</td><td class="num">362,047</td></tr>
+<tr><td>Skills: decompose-app + rehost-app</td><td>Opus</td><td class="num">149,873</td></tr>
+<tr><td>Skills: mendix-service-seam + patches</td><td>Opus</td><td class="num">103,049</td></tr>
+<tr><td>Web slice candidates</td><td>Sonnet</td><td class="num">92,826</td></tr>
+<tr><td>Native bug hunt</td><td>Sonnet</td><td class="num">124,028</td></tr>
+<tr><td>Upstream bug report draft</td><td>Sonnet</td><td class="num">107,142</td></tr>
+<tr><td>Decompose skill vs Mendix docs check</td><td>Sonnet</td><td class="num">67,486</td></tr>
+<tr><td>Stage 53 issues for filing</td><td>Sonnet</td><td class="num">79,082</td></tr>
+<tr><td>Reduce repros group A</td><td>Sonnet</td><td class="num">159,018</td></tr>
+<tr><td>Reduce repros group B</td><td>Sonnet</td><td class="num">177,316</td></tr>
+<tr><td>Reduce repros group C</td><td>Sonnet</td><td class="num">117,053</td></tr>
+</tbody></table></div>
+<div class="tablewrap"><table>
+<thead><tr><th>Model</th><th>Workers</th><th>Tokens</th><th>Share</th></tr></thead>
+<tbody>
+<tr><td>Opus</td><td class="num">8</td><td class="num">1,907,879</td><td class="num">63.4%</td></tr>
+<tr><td>Sonnet</td><td class="num">8</td><td class="num">923,951</td><td class="num">30.7%</td></tr>
+<tr><td>Fable</td><td class="num">1</td><td class="num">178,931</td><td class="num">5.9%</td></tr>
+<tr><td><strong>Total</strong></td><td class="num"><strong>17</strong></td><td class="num"><strong>3,010,761</strong></td><td class="num">100%</td></tr>
+</tbody></table></div>
+<div class="callout">
+<p><strong>Not counted:</strong> the orchestrator session itself; increments 1a and 1b and the first FSM cut-score worker (they ran before measurement began); the stopped Dispatch run; the strangling run still in progress. The real total is higher.</p>
+<p><strong>Routing decision:</strong> after the first worker ran on Fable, the most expensive model, we moved work off it mid-session: Opus for hard work, Sonnet for recipe work. Fable's share fell to under 6%.</p>
+</div>
+
+<h2>6. Proven, not proven, and next</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>Proven</th><th>Not proven</th></tr></thead>
+<tbody>
+<tr><td>Same-version single-module rehost is essentially lossless (154 of 155).</td><td>A large rehost reaching build-green. GenAI stopped at 14 errors and a failed build.</td></tr>
+<tr><td>A Mendix 9 app can be read, upgraded on a copy and its modules moved to Mendix 11 by package.</td><td>Regression parity of a rehosted app. It is not reachable headlessly and needs a human-run level.</td></tr>
+<tr><td>Two slices reach build-green (<code>mx check</code> 0, build succeeded, 0 unresolved ledger rows).</td><td>Strangling: rewiring the monolith's calls (only 1 of 536 in-edges rewired in increment 5) and deleting the module.</td></tr>
+<tr><td>A live seam: one record crossed in increment 4; a journey slice to monolith to slice passed 9/9 in increment 6.</td><td>Mobile: 31 stub rows remain, and offline sync needs REST-fed copies.</td></tr>
+<tr><td>Stub rows fell 120 to 32 by publishing core services.</td><td>Login across apps, and data migration. A monolith outage makes the slice's asset page unusable (measured).</td></tr>
+</tbody></table></div>
+<h3>Next</h3>
+<ul class="tight">
+<li><span class="pill run">in progress</span> Strangled Assets &amp; Parts, plus a cross-app end-to-end test.</li>
+<li><span class="pill next">next</span> Dispatch &amp; Workforce. It has about 1.8 times the no-lane calls of Assets &amp; Parts (126 vs 69), so it follows once the pattern works.</li>
+<li><span class="pill next">next</span> The Mobile partition (offline sync, REST-fed copies).</li>
+<li><span class="pill open">open</span> Token authentication between apps (today a machine role with basic auth).</li>
+<li><span class="pill open">open</span> Data migration per owned entity: toolkit scope or customer job is undecided.</li>
+<li><span class="pill next">next</span> Fix the extractor's silent module drop, then re-run GenAI.</li>
+</ul>
+
+<footer>Sources: <code>process/decompose-and-rehost-plan-2026-10-12.md</code>, <code>pipelines/mendix-mpr/README.md</code>, and the FINDINGS files under <code>pipelines/mendix-mpr/samples/</code>. Companion to the overview page. A reading aid, not a decision register.</footer>
+</div>
+</body>
+</html>
