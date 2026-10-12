@@ -14,9 +14,23 @@
 # Usage:
 #   bin/lint-gate.sh                    # check against baseline; exit 1 if any rule rose
 #   bin/lint-gate.sh --update-baseline  # accept current counts as the new baseline
+#       --reason "<why>"                # REQUIRED when the update raises any rule's count
+#       --approved-in-chat              # ALSO required when a security-tier rule rises
 #   bin/lint-gate.sh --full             # ignore the vendor exclusion (rarely useful)
 #
-# Exit codes: 0 clean or unchanged · 1 a rule increased · 2 could not run
+# Exit codes: 0 clean or unchanged · 1 a rule increased · 2 could not run (or a refused update)
+#
+# ACCEPTING DEBT IS RECORDED, NOT SILENT (2026-10-12). Three toolkit-built apps re-baselined
+# 61 times in four days — every acceptance made by the agent whose script caused the rise,
+# with no reason field and nothing that ever summed them: baselines grew 8 -> 757, 440 -> 677
+# and 9 -> 187, and security warnings (CONV006, SEC003) went in in the same batches as naming
+# info. So an update that RAISES any rule now needs --reason, and is appended to
+# .claude/lint-acceptances.tsv (ts, total before/after, per-rule rises, security flag, reason)
+# — commit it with the baseline. A first baseline and a pure ratchet-down need no reason.
+# A rise in a security-tier rule (default SEC* and CONV006; override, one id or glob per line,
+# in .claude/lint-security-rules.txt) also needs --approved-in-chat: a claim on the record that
+# the user was shown the findings and said yes, the same contract as gate-check --ack-protocol.
+# Never set it on your own judgement.
 #
 # PRODUCES .claude/loop/lint-ledger.tsv (append-only, one row per rule per run; read with
 # project-bin/lint-trend.sh) and .claude/loop/lint-last.json on every run that actually gets as far as computing
@@ -87,14 +101,23 @@ trap 'rm -f "$OUT"' EXIT
 
 UPDATE=0
 FULL=0
-for a in "$@"; do
-  case "$a" in
+REASON=""
+APPROVED=0
+while [ $# -gt 0 ]; do
+  case "$1" in
     --update-baseline) UPDATE=1 ;;
     --full) FULL=1 ;;
-    -h|--help) sed -n '2,20p' "$0"; exit 0 ;;
-    *) echo "lint-gate: unknown argument '$a'" >&2; exit 2 ;;
+    --reason) [ $# -ge 2 ] || { echo "lint-gate: --reason needs a value" >&2; exit 2; }
+              REASON="$2"; shift ;;
+    --reason=*) REASON="${1#--reason=}" ;;
+    --approved-in-chat) APPROVED=1 ;;
+    -h|--help) sed -n '2,35p' "$0"; exit 0 ;;
+    *) echo "lint-gate: unknown argument '$1'" >&2; exit 2 ;;
   esac
+  shift
 done
+SECURITY_FILE="$ROOT/.claude/lint-security-rules.txt"
+ACCEPT_LOG="$ROOT/.claude/lint-acceptances.tsv"
 
 # This script does not source _common.sh (see header); resolve the binary the same way it
 # does — mxcli.exe first on Git Bash, since the Dev Container may have left a Linux `mxcli`.
@@ -129,8 +152,9 @@ else
 fi
 [ -s "$OUT" ] || { echo "lint-gate: lint produced no output" >&2; exit 2; }
 
-BASELINE="$BASELINE" OUT="$OUT" UPDATE="$UPDATE" "$PY" - <<'PY'
-import json, os, sys, collections, datetime
+BASELINE="$BASELINE" OUT="$OUT" UPDATE="$UPDATE" REASON="$REASON" APPROVED="$APPROVED" \
+  SECURITY_FILE="$SECURITY_FILE" ACCEPT_LOG="$ACCEPT_LOG" "$PY" - <<'PY'
+import json, os, sys, collections, datetime, fnmatch
 
 out_path  = os.environ["OUT"]
 base_path = os.environ["BASELINE"]
@@ -223,14 +247,69 @@ if crashed:
     viol = [v for v in viol if v["ruleId"] not in crashed]
     counts = collections.Counter(v["ruleId"] for v in viol)
 
-# Self-reported blindness (module "_rule") is likewise never baselined: a rule that said it
-# inspected nothing would otherwise be ratcheted as accepted debt (#229). Later runs still
-# report it as PASS-BLIND via `blind` above, which was computed before this filter.
-if update:
-    viol = [v for v in viol if v.get("module") != "_rule"]
-    counts = collections.Counter(v["ruleId"] for v in viol)
+# Self-reported blindness (module "_rule") is likewise never counted: a rule that said it
+# inspected nothing would otherwise be ratcheted as accepted debt (#229). It is reported as
+# PASS-BLIND via `blind` above, which was computed before this filter. The filter applies to
+# check runs too, not only --update-baseline: when it ran on updates alone, the blind finding
+# was missing from the baseline but present in every check, so each later run reported it as
+# "CONV020 0 -> 1 (+1)" — a rise — and exec.sh logged LINT ROSE for an instrument fault.
+viol = [v for v in viol if v.get("module") != "_rule"]
+counts = collections.Counter(v["ruleId"] for v in viol)
 
 if update:
+    # Accepting a rise is a decision; record it. See the header ("ACCEPTING DEBT ...").
+    reason   = os.environ.get("REASON", "").strip()
+    approved = os.environ.get("APPROVED") == "1"
+    sec_pats = ["SEC*", "CONV006"]
+    sec_file = os.environ.get("SECURITY_FILE", "")
+    if sec_file and os.path.exists(sec_file):
+        sec_pats = [l.strip() for l in open(sec_file)
+                    if l.strip() and not l.lstrip().startswith("#")]
+    is_sec = lambda r: any(fnmatch.fnmatchcase(r, p) for p in sec_pats)
+    old_base = None
+    if os.path.exists(base_path):
+        try:
+            old_base = json.load(open(base_path)).get("counts", {})
+        except ValueError:
+            old_base = None
+    raised = []
+    if old_base is not None:
+        raised = [(r, old_base.get(r, 0), c) for r, c in sorted(counts.items())
+                  if c > old_base.get(r, 0)]
+    sec_raised = [x for x in raised if is_sec(x[0])]
+    if raised and not reason:
+        print("lint-gate: REFUSED — this update raises %d rule(s): %s" % (len(raised),
+              ", ".join("%s %d->%d" % x for x in raised)), file=sys.stderr)
+        print("           Accepting debt needs a reason on the record:", file=sys.stderr)
+        print("           bin/lint-gate.sh --update-baseline --reason \"<why each rise is acceptable>\"",
+              file=sys.stderr)
+        sys.exit(2)
+    if sec_raised and not approved:
+        print("lint-gate: REFUSED — security-tier rule(s) rose: %s" % ", ".join(
+              "%s %d->%d" % x for x in sec_raised), file=sys.stderr)
+        print("           Show the user these findings in chat. Only after they say yes, re-run with", file=sys.stderr)
+        print("           --approved-in-chat (a claim on the record). Otherwise fix the grant.", file=sys.stderr)
+        for v in [x for x in viol if x["ruleId"] in {r for r, _, _ in sec_raised}][:10]:
+            print("             %s | %s | %s" % (v["ruleId"], v.get("document") or v.get("module") or "",
+                  (v.get("message") or "")[:110]), file=sys.stderr)
+        sys.exit(2)
+    if raised:
+        log = os.environ.get("ACCEPT_LOG", "")
+        try:
+            new_log = not os.path.exists(log)
+            with open(log, "a") as f:
+                if new_log:
+                    f.write("ts\ttotal_before\ttotal_after\trises\tsecurity_approved_in_chat\treason\n")
+                f.write("%s\t%d\t%d\t%s\t%s\t%s\n" % (
+                    datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    sum(old_base.values()), len(viol),
+                    " ".join("%s+%d" % (r, n - w) for r, w, n in raised),
+                    "yes" if sec_raised else "-",
+                    reason.replace("\t", " ").replace("\n", " ")))
+            print("==> acceptance recorded in %s — commit it with the baseline" % os.path.relpath(log))
+        except OSError as e:
+            print("lint-gate: could not append %s: %s" % (log, e), file=sys.stderr)
+            sys.exit(2)
     json.dump({"counts": dict(sorted(counts.items())),
                "total": len(viol),
                "note": "Per-rule finding counts on OUR modules. Gate fails when any rises."},
@@ -260,7 +339,7 @@ print("==> %d findings on our modules (baseline %d)" % (len(viol), sum(base.valu
 if blind:
     print("\n!! A RULE COULD NOT READ THE MODEL — a clean result here means nothing:")
     for v in blind:
-        print("   %s" % v["message"][:160])
+        print("   %s: %s" % (v["ruleId"], v["message"][:160]))
 
 if fell:
     print("\n   improved:")
