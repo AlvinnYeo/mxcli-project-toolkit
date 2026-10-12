@@ -108,17 +108,36 @@ Bound: `bin/cut-ledger.sh` exits 0 (0 unresolved rows).
 
 Bound: every behaviour-carrying stub is replaced by a working call, or is still counted.
 
-- **Reads: OData.** Publish entities from the owning app, consume as external entities. A published
-  entity needs a key, and the key needs a unique validation rule (CE6624 otherwise).
-  Local → external associations pass `mx check` (10.24), so consumers can be re-pointed.
-- **Writes: a published REST action** backed by an upsert microflow; primitive parameters become
-  query parameters, so no JSON structures or mappings are needed. Base URL in a per-environment
-  constant.
+- **Reads: OData.** Publish entities from the owning app, consume as external entities. The key
+  must be unique, required and stable (unique validation rule, CE6624 otherwise; Integer, Long,
+  String or AutoNumber). What re-pointing a consumer at an external entity really costs — `mx check`
+  will not tell you:
+  - Associations: local → external is allowed only with the **local entity as owner** (passes
+    `mx check` on 10.24); XPath cannot traverse a local ↔ external association, so retrieves,
+    pages and nanoflows using one break at runtime.
+  - Writes: a Commit/Change/Delete on an external entity does not work — each such flow is
+    rewritten to Send External Object or to the REST action below.
+  - Aggregates: count works; sum/avg/min/max over OData run in memory or not at all; no OQL or
+    datasets. Reports and grid totals on moved data need a published aggregate or a local copy.
+  - Offline: native offline profiles cannot hold external entities (Stage 1).
+  Source: https://docs.mendix.com/refguide/external-entities/ and `published-odata-entity/`.
+- **Writes: OData can write too** (Insertable/Updatable/Deletable, consumer uses Send External
+  Object). Choose a **published REST action** backed by an upsert microflow when the write carries
+  behaviour — validation, upsert logic, side effects — which is what both field runs needed;
+  primitive parameters become query parameters, so no JSON structures or mappings. Base URL in a
+  per-environment constant. Never delete-and-recreate under the same key: consumers go
+  inconsistent — soft-delete instead.
+- **Ownership flips.** Once the slice serves an entity, it is the system of record and the monolith's
+  copy is external or a stub. A local save kept next to the REST call (as in `slice-assets`) is a dual
+  write: it stays a hand-off row until one side is removed.
 - **Error handler is mandatory.** The failure: the first seam call had no `on error` handler, so a
   slice outage would roll back the monolith's own commit (`seam-probe/FINDINGS.md` → "Failure
   coupling"). Use `on error without rollback` plus a log, and a retry flag or queue.
 - **Security Production on both sides.** A machine role is the only role granted on the services
   (a human role gets 404 on OData); basic-auth credentials in machine-local constants, never git.
+  Basic auth over TLS is the minimal route the field runs proved; for production prefer token-based
+  service auth via the OIDC SSO module (the Mendix SSO module is deprecated as of 1 May 2026). The
+  publisher picks the method, the consumer must match it.
   Stub entities need module roles too (CE2729 otherwise).
 - Monolith edits: ALTER cannot replace a decision — replace the call at the actual write one level
   down.
