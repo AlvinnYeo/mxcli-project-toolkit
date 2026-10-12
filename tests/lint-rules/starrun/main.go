@@ -12,24 +12,44 @@
 // casing). That is the field calibration, still owed per lint-rules/README.md.
 //
 // Usage:
-//   go run ./tests/lint-rules/starrun -rule lint-rules/x.star -fixture f.json [-strip-fields a,b]
+//
+//	go run ./tests/lint-rules/starrun -rule lint-rules/x.star -fixture f.json [-strip-fields a,b]
+//
 // Prints a JSON array of {module,document_type,document_name,message,suggestion}.
 // Exit 0 on success, 1 on a load/eval error (message on stderr).
 //
 // Fixture schema (every key optional, missing struct fields default to ""/false/0):
-//   {"widgets":[{...}], "microflows":[{...}], "pages":[{...}],
-//    "activities":{"Mod.Flow":[{...}]}, "refs_from":{"Mod.Flow":[{...}]}}
+//
+//	{"widgets":[{...}], "microflows":[{...}], "pages":[{...}],
+//	 "entities":[{...}], "associations":[{...}],
+//	 "activities":{"Mod.Flow":[{...}]}, "refs_from":{"Mod.Flow":[{...}]}}
+//
 // Field names are the mxcli Starlark projection names (mdl/linter/starlark.go):
 // widget: id name widget_type container_id container_qualified_name container_type
-//   module_name entity_ref attribute_ref microflow_ref nanoflow_ref page_ref
-//   parent_widget_id depth class_name style dynamic_classes action_type has_confirmation
+//
+//	module_name entity_ref attribute_ref microflow_ref nanoflow_ref page_ref
+//	parent_widget_id depth class_name style dynamic_classes action_type has_confirmation
+//
 // microflow: id name qualified_name module_name folder microflow_type description
-//   return_type parameter_count activity_count total_activity_count complexity
+//
+//	return_type parameter_count activity_count total_activity_count complexity
+//
 // activity: id name caption activity_type action_type microflow_id
-//   microflow_qualified_name module_name entity_ref service_ref action_ref
-//   use_request_timeout timeout_expression auto_generate_caption description
-//   parent_loop_id loop_depth condition_expression condition_rule error_handling_type
-//   log_level log_node_expression log_message commit_type with_events retrieve_source queue_ref
+//
+//	microflow_qualified_name module_name entity_ref service_ref action_ref
+//	use_request_timeout timeout_expression auto_generate_caption description
+//	parent_loop_id loop_depth condition_expression condition_rule error_handling_type
+//	log_level log_node_expression log_message commit_type with_events retrieve_source queue_ref
+//
+// entity: id name qualified_name module_name folder entity_type description generalization
+//
+//	attribute_count access_rule_count validation_rule_count has_event_handlers is_external
+//	has_created_date has_changed_date has_owner has_changed_by
+//
+// association: name qualified_name module_name from_entity to_entity type owner storage_format
+//
+//	description to_delete_behavior from_delete_behavior
+//
 // reference: source_type source_id source_name target_type target_id target_name ref_kind module_name
 package main
 
@@ -46,11 +66,13 @@ import (
 )
 
 type fixture struct {
-	Widgets    []map[string]any            `json:"widgets"`
-	Microflows []map[string]any            `json:"microflows"`
-	Pages      []map[string]any            `json:"pages"`
-	Activities map[string][]map[string]any `json:"activities"`
-	RefsFrom   map[string][]map[string]any `json:"refs_from"`
+	Widgets      []map[string]any            `json:"widgets"`
+	Microflows   []map[string]any            `json:"microflows"`
+	Pages        []map[string]any            `json:"pages"`
+	Activities   map[string][]map[string]any `json:"activities"`
+	RefsFrom     map[string][]map[string]any `json:"refs_from"`
+	Entities     []map[string]any            `json:"entities"`
+	Associations []map[string]any            `json:"associations"`
 }
 
 // Projection field lists with their zero values. Order does not matter to Starlark.
@@ -177,10 +199,12 @@ func main() {
 	}
 
 	predeclared := starlark.StringDict{
-		"struct":     starlark.NewBuiltin("struct", starlarkstruct.Make),
-		"widgets":    noArgs("widgets", list("widget", widgetFields, fx.Widgets)),
-		"microflows": noArgs("microflows", list("microflow", microflowFields, fx.Microflows)),
-		"pages":      noArgs("pages", list("page", pageFields, fx.Pages)),
+		"struct":       starlark.NewBuiltin("struct", starlarkstruct.Make),
+		"widgets":      noArgs("widgets", list("widget", widgetFields, fx.Widgets)),
+		"microflows":   noArgs("microflows", list("microflow", microflowFields, fx.Microflows)),
+		"pages":        noArgs("pages", list("page", pageFields, fx.Pages)),
+		"entities":     noArgs("entities", list("entity", entityFields, fx.Entities)),
+		"associations": noArgs("associations", list("association", associationFields, fx.Associations)),
 		// activities_for(q, nested=False) mirrors mxcli 0.25.0: the fixture lists every
 		// object of a flow, loop bodies included (with parent_loop_id / loop_depth), and the
 		// default call returns only the rows whose loop_depth is 0 or absent, exactly as the
@@ -288,4 +312,14 @@ func main() {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", " ")
 	_ = enc.Encode(rows)
+}
+
+var entityFields = fields{
+	s: []string{"id", "name", "qualified_name", "module_name", "folder", "entity_type", "description", "generalization"},
+	b: []string{"has_event_handlers", "is_external", "has_created_date", "has_changed_date", "has_owner", "has_changed_by"},
+	i: []string{"attribute_count", "access_rule_count", "validation_rule_count"},
+}
+var associationFields = fields{
+	s: []string{"name", "qualified_name", "module_name", "from_entity", "to_entity", "type", "owner",
+		"storage_format", "description", "to_delete_behavior", "from_delete_behavior"},
 }

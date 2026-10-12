@@ -72,8 +72,8 @@ is still the vocabulary probe from rollout rule 3. The full review is
 | 13 | Anonymous role hygiene: anonymous = admin role; anonymous mapped to an Administration module role; a module role shared by anonymous and another user role (SEC010) | security | Recommender MXS005, MXS008, MXS009 | `project_security()` anonymous/admin role names; `user_roles().is_anonymous`; `role_mappings()` | idea |
 | 14 | Anonymous role can create, delete or write members of a persistable entity (SEC011) | security | Recommender MXS006 | `permissions()` access_type vocabulary (probe) | idea |
 | 15 | Entity access grants default rights to new members (SEC012) | security | General Development Best Practices → Security | `permissions().default_member_access_rights` values (probe) | idea |
-| 16 | Generalization deeper than two levels (PERF001) | performance | Recommender MXP009; General Dev BP; Community perf #9 | `entities().generalization`; how System ancestors count | idea |
-| 17 | Data view / list view nested two or more levels (PERF002) | performance | Recommender MXP011 | `widgets()` widget_type strings, parent_widget_id | idea |
+| 16 | Generalization deeper than two levels (PERF001) | performance | Recommender MXP009; General Dev BP; Community perf #9 | `entities().generalization`; how System ancestors count | drafted (Batch 2) |
+| 17 | Data view / list view nested two or more levels (PERF002) | performance | Recommender MXP011 | `widgets()` widget_type strings, parent_widget_id | drafted (Batch 2) |
 | 18 | Commit without events on an entity with event handlers or validation rules (CORR001) | correctness | Setting Up Data Validation ("set With events to Yes") | `activities_for()` with_events / commit_type values; `entities().has_event_handlers` | idea |
 | 19 | Page title empty or default (UX003) | design | Accessibility introduction → meaningful page titles | `pages().title` default value (probe) | idea |
 | 20 | Page URL starts with a parameter, or two URLs conflict (CONV021) | correctness | General Dev BP → URLs | `pages().url` | idea |
@@ -83,7 +83,7 @@ is still the vocabulary probe from rollout rule 3. The full review is
 | 24 | Binary attribute instead of System.Image / FileDocument specialisation (DESIGN002) | design | Configuring a Domain Model | `attributes_for().data_type` value for binary (probe) | idea |
 | 25 | User role holds more than one module role of the same module (SEC013) | security | App Setup BP → user roles | `role_mappings()` | idea |
 | 26 | Exact-duplicate access rules on one entity (PERF003) | performance | Recommender MXP010 | `permissions()` grouped by entity + xpath_constraint | idea |
-| 27 | Non-persistable entity associated with System.User / System.Session (PERF004) | performance | Recommender MXP008 | `associations()` from/to; `entities().entity_type` | idea |
+| 27 | Non-persistable entity associated with System.User / System.Session (PERF004) | performance | Recommender MXP008 | `associations()` from/to; `entities().entity_type` | drafted (Batch 2) |
 | 28 | Log node empty or not the module name (LOG001) | quality | General Dev BP → logging; Logging refguide | `activities_for().log_node_expression` shape (literal vs constant) | idea |
 | 29 | Action buttons and inputs left on generated widget names (TEST001) | quality | ATS community + harness locator practice (mx-name) | `widgets().name`, widget_type | idea |
 | 30 | Index on sort / XPath / OData-key attributes | performance | Recommender MXP003, MXP007, MXP016 | an `indexes()` accessor (does not exist; upstream) | blocked: no index accessor |
