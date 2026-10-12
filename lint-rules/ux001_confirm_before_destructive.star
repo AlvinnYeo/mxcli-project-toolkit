@@ -30,7 +30,8 @@
 #
 # Vocabulary below was read from the mxcli catalog builder source (builder_pages.go
 # widgetPrimaryAction stores the action's stored $Type verbatim; builder_microflows.go
-# strips the "Microflows$" prefix from an action's type), NOT from write-lint-rules.md.
+# strips the "Microflows$" prefix from an action's type), NOT from write-lint-rules.md,
+# then probed on a real model (see FLOW_CALLS: the source read got one name wrong).
 # Probe it on your model before trusting it:
 #   sqlite3 .mxcli/catalog.db "SELECT DISTINCT ActionType FROM widgets ORDER BY 1;"
 #   sqlite3 .mxcli/catalog.db "SELECT DISTINCT ActionType FROM activities ORDER BY 1;"
@@ -49,7 +50,13 @@ SKIP_MODULES = ("System", "Administration")
 
 # Stored client-action types on a button / on-click action (widgets.ActionType).
 DIRECT_DELETE = "Forms$DeleteClientAction"
-FLOW_CALLS = ("Forms$MicroflowClientAction", "Forms$CallNanoflowClientAction")
+# Field-probed 2026-10-12 on mxcli 0.26.0 against a 21-module Mendix 11.12 model: the stored
+# microflow-button value is "Forms$MicroflowAction" (290 rows, 37 with confirmation), NOT the
+# "Forms$MicroflowClientAction" the source read suggested -- with the old name legs 2 and 3
+# could never fire for a microflow button, and the self-check did not notice because other
+# widgets still reported an action type. Both spellings stay listed; the nanoflow and direct
+# delete names were confirmed as written.
+FLOW_CALLS = ("Forms$MicroflowAction", "Forms$MicroflowClientAction", "Forms$CallNanoflowClientAction")
 
 # Microflow action types that destroy data (activities.ActionType, "Microflows$" stripped).
 DESTRUCTIVE_ACTIONS = ("DeleteObjectAction",)

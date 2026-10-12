@@ -17,7 +17,8 @@
     "caption": "Already approved?",
     "activity_type": "ExclusiveSplit",
     "action_type": "",
-    "auto_generate_caption": false
+    "auto_generate_caption": false,
+    "condition_expression": "$Order/Status = 'Approved'"
    }
   ]
  }

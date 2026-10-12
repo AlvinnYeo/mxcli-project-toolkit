@@ -24,10 +24,11 @@
 # findings, not seven), so the ratchet in bin/lint-gate.sh moves one step per flow.
 # Rules (RULE microflow_type) are skipped: they are expressions, not narratives.
 #
-# REQUIRES mxcli >= 0.25.0: activity caption / auto_generate_caption / description
-# (mendixlabs/mxcli#1266, #1267). Before that every activity's caption was the
-# placeholder "Activity". On an older binary the rule emits a `_rule` finding instead
-# of a silent clean pass.
+# REQUIRES mxcli >= 0.25.0: activity caption / auto_generate_caption / description /
+# condition_expression (mendixlabs/mxcli#1266, #1267). Before that every activity's
+# caption was the placeholder "Activity". On an older binary the rule emits a `_rule`
+# finding instead of a silent clean pass. Field note (0.26.0): auto_generate_caption is
+# never set on a decision; a bare decision is detected by caption == condition_expression.
 #
 # Vocabulary: activity_type "ExclusiveSplit" / "Annotation" are the names
 # getMicroflowObjectType() in mxcli's catalog builder returns (builder_microflows.go);
@@ -89,7 +90,14 @@ def check():
                 counted += 1
             if act.activity_type != "ExclusiveSplit":
                 continue
-            if act.auto_generate_caption or act.caption.strip() == "":
+            # Field-probed 2026-10-12 on mxcli 0.26.0 (21-module Mendix 11.12 model, 728
+            # decisions): auto_generate_caption is 0 on EVERY ExclusiveSplit, and a decision
+            # left on its generated caption carries its condition expression AS the caption.
+            # So "bare" means: empty, or equal to the condition expression (39 of 39 custom
+            # decisions on that model; the marketplace ones read "Passwords equal?").
+            cap = act.caption.strip()
+            cond = getattr(act, "condition_expression", "").strip()
+            if act.auto_generate_caption or cap == "" or (cond != "" and cap == cond):
                 bare_decisions += 1
 
         loc = location(
@@ -100,7 +108,7 @@ def check():
 
         if bare_decisions > 0:
             violations.append(violation(
-                message="'{}' has {} decision(s) with no caption of their own (auto-generated or empty).".format(
+                message="'{}' has {} decision(s) with no caption of their own (empty, or still the condition expression).".format(
                     mf.name, bare_decisions
                 ),
                 location=loc,
