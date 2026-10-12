@@ -111,6 +111,15 @@ all the same order of magnitude, and no project produced a single real error-sev
 the ratchet is the *only* mechanism available. `project-bin/lint-gate.sh` implements it
 (`--update-baseline` to accept current counts).
 
+**Accepting a rise is a recorded decision, not a reflex.** Three apps built in four days
+re-baselined 61 times, every time by the agent whose script caused the rise; baselines grew
+8 -> 757, 440 -> 677 and 9 -> 187, with security warnings accepted in the same batches as naming
+info. So an update that raises any rule needs `--reason "<why>"` and is appended to
+`.claude/lint-acceptances.tsv` (commit it with the baseline); a rise in a security-tier rule
+(default `SEC*` and `CONV006`, override in `.claude/lint-security-rules.txt`) also needs
+`--approved-in-chat`, set only after the user saw the findings and said yes. A first baseline
+and a ratchet-down need neither.
+
 **The ratchet remembers one number per rule; the ledger remembers every run.** Every gate run
 appends one row per rule to `.claude/loop/lint-ledger.tsv` (timestamp, verdict, rule, count,
 severity, blind), and `project-bin/lint-trend.sh` reads it back: runs a rule fired in, first and

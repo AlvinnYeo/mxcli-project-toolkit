@@ -398,13 +398,30 @@ run_lint_gate() {
   bash "$PROJECT_ROOT/bin/lint-gate.sh" >"$_lo" 2>&1 || LINT_RC=$?
   case "$LINT_RC" in
     0) LINT_DETAIL="lint unchanged vs baseline"; echo "  ✓ lint: no rule rose vs baseline" ;;
-    1) _rules=$(grep -E '^ +[A-Z]+[0-9]+ +[a-z]+ +[0-9]+ -> [0-9]+ +\(\+[0-9]+\)' "$_lo" \
+    1) # Rule ids are matched as [A-Z][A-Z0-9-]*[0-9]+, not [A-Z]+[0-9]+: mxcli's built-in
+       # rules include hyphenated ids (MDL-FLOW01), and the old pattern dropped them from every
+       # row — three field apps logged 475 ROSE rows and not one named MDL-FLOW01 (2026-10-12).
+       _rules=$(grep -E '^ +[A-Z][A-Z0-9-]*[0-9]+ +[a-z]+ +[0-9]+ -> [0-9]+ +\(\+[0-9]+\)' "$_lo" \
                  | awk '{printf "%s %s ", $1, $6}')
-       LINT_DETAIL="lint ROSE: ${_rules:-see output}"
-       echo "  ✗ lint: rule(s) rose vs baseline — ${_rules:-see below}"
-       sed -n '/^FAIL/,$p' "$_lo" | head -60 | sed 's/^/    /'
-       echo "    Fix the script and re-run, or accept the debt on purpose with"
-       echo "    bin/lint-gate.sh --update-baseline and say so in the commit message." ;;
+       _blind=$(sed -n '/^!! A RULE COULD NOT READ/,/^$/p' "$_lo" \
+                 | grep -oE '^ +[A-Z][A-Z0-9-]*[0-9]+:' | tr -d ' :' | sort -u | paste -sd, -)
+       if [ -z "$_rules" ] && grep -q '^PASS' "$_lo"; then
+         # lint-gate exits 1 for PASS-BLIND too. Logging that as "ROSE: see output" made a rule
+         # that inspected nothing look like a rise with no rule named — 20 such rows in two
+         # field apps whose CONV020 shipped unconfigured (#229). It is an instrument fault.
+         LINT_RC=3
+         LINT_DETAIL="lint BLIND: ${_blind:-a rule} inspected nothing (instrument fault, not a rise)"
+         echo "  ✗ lint: nothing rose, but ${_blind:-a rule} could not read the model — a clean count means nothing"
+         sed -n '/^!! A RULE COULD NOT READ/,/^$/p' "$_lo" | head -12 | sed 's/^/    /'
+         echo "    Configure or fix the rule (see the message above); do not re-baseline over it."
+       else
+         LINT_DETAIL="lint ROSE: ${_rules:-see output}${_blind:+; BLIND: $_blind}"
+         echo "  ✗ lint: rule(s) rose vs baseline — ${_rules:-see below}"
+         sed -n '/^FAIL/,$p' "$_lo" | head -60 | sed 's/^/    /'
+         echo "    Fix the script and re-run. Accepting the debt is the user's call, made in chat:"
+         echo "    bin/lint-gate.sh --update-baseline --reason \"<why>\" (a security-tier rise also"
+         echo "    needs --approved-in-chat). The acceptance is logged to .claude/lint-acceptances.tsv."
+       fi ;;
     *) LINT_DETAIL="lint could not run (lint-gate exit $LINT_RC)"; echo "  ⚠ $LINT_DETAIL"
        tail -5 "$_lo" | sed 's/^/    /' ;;
   esac
@@ -417,6 +434,8 @@ log_applied() {  # $1 = mxbuild detail
   take_score
   if [ "$LINT_RC" -eq 1 ]; then
     log_build "⚠️ applied, LINT ROSE" "$1; $LINT_DETAIL"
+  elif [ "$LINT_RC" -eq 3 ]; then
+    log_build "⚠️ applied, LINT BLIND" "$1; $LINT_DETAIL"
   else
     log_build "✅ applied" "$1; $LINT_DETAIL"
   fi
@@ -1157,6 +1176,13 @@ if [ "$GATE_STATE" != "pass" ]; then
   exit 0
 fi
 
+if [ "$LINT_RC" -eq 3 ]; then
+  echo ""
+  echo "✗ Script applied and mxbuild is clean, but a LINT RULE IS BLIND — this is not a pass."
+  echo "  $LINT_DETAIL"
+  echo "  The write is kept. Fix the rule's configuration before trusting any lint result."
+  exit 1
+fi
 if [ "$LINT_RC" -eq 1 ]; then
   echo ""
   echo "✗ Script applied and mxbuild is clean, but LINT ROSE — this is not a pass."
