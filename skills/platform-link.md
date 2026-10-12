@@ -193,11 +193,30 @@ ref — which on a fresh app is the template's. On the field run an 11.13.0 mode
 note and 11.13 refused it, insisting the project was "on 11.14", because 11.14.0 was what the
 template's note said.
 
+The same note is also where Studio Pro's **History → Model changes** pane gets its list of changed
+documents: a `ModelChanges` array, one entry per changed document
+(`{"Status":"Added|Modified|Deleted","UnitID":…,"UnitType":"Forms$Page","UnitName":…,"Module":…}`).
+Studio Pro fills it when it commits; a note hand-written with `"ModelChanges":[]` shows
+**Model changes 0** for every CLI commit. That was this skill's own template until 2026-10-12. The
+field project then had 270 of 270 notes empty, and the "which microflow, which page" history was
+gone. Do not hand-write the note. `bin/install-project-hooks.sh` installs post-commit and post-rewrite
+hooks that run `bin/mx-metadata-note.py write HEAD`. That keeps every key an existing note has,
+reads `ModelerVersion` from the commit's own `.mpr`, and computes `ModelChanges` from the commit's
+changed `.mxunit` files. The installer also adds the notes ref to the Team Server remote's push
+refspecs, so a plain `git push teamserver` carries the notes.
+
 ```bash
-git notes --ref=mx_metadata add -f -m \
-  '{"BranchName":"main","ModelerVersion":"11.13.0","ModelChanges":[],"RelatedStories":[],"isWebModelerCommit":false}' HEAD
-git push teamserver refs/notes/mx_metadata:refs/notes/mx_metadata   # notes are NOT pushed by default
+./bin/install-project-hooks.sh                 # once; init-project.sh / sync-project.sh run it too
+./bin/mx-metadata-note.py backfill --dry-run   # history from before the hook: what it would write
+./bin/mx-metadata-note.py backfill             # fill it (adds note commits; code history untouched)
+git push teamserver                            # branch + notes (refspecs set by the installer)
+./bin/mx-metadata-note.py sync teamserver      # only if the notes push was rejected: a colleague's
+                                               # Studio Pro noted commits too; 3-way merge, no force
 ```
+
+Field proof (2026-10-12, Mendix 11.15.0): 158 notes backfilled and pushed on a 357-commit app, and
+Studio Pro History lists the documents per revision. Against Studio Pro's own notes on 51 Studio Pro
+commits in 5 apps, 3387 of 3389 entries reproduce exactly.
 
 Read the version out of the model rather than trusting the dialog that just lied to you:
 
@@ -206,7 +225,7 @@ python3 -c "import sqlite3;print(list(sqlite3.connect('App.mpr').execute('select
 # (2, '11.13.0', '11.13.0', '{SHA256}...')   -> storage format 2, ModelerVersion 11.13.0
 ```
 
-**The check:** before any push, assert (a) and (b) from the tree and write (c) from the `.mpr`.
+**The check:** before any push, assert (a) and (b) from the tree; (c) is the hook's job — `./bin/install-project-hooks.sh --check` says whether it is installed.
 
 ```bash
 [ -f App.mpr ] || exit 1
