@@ -34,6 +34,10 @@ GET odata/core/v1/Technician (machine role)      HTTP 200
 GET odata/core/v1/Technician (no credentials)    HTTP 401
 GET odata/core/v1/Technician (human role)        HTTP 404
 ```
+Basic auth with the password in each app's local constant store is the minimal route the field runs
+proved; over TLS only. For production prefer token-based service auth via the OIDC SSO module (client
+credentials); the Mendix SSO module is deprecated as of 1 May 2026. The publisher picks the method and
+the consumer must match it (https://docs.mendix.com/refguide/consumed-odata-services/).
 (`<core>/captures/19`). 401 = no or bad credentials; 404 = authenticated but the role has no access
 to the service. *Anti:* a human role on the service exposes the API to every user login.
 
