@@ -1,0 +1,19 @@
+-- EXCERPT, NOT REDUCED: describe prints `repeater repeater4 (DataSource: nanoflow NativeMobileForm.DS_GetInstanceNativePictureImage)` with no argument;
+-- check then refuses its own output (CE1571, parameter NativeInstanceItem). The nanoflow cannot be created on 9.24.2 (D3), so no isolated run.
+create or modify nanoflow NativeMobileForm.DS_GetInstanceNativePictureImage (
+  @position(-170, 10)
+  $NativeInstanceItem: NativeMobileForm.NativeInstanceItem
+)
+returns List of NativeMobileForm.NativeInstancePictureImage
+folder 'Pages/NativeInstancePictureImage'
+begin
+  @start(-170, 200)
+  @position(-15, 200)
+  retrieve $NativeInstancePictureImageList from $NativeInstanceItem/NativeMobileForm.NativeInstancePictureImage_NativeInstanceItem;
+  @position(200, 200)
+  $NativeInstancePictureImageList_NotDeleted = filter $NativeInstancePictureImageList by IsDeleted = false;
+  @position(410, 200)
+  $NativeInstanceItemImageList_Sorted = sort $NativeInstancePictureImageList_NotDeleted by createdDate desc;
+  @position(615, 200)
+  return $NativeInstanceItemImageList_Sorted;
+end;
