@@ -1,0 +1,14 @@
+mdl 1;
+-- part 1b: the consumed service caches $metadata at create time and `create or modify external entities` reads that
+-- cache ("4 updated", no new attribute). No refresh statement exists: drop and re-create the consumed service (its
+-- external entities survive, increment 6 fix3), then update the entities from the new metadata.
+drop consumed odata service CoreSeam.CoreAPI;
+create consumed odata service CoreSeam.CoreAPI (
+  Version: '1.0.0',
+  ODataVersion: OData4,
+  MetadataUrl: 'core-metadata.xml',
+  Timeout: 60,
+  ServiceUrl: CoreSeam.CoreODataUrl,
+  HeadersMicroflow: microflow CoreSeam.GetAuthHeaders
+);
+create or modify external entities from CoreSeam.CoreAPI into TicketManagement entities (Ticket, Roster, ContactPerson, SLA);

@@ -1,0 +1,20 @@
+mdl 1;
+-- round 7 (security): every external entity readable by AssetsClient.User, mapped to every human user role that
+-- shows slice data (CE2729 x205); the machine role FSMAPIConsumer reads assets for the published ticket API
+grant read ("SystemID", "AssetID", "Description", "Notes", "Address", "ZipCode", "City", "FullAddress", "HasOpeningTimes", "CustomerName", "CustomerPublicID", "PreferredTechnicianID", "Asset_Manufacturer") on entity AssetsClient.Asset to AssetsClient.User;
+grant read ("PublicID", "Name") on entity AssetsClient.Manufacturer to AssetsClient.User;
+grant read ("SystemID", "PartID", "Name", "Description", "Price", "Vendor", "IsActive", "IsAdditionalPart", "Part_UnitOfMeasure") on entity AssetsClient.Part to AssetsClient.User;
+grant read ("SystemID", "UnitName", "Abbreviation") on entity AssetsClient.UnitOfMeasure to AssetsClient.User;
+grant read ("PublicID", "SystemID", "Quantity", "AssetPart_Asset", "AssetPart_Part") on entity AssetsClient.AssetPart to AssetsClient.User;
+grant read ("UsedPartKey", "IsFromWarehouse", "Quantity", "AppointmentPublicID", "UsedPart_Inventory") on entity AssetsClient.UsedPart to AssetsClient.User;
+grant read ("SuggestedPartKey", "Quantity", "IsUsed", "WorkOrderPublicID", "SuggestedPart_Part") on entity AssetsClient.SuggestedPart to AssetsClient.User;
+grant read ("SystemID", "WarehouseID", "Description") on entity AssetsClient.Warehouse to AssetsClient.User;
+grant read ("PublicID", "SystemID", "InventoryID", "Amount", "Inventory_Part", "Inventory_Warehouse") on entity AssetsClient.Inventory to AssetsClient.User;
+grant read ("PublicID", "ToolID", "Name", "Description", "IsActive") on entity AssetsClient.Tool to AssetsClient.User;
+grant read ("PublicID", "SelectedToolID", "Quantity", "WorkOrderPublicID", "SelectedTool_Tool") on entity AssetsClient.SelectedTool to AssetsClient.User;
+alter user role ServiceRegionManager add module roles (AssetsClient.User);
+alter user role TechnicalAdministrator add module roles (AssetsClient.User);
+alter user role Mechanic add module roles (AssetsClient.User);
+alter user role CallCenterEmployee add module roles (AssetsClient.User);
+alter user role ServiceDeskEmployee add module roles (AssetsClient.User);
+alter user role FSMAPIConsumer add module roles (AssetsClient.User);

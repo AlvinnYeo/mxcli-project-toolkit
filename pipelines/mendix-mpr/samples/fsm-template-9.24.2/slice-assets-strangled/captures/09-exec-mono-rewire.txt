@@ -1,0 +1,191 @@
+$ mxcli exec mono-strangle-rewire-all.mdl -p fsm.mpr   (= mono-strangle-rewire.mdl + mono-strangle-rewire-docs.mdl)
+Connected to: fsm.mpr (Mendix 10.24.0.73019)
+2026/10/12 14:32:54 info: user definition "barcodescanner.def.json" overrides built-in barcodescanner (widgetId: com.mendix.widget.web.barcodescanner.BarcodeScanner → com.mendix.widget.native.barcodescanner.BarcodeScanner)
+2026/10/12 14:32:54 info: user definition "gallery.def.json" overrides built-in gallery (widgetId: com.mendix.widget.web.gallery.Gallery → com.mendix.widget.native.gallery.Gallery)
+2026/10/12 14:32:54 info: user definition "image.def.json" overrides built-in image (widgetId: com.mendix.widget.web.image.Image → com.mendix.widget.native.image.Image)
+(no module)
+-----------
+  ✗ microflow returns Boolean but not all code paths have a return statement [MDL003]
+      at Synchronization.OfflineTicketAction_Validate
+      → Add return statements to all code paths
+
+1 issues: 1 errors, 0 warnings, 0 info
+
+Refusing to execute: 1 error(s) above. Nothing was written.
+  exec applies statements one at a time and cannot roll back, so a script
+  with a known error would leave the model partly updated.
+  Fix them, or re-run with --no-check to apply the script anyway.
+real 11.93 s
+$ mxcli exec mono-strangle-rewire-all.mdl -p fsm.mpr   (second run)
+Connected to: fsm.mpr (Mendix 10.24.0.73019)
+FSMPublishedAPI
+---------------
+  ✗ exec would refuse this statement: create or modify microflow FSMPublishedAPI.Asset_MapToAssetResponse: this change cannot be spliced into the stored flow: alter microflow FSMPublishedAPI.Asset_MapToAssetResponse: replace $Structure: the fragment declares $Customer, which the microflow already has; choose another name. Nothing was written: rebuilding the whole flow instead would reset what Studio Pro drew (curves, merges, element IDs). Change activities with `alter microflow FSMPublishedAPI.Asset_MapToAssetResponse { … }`; to rebuild the flow deliberately, drop the microflow and create it in the same script (the drop's module-role grants carry to a create in the same script or session, not to one in a later run) [MDL-V1-REBUILD]
+      at FSMPublishedAPI.Asset_MapToAssetResponse
+
+NativeMobileAsset
+-----------------
+  ✗ exec would refuse this statement: create or modify microflow NativeMobileAsset.Asset_RetrieveAppointmentList_ByStatus: this change cannot be spliced into the stored flow: the free annotations change; the splice edits activities only. Nothing was written: rebuilding the whole flow instead would reset what Studio Pro drew (curves, merges, element IDs). Change activities with `alter microflow NativeMobileAsset.Asset_RetrieveAppointmentList_ByStatus { … }`; to rebuild the flow deliberately, drop the microflow and create it in the same script (the drop's module-role grants carry to a create in the same script or session, not to one in a later run) [MDL-V1-REBUILD]
+      at NativeMobileAsset.Asset_RetrieveAppointmentList_ByStatus
+
+  ✗ exec would refuse this statement: create or modify microflow NativeMobileAsset.Asset_RetrieveUnplannedWorkOrderList: this change cannot be spliced into the stored flow: the free annotations change; the splice edits activities only. Nothing was written: rebuilding the whole flow instead would reset what Studio Pro drew (curves, merges, element IDs). Change activities with `alter microflow NativeMobileAsset.Asset_RetrieveUnplannedWorkOrderList { … }`; to rebuild the flow deliberately, drop the microflow and create it in the same script (the drop's module-role grants carry to a create in the same script or session, not to one in a later run) [MDL-V1-REBUILD]
+      at NativeMobileAsset.Asset_RetrieveUnplannedWorkOrderList
+
+NativeMobileRelated
+-------------------
+  ✗ exec would refuse this statement: create or modify microflow NativeMobileRelated.NativeWorkOrderNPSearchHelperDownload_GetRelevantWorkorderList: this change cannot be spliced into the stored flow: the free annotations change; the splice edits activities only. Nothing was written: rebuilding the whole flow instead would reset what Studio Pro drew (curves, merges, element IDs). Change activities with `alter microflow NativeMobileRelated.NativeWorkOrderNPSearchHelperDownload_GetRelevantWorkorderList { … }`; to rebuild the flow deliberately, drop the microflow and create it in the same script (the drop's module-role grants carry to a create in the same script or session, not to one in a later run) [MDL-V1-REBUILD]
+      at NativeMobileRelated.NativeWorkOrderNPSearchHelperDownload_GetRelevantWorkorderList
+
+TicketManagement
+----------------
+  ✗ exec would refuse this statement: create or modify microflow TicketManagement.ACT_Workorder_CancelEdit: this change cannot be spliced into the stored flow: alter microflow TicketManagement.ACT_Workorder_CancelEdit: drop $SelectedToolList: $SelectedToolList is still used by: loop $IteratorSelectedTool in $SelectedToolList. Nothing was written: rebuilding the whole flow instead would reset what Studio Pro drew (curves, merges, element IDs). Change activities with `alter microflow TicketManagement.ACT_Workorder_CancelEdit { … }`; to rebuild the flow deliberately, drop the microflow and create it in the same script (the drop's module-role grants carry to a create in the same script or session, not to one in a later run) [MDL-V1-REBUILD]
+      at TicketManagement.ACT_Workorder_CancelEdit
+
+  ✗ exec would refuse this statement: create or modify microflow TicketManagement.AppointmentList_Delete: this change cannot be spliced into the stored flow: the Loop at (1630, 200) changes inside its body; the splice does not edit inside a loop, and replacing the whole loop would rebuild every node it holds. Nothing was written: rebuilding the whole flow instead would reset what Studio Pro drew (curves, merges, element IDs). Replace the whole loop instead, stating its body as it should be (the rest of the flow keeps its element IDs and layout; the loop and its body are rebuilt): `alter microflow TicketManagement.AppointmentList_Delete { replace loop $IteratorAppointment in $AppointmentList with begin loop $IteratorAppointment in $AppointmentList begin … end loop; end; };` [MDL-V1-REBUILD]
+      at TicketManagement.AppointmentList_Delete
+
+  ✗ exec would refuse this statement: create or modify microflow TicketManagement.WorkOrderList_Delete: this change cannot be spliced into the stored flow: the Loop at (3090, 200) changes inside its body; the splice does not edit inside a loop, and replacing the whole loop would rebuild every node it holds. Nothing was written: rebuilding the whole flow instead would reset what Studio Pro drew (curves, merges, element IDs). Replace the whole loop instead, stating its body as it should be (the rest of the flow keeps its element IDs and layout; the loop and its body are rebuilt): `alter microflow TicketManagement.WorkOrderList_Delete { replace loop $IteratorWorkOrder in $WorkOrderList with begin loop $IteratorWorkOrder in $WorkOrderList begin … end loop; end; };` [MDL-V1-REBUILD]
+      at TicketManagement.WorkOrderList_Delete
+
+  ✗ exec would refuse this statement: create or modify microflow TicketManagement.WorkOrder_CommitSelectedParts: this change cannot be spliced into the stored flow: alter microflow TicketManagement.WorkOrder_CommitSelectedParts: drop $SuggestedPartList: $SuggestedPartList is still used by: call microflow Part.SuggestedPartList_Save(SuggestedPartList = $SuggestedPartList, Ticket_DisplayEnd = $WorkOrder/TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/DisplayEnd). Nothing was written: rebuilding the whole flow instead would reset what Studio Pro drew (curves, merges, element IDs). Change activities with `alter microflow TicketManagement.WorkOrder_CommitSelectedParts { … }`; to rebuild the flow deliberately, drop the microflow and create it in the same script (the drop's module-role grants carry to a create in the same script or session, not to one in a later run) [MDL-V1-REBUILD]
+      at TicketManagement.WorkOrder_CommitSelectedParts
+
+  ✗ exec would refuse this statement: create or modify microflow TicketManagement.WorkOrder_CommitSelectedTools: this change cannot be spliced into the stored flow: alter microflow TicketManagement.WorkOrder_CommitSelectedTools: drop $SelectedToolList: $SelectedToolList is still used by: call microflow Tool.SelectedToolList_Save(SelectedToolList = $SelectedToolList). Nothing was written: rebuilding the whole flow instead would reset what Studio Pro drew (curves, merges, element IDs). Change activities with `alter microflow TicketManagement.WorkOrder_CommitSelectedTools { … }`; to rebuild the flow deliberately, drop the microflow and create it in the same script (the drop's module-role grants carry to a create in the same script or session, not to one in a later run) [MDL-V1-REBUILD]
+      at TicketManagement.WorkOrder_CommitSelectedTools
+
+9 issues: 9 errors, 0 warnings, 0 info
+
+Refusing to execute: 9 flow change(s) above would be refused when reached. Nothing was written.
+  exec applies statements one at a time, so the statements before a refused
+  change would be written and the ones after it would not.
+  Make the change the refusal names, or re-run with --continue-on-error to
+  apply every other statement.
+real 275.7 s
+$ mxcli exec mono-strangle-rewire-all.mdl -p fsm.mpr   (third run: drop + create for every edited flow)
+Connected to: fsm.mpr (Mendix 10.24.0.73019)
+(no module)
+-----------
+  ⚠ line 1535: the doc comment before `drop microflow TicketManagement.WorkOrder_TechnicianPicker_GetEligibleLinkedTechnician` is lost: that statement cannot store documentation, so the comment is ignored; the next statement that can take it is `create or modify microflow TicketManagement.WorkOrder_TechnicianPicker_GetEligibleLinkedTechnician` (line 1540) [MDL089]
+      at 
+      → Move the doc comment directly above `create or modify microflow TicketManagement.WorkOrder_TechnicianPicker_GetEligibleLinkedTechnician`, after the `drop microflow TicketManagement.WorkOrder_TechnicianPicker_GetEligibleLinkedTechnician`.
+
+1 issues: 0 errors, 1 warnings, 0 info
+Created microflow: AssetsClient.Asset_Get_BySystemID
+  access: granted to auto-created role AssetsClient.User (the module has no other roles; a later grant adds to it — revoke it to narrow access)
+Created microflow: AssetsClient.Part_Get_BySystemID
+  access: granted to auto-created role AssetsClient.User (the module has no other roles; a later grant adds to it — revoke it to narrow access)
+Created microflow: AssetsClient.Part_NameIsInUse
+  access: granted to auto-created role AssetsClient.User (the module has no other roles; a later grant adds to it — revoke it to narrow access)
+Created microflow: AssetsClient.Asset_GetPreferredTechnician
+  access: granted to auto-created role AssetsClient.User (the module has no other roles; a later grant adds to it — revoke it to narrow access)
+Created microflow: AssetsClient.Asset_GetRelevantSLA
+  access: granted to auto-created role AssetsClient.User (the module has no other roles; a later grant adds to it — revoke it to narrow access)
+Created rule: AssetsClient.Rule_Asset_RequiresNoContractNotification
+Created microflow: AssetsClient.REST_UpsertUsedPart
+  access: granted to auto-created role AssetsClient.User (the module has no other roles; a later grant adds to it — revoke it to narrow access)
+Created microflow: AssetsClient.REST_DeleteUsedPart
+  access: granted to auto-created role AssetsClient.User (the module has no other roles; a later grant adds to it — revoke it to narrow access)
+Created microflow: AssetsClient.REST_UpsertPart
+  access: granted to auto-created role AssetsClient.User (the module has no other roles; a later grant adds to it — revoke it to narrow access)
+Created microflow: AssetsClient.REST_SetInventoryAmount
+  access: granted to auto-created role AssetsClient.User (the module has no other roles; a later grant adds to it — revoke it to narrow access)
+Dropped microflow: Synchronization.OfflineUsedPartAction_Process
+Created microflow: Synchronization.OfflineUsedPartAction_Process
+Dropped microflow: Synchronization.OfflineUsedPartAction_Validate
+Created microflow: Synchronization.OfflineUsedPartAction_Validate
+Dropped microflow: Synchronization.OfflinePartAction_Process
+Created microflow: Synchronization.OfflinePartAction_Process
+Dropped microflow: Synchronization.OfflineInventoryAction_Process
+Created microflow: Synchronization.OfflineInventoryAction_Process
+Dropped microflow: Synchronization.OfflineCustomPartAction_Process
+Created microflow: Synchronization.OfflineCustomPartAction_Process
+Dropped microflow: Synchronization.OfflineUsedPartAction_Process_PartAdded
+Dropped microflow: Synchronization.UsedPart_SetSuggestedPartToUsedOrUnused
+Dropped microflow: Synchronization.UsedPart_UpdateInventory
+Dropped microflow: Synchronization.UsedPart_UpdateLastChangedBy
+Dropped microflow: Synchronization.UsedPart_UpdateQuantity
+Dropped microflow: Synchronization.UsedPart_UpdateNativeUsedPart
+Dropped microflow: Synchronization.UsedPart_ProcessUpdatingNativeUsedPart
+Dropped rule: Synchronization.Rule_UsedPart_HasChanged
+Dropped microflow: AppSettings.DataRemoval_SelectedPartList
+Dropped microflow: AppSettings.DataRemoval_SuggestedPartList
+Dropped microflow: AppSettings.DataRemoval_UsedPartList
+Dropped microflow: Dashboard.ACT_AssetDashboardNP_ShowAsset
+  Removed its execute grants to Dashboard.ViewAll. A create of Dashboard.ACT_AssetDashboardNP_ShowAsset later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow Dashboard.ACT_AssetDashboardNP_ShowAsset to Dashboard.ViewAll;
+Created microflow: Dashboard.ACT_AssetDashboardNP_ShowAsset
+All specified roles already have execute access on Dashboard.ACT_AssetDashboardNP_ShowAsset
+Dropped microflow: FSMPublishedAPI.Asset_MapToAssetResponse
+Created microflow: FSMPublishedAPI.Asset_MapToAssetResponse
+Dropped microflow: FSMPublishedAPI.TicketRequest_ValidateSLA
+Created microflow: FSMPublishedAPI.TicketRequest_ValidateSLA
+Dropped microflow: FSMPublishedAPI.TicketRequest_ValidateSchedulingOption
+Created microflow: FSMPublishedAPI.TicketRequest_ValidateSchedulingOption
+Dropped microflow: General.ASU_General
+Created microflow: General.ASU_General
+Dropped microflow: NativeMobileAsset.Asset_RetrieveAppointmentList_ByStatus
+Created microflow: NativeMobileAsset.Asset_RetrieveAppointmentList_ByStatus
+Dropped microflow: NativeMobileAsset.Asset_RetrieveUnplannedWorkOrderList
+Created microflow: NativeMobileAsset.Asset_RetrieveUnplannedWorkOrderList
+Dropped microflow: NativeMobilePart.PartNP_ValidateUniqueName
+  Removed its execute grants to NativeMobilePart.EditMy. A create of NativeMobilePart.PartNP_ValidateUniqueName later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow NativeMobilePart.PartNP_ValidateUniqueName to NativeMobilePart.EditMy;
+Created microflow: NativeMobilePart.PartNP_ValidateUniqueName
+All specified roles already have execute access on NativeMobilePart.PartNP_ValidateUniqueName
+Dropped microflow: NativeMobilePart.PartSearchHelper_SearchInventories
+  Removed its execute grants to NativeMobilePart.EditMy. A create of NativeMobilePart.PartSearchHelper_SearchInventories later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow NativeMobilePart.PartSearchHelper_SearchInventories to NativeMobilePart.EditMy;
+Created microflow: NativeMobilePart.PartSearchHelper_SearchInventories
+All specified roles already have execute access on NativeMobilePart.PartSearchHelper_SearchInventories
+Dropped microflow: NativeMobilePart.PartSearchHelper_SearchParts
+  Removed its execute grants to NativeMobilePart.EditMy. A create of NativeMobilePart.PartSearchHelper_SearchParts later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow NativeMobilePart.PartSearchHelper_SearchParts to NativeMobilePart.EditMy;
+Created microflow: NativeMobilePart.PartSearchHelper_SearchParts
+All specified roles already have execute access on NativeMobilePart.PartSearchHelper_SearchParts
+Dropped microflow: NativeMobileRelated.Asset_PopulateRelatedWorkHelper
+  Removed its execute grants to NativeMobileRelated.ViewRelated. A create of NativeMobileRelated.Asset_PopulateRelatedWorkHelper later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow NativeMobileRelated.Asset_PopulateRelatedWorkHelper to NativeMobileRelated.ViewRelated;
+Created microflow: NativeMobileRelated.Asset_PopulateRelatedWorkHelper
+All specified roles already have execute access on NativeMobileRelated.Asset_PopulateRelatedWorkHelper
+Dropped microflow: NativeMobileRelated.NativeWorkOrderNPSearchHelperDownload_GetRelevantWorkorderList
+Created microflow: NativeMobileRelated.NativeWorkOrderNPSearchHelperDownload_GetRelevantWorkorderList
+Dropped microflow: NativeMobileRelated.NativeWorkOrderNP_Create
+Created microflow: NativeMobileRelated.NativeWorkOrderNP_Create
+Dropped microflow: Scheduler.PlannerContext_GetWorkOrders
+Created microflow: Scheduler.PlannerContext_GetWorkOrders
+Dropped microflow: Synchronization.Asset_ProcessUpdateNativeAsset
+Created microflow: Synchronization.Asset_ProcessUpdateNativeAsset
+Dropped microflow: Synchronization.OfflineInventoryAction_Validate
+Created microflow: Synchronization.OfflineInventoryAction_Validate
+Dropped microflow: Synchronization.OfflineTicketAction_Process
+Created microflow: Synchronization.OfflineTicketAction_Process
+Dropped rule: Synchronization.Rule_SuggestedPart_HasChanged
+Created rule: Synchronization.Rule_SuggestedPart_HasChanged
+Dropped microflow: Synchronization.SuggestedPart_ProcessUpdatingNativeSuggestedPart
+Created microflow: Synchronization.SuggestedPart_ProcessUpdatingNativeSuggestedPart
+Dropped microflow: TicketManagement.ACT_Workorder_CancelEdit
+  Removed its execute grants to TicketManagement.WorkorderEditAll. A create of TicketManagement.ACT_Workorder_CancelEdit later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow TicketManagement.ACT_Workorder_CancelEdit to TicketManagement.WorkorderEditAll;
+Created microflow: TicketManagement.ACT_Workorder_CancelEdit
+All specified roles already have execute access on TicketManagement.ACT_Workorder_CancelEdit
+Dropped microflow: TicketManagement.AppointmentList_Delete
+Created microflow: TicketManagement.AppointmentList_Delete
+Dropped microflow: TicketManagement.DS_Asset_GetRelevantSLA
+  Removed its execute grants to TicketManagement.TicketEditAll. A create of TicketManagement.DS_Asset_GetRelevantSLA later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow TicketManagement.DS_Asset_GetRelevantSLA to TicketManagement.TicketEditAll;
+Created microflow: TicketManagement.DS_Asset_GetRelevantSLA
+All specified roles already have execute access on TicketManagement.DS_Asset_GetRelevantSLA
+Dropped microflow: TicketManagement.Private_Ticket_DetermineSLA
+Created microflow: TicketManagement.Private_Ticket_DetermineSLA
+Dropped microflow: TicketManagement.Private_WorkOrder_TechnicianPicker_GetMalfunctionTechnician
+Created microflow: TicketManagement.Private_WorkOrder_TechnicianPicker_GetMalfunctionTechnician
+Dropped microflow: TicketManagement.TicketNP_Asset_RequiresContractWarning
+Created microflow: TicketManagement.TicketNP_Asset_RequiresContractWarning
+Dropped microflow: TicketManagement.TicketNP_IsChoosenTechnicianAssigned
+Created microflow: TicketManagement.TicketNP_IsChoosenTechnicianAssigned
+Dropped microflow: TicketManagement.TicketNP_Malfunction_Validate
+Created microflow: TicketManagement.TicketNP_Malfunction_Validate
+Dropped microflow: TicketManagement.TicketNP_Malfunction_ValidateEdit
+Created microflow: TicketManagement.TicketNP_Malfunction_ValidateEdit
+Dropped microflow: TicketManagement.WorkOrderList_Delete
+Created microflow: TicketManagement.WorkOrderList_Delete
+Dropped microflow: TicketManagement.WorkOrder_CommitSelectedParts
+Created microflow: TicketManagement.WorkOrder_CommitSelectedParts
+Dropped microflow: TicketManagement.WorkOrder_CommitSelectedTools
+Created microflow: TicketManagement.WorkOrder_CommitSelectedTools
+Dropped microflow: TicketManagement.WorkOrder_TechnicianPicker_GetEligibleLinkedTechnician
+Created microflow: TicketManagement.WorkOrder_TechnicianPicker_GetEligibleLinkedTechnician
+real 269.9 s

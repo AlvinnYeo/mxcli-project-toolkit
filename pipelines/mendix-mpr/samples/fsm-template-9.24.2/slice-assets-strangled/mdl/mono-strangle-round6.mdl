@@ -1,0 +1,53 @@
+mdl 1;
+-- round 6: external entities cannot be retrieved by comparing the reverse association with an object (CE0161);
+-- retrieve over the navigation association from the external owner instead
+drop rule Synchronization.Rule_Inventory_HasChanged;
+create or modify rule Synchronization.Rule_Inventory_HasChanged (
+  $Inventory: AssetsClient.Inventory,
+  $NativeInventory: NativeMobileWarehouse.NativeInventory
+)
+returns Boolean
+folder 'Objects/Inventory'
+begin
+  declare $HasChanged Boolean = false;
+  retrieve $NativePart from NativeMobilePart.NativePart
+    where [NativeMobileWarehouse.NativeInventory_NativePart = $NativeInventory]
+    [IsDeleted = false()]
+    first;
+  retrieve $NativeWarehouse from NativeMobileWarehouse.NativeWarehouse
+    where [NativeMobileWarehouse.NativeInventory_NativeWarehouse = $NativeInventory]
+    [IsDeleted = false()]
+    first;
+  retrieve $Part from $Inventory/AssetsClient.Inventory_Part;
+  retrieve $Warehouse from $Inventory/AssetsClient.Inventory_Warehouse;
+  @caption 'values changed?'
+  if $Inventory/Amount != $NativeInventory/Amount
+or
+$NativePart/SystemID != $Part/SystemID
+or
+$NativeWarehouse/SystemID != $Warehouse/SystemID
+or
+$NativeInventory/InventoryID != $Inventory/InventoryID
+or
+$NativeInventory/ShouldBeSynced then
+    set $HasChanged = true;
+    return $HasChanged;
+  else
+    @anchor(to: top)
+    return false;
+  end if;
+end;
+
+-- ContactPerson_Overview: a custom-content column with filtering/sorting needs an attribute - dropped
+alter page CustomerManagement.ContactPerson_Overview {
+  replace grid1 with {
+    datagrid grid1 (
+      DataSource: database from CustomerManagement.ContactPerson sort by Name asc,
+      Selection: Single
+    ) {
+      column (Attribute: Name, Caption: 'Name')
+      column (Attribute: PhoneNumber, Caption: 'Phone number')
+      column (Attribute: EmailAddress, Caption: 'Email')
+    }
+  };
+};

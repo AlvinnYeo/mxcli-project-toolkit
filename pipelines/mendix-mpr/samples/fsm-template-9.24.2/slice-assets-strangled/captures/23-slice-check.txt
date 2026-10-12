@@ -1,0 +1,14 @@
+$ mx(11.13) check AssetsApp.mpr
+Checking app for errors...
+[error] [CE0161] "Error(s) in XPath constraint." at Retrieve object(s) activity 'Retrieve SLA from database'
+The app contains: 1 errors.
+real 10 s
+
+$ mx(11.13) check AssetsApp.mpr  (after part 3)
+Checking app for errors...
+The app contains: 0 errors.
+real 11 s
+$ mxbuild(11.13.0) --java-home=<jdk21> --java-exe-path=<jdk21>/bin/java --target=deploy AssetsApp.mpr
+Cleaning up...
+BUILD SUCCEEDED
+exit=0 real 22 s

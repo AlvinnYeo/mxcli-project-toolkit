@@ -1,0 +1,35 @@
+mdl 1;
+-- Increment 7, slice: P1 trap. An AutoNumber key added to an entity that a PAGE creates fails at commit for every role
+-- without read on it: "Failed to commit: Value of auto-number attribute 'PublicID' not available, could be caused by
+-- insufficient access rights to serialize the mendix object to the client" (captures/25). Read on the key for every
+-- module role that has an access rule on the entity.
+grant read (PublicID) on entity WarehouseManagement.Inventory to WarehouseManagement.EditAll;
+grant read (PublicID) on entity WarehouseManagement.Inventory to WarehouseManagement.EditAllAdmin;
+grant read (PublicID) on entity WarehouseManagement.Inventory to WarehouseManagement.ViewAll;
+grant read (PublicID) on entity WarehouseManagement.Inventory to WarehouseManagement.ViewMy;
+grant read (PublicID) on entity Part.AssetPart to Part.EditAll;
+grant read (PublicID) on entity Part.AssetPart to Part.EditAllAdmin;
+grant read (PublicID) on entity Part.AssetPart to Part.ViewAll;
+grant read (PublicID) on entity Part.AssetPart to Part.ViewMy;
+grant read (PublicID) on entity AssetManagement.Manufacturer to AssetManagement.EditAsset;
+grant read (PublicID) on entity AssetManagement.Manufacturer to AssetManagement.EditAssetAdmin;
+grant read (PublicID) on entity AssetManagement.Manufacturer to AssetManagement.ViewAll;
+grant read (PublicID) on entity Tool.Tool to Tool.EditAll;
+grant read (PublicID) on entity Tool.Tool to Tool.ViewAll;
+grant read (PublicID) on entity Tool.Tool to Tool.ViewMy;
+grant read (PublicID) on entity Tool.SelectedTool to Tool.EditAll;
+grant read (PublicID) on entity Tool.SelectedTool to Tool.ViewAll;
+grant read (PublicID) on entity Tool.SelectedTool to Tool.ViewMy;
+grant read (PublicID) on entity Tool.SelectedTool to Tool._AddOn_SelectTools;
+grant read (PublicID) on entity Part.SelectedPart to Part.EditAll;
+grant read (PublicID) on entity Part.SelectedPart to Part.EditAllAdmin;
+grant read (PublicID) on entity Part.SelectedPart to Part.ViewAll;
+grant read (UsedPartKey) on entity Part.UsedPart to Part.EditAll;
+grant read (UsedPartKey) on entity Part.UsedPart to Part.EditAllAdmin;
+grant read (UsedPartKey) on entity Part.UsedPart to Part.ViewAll;
+grant read (UsedPartKey) on entity Part.UsedPart to Part.ViewMy;
+grant read (SuggestedPartKey) on entity Part.SuggestedPart to Part.EditAll;
+grant read (SuggestedPartKey) on entity Part.SuggestedPart to Part.EditAllAdmin;
+grant read (SuggestedPartKey) on entity Part.SuggestedPart to Part.ViewAll;
+grant read (SuggestedPartKey) on entity Part.SuggestedPart to Part.ViewMy;
+grant read (SuggestedPartKey) on entity Part.SuggestedPart to Part._AddOn_SelectParts;

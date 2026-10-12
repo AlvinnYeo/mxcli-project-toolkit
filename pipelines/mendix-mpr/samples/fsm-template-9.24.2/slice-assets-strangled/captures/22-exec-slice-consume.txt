@@ -1,0 +1,29 @@
+$ mxcli exec slice-strangle-consume-1.mdl
+  SKIPPED: TicketManagement.ContactPerson (already exists; use create or modify to update)
+  SKIPPED: TicketManagement.SLA (already exists; use create or modify to update)
+  SKIPPED: TicketManagement.Ticket (already exists; use create or modify to update)
+  SKIPPED: TicketManagement.Roster (already exists; use create or modify to update)
+
+From CoreSeam.CoreAPI into TicketManagement: 0 created, 0 updated, 4 skipped, 0 failed
+$ mxcli exec slice-strangle-consume-1b.mdl
+Connected to: AssetsApp.mpr (Mendix 11.13.0)
+
+From CoreSeam.CoreAPI into TicketManagement: 0 created, 4 updated, 0 skipped, 0 failed
+$ mxcli exec slice-strangle-consume-1b.mdl  (drop + re-create the consumed service)
+Connected to: AssetsApp.mpr (Mendix 11.13.0)
+Dropped OData client: CoreSeam.CoreAPI
+Created OData client: CoreSeam.CoreAPI
+  Cached $metadata: 11 entity types, 0 actions
+
+From CoreSeam.CoreAPI into TicketManagement: 0 created, 4 updated, 0 skipped, 0 failed
+$ mxcli exec slice-strangle-consume-2.mdl
+Dropped microflow: AssetManagement.ACT_Asset_Delete
+  Removed its execute grants to AssetManagement.EditAsset. A create of AssetManagement.ACT_Asset_Delete later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow AssetManagement.ACT_Asset_Delete to AssetManagement.EditAsset;
+Created microflow: AssetManagement.ACT_Asset_Delete
+All specified roles already have execute access on AssetManagement.ACT_Asset_Delete
+Dropped microflow: AssetManagement.Asset_GetRelevantSLA
+Created microflow: AssetManagement.Asset_GetRelevantSLA
+$ mxcli exec slice-strangle-consume-3.mdl
+Connected to: AssetsApp.mpr (Mendix 11.13.0)
+Dropped microflow: AssetManagement.Asset_GetRelevantSLA
+Created microflow: AssetManagement.Asset_GetRelevantSLA

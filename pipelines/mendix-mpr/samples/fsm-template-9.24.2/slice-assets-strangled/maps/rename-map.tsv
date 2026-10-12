@@ -1,0 +1,21 @@
+# old qualified name -> AssetsClient (the external entities / navigation associations of AssetsAPIv2)
+AssetManagement.Asset_Manufacturer	AssetsClient.Asset_Manufacturer
+AssetManagement.Asset	AssetsClient.Asset
+AssetManagement.Manufacturer	AssetsClient.Manufacturer
+Part.Part_UnitOfMeasure	AssetsClient.Part_UnitOfMeasure
+Part.Part	AssetsClient.Part
+Part.UnitOfMeasure	AssetsClient.UnitOfMeasure
+Part.AssetPart_Asset	AssetsClient.AssetPart_Asset
+Part.AssetPart_Part	AssetsClient.AssetPart_Part
+Part.AssetPart	AssetsClient.AssetPart
+Part.UsedPart_Inventory	AssetsClient.UsedPart_Inventory
+Part.UsedPart	AssetsClient.UsedPart
+Part.SuggestedPart_Part	AssetsClient.SuggestedPart_Part
+Part.SuggestedPart	AssetsClient.SuggestedPart
+WarehouseManagement.Inventory_Part	AssetsClient.Inventory_Part
+WarehouseManagement.Inventory_Warehouse	AssetsClient.Inventory_Warehouse
+WarehouseManagement.Inventory	AssetsClient.Inventory
+WarehouseManagement.Warehouse	AssetsClient.Warehouse
+Tool.SelectedTool_Tool	AssetsClient.SelectedTool_Tool
+Tool.SelectedTool	AssetsClient.SelectedTool
+Tool.Tool	AssetsClient.Tool

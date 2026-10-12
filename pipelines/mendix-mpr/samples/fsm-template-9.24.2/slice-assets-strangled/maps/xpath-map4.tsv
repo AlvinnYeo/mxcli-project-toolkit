@@ -1,0 +1,2 @@
+# round 4: BOM filter of the native part search walked slice AssetPart -> slice Asset -> monolith Ticket (hand-off)
+\n[AssetsClient.AssetPart_Part/AssetsClient.AssetPart/AssetsClient.AssetPart_Asset/AssetsClient.Asset/TicketManagement.Ticket_Asset/TicketManagement.Ticket/TicketManagement.WorkOrder_Ticket/TicketManagement.WorkOrder/TicketManagement.Appointment_WorkOrder = $Appointment]	

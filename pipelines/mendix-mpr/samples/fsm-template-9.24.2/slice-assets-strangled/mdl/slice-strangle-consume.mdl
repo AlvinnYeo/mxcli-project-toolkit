@@ -1,0 +1,180 @@
+mdl 1;
+-- Increment 7, slice: the monolith no longer has an asset mirror (MonoAsset). Tickets and rosters of a slice asset are
+-- found by the key copy the monolith now publishes (AssetSystemID); contacts by the asset's customer (CustomerPublicID).
+-- SLA_Asset / ContactPerson_Asset cannot be published by the monolith any more (associations to an external entity).
+drop external entity TicketManagement.MonoAsset;
+create external entities from CoreSeam.CoreAPI into TicketManagement entities (Ticket, Roster, ContactPerson, SLA);
+grant read (PublicID, TicketID, "Status", ShortDescription, "Description", CallerName, CreationTime, DueDate, AssetSystemID, AssetID, AssetDescription, Ticket_Priority, Ticket_TicketType) on entity TicketManagement.Ticket to TicketManagement.User;
+grant read (PublicID, StartDate, EndDate, StartTime, EndTime, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday, AssetSystemID) on entity TicketManagement.Roster to TicketManagement.User;
+alter snippet AssetManagement.Snippet_Asset_DataTabs {
+  replace grid2 with {
+      datagrid grid2 (
+        DataSource: database from TicketManagement.ContactPerson where [TicketManagement.ContactPerson_Customer/TicketManagement.Customer/PublicID = $Asset/CustomerPublicID] sort by Name asc,
+        Selection: Single
+      ) {
+        -- Context: $currentObject (TicketManagement.ContactPerson), $grid2 (selection)
+        column (Attribute: Name, Caption: 'Name')
+        column (Attribute: PhoneNumber, Caption: 'Phone number')
+        column (Attribute: EmailAddress, Caption: 'Email')
+        column (Attribute: Description, Caption: 'Job description')
+        column (Attribute: ContactPerson_Customer/CustomerName, Caption: 'Customer(s)')
+        column (Attribute: ContactPerson_Contract/Number, Caption: 'Contract(s)')
+        column (Caption: ' ', ShowContentAs: customContent) {
+          actionbutton actionButton2 (
+            Caption: 'Open',
+            Action: show page CustomerManagement.ContactPerson_View(ContactPerson = $currentObject)
+          )
+        }
+      }
+  };
+  replace grid3 with {
+      datagrid grid3 (
+        DataSource: database from TicketManagement.Roster where [AssetSystemID = $Asset/SystemID] sort by StartDate asc,
+        Selection: Single
+      ) {
+        -- Context: $currentObject (TicketManagement.Roster), $grid3 (selection)
+        controlbar {
+          actionbutton actionButton3 (
+            Caption: 'New',
+            Action: call microflow AssetManagement.ACT_Asset_CreateRoster(Asset = $Asset)
+          )
+          actionbutton deleteButton3 (
+            Caption: 'Delete All',
+            Action: call microflow AssetManagement.ACT_Asset_DeleteRosters(Asset = $Asset)
+          )
+        }
+        column (Attribute: StartDate, Caption: 'Start date')
+        column (Attribute: EndDate, Caption: 'End date')
+        column (Attribute: StartTime, Caption: 'Start time')
+        column (Attribute: EndTime, Caption: 'End time')
+        column (Caption: ' ', ShowContentAs: customContent) {
+          actionbutton editButton2 (
+            Caption: 'View',
+            Action: show page RosterManagement.Roster_NewEdit(Roster = $currentObject)
+          )
+          actionbutton deleteButton2 (
+            Caption: 'Delete',
+            Action: call microflow RosterManagement.ACT_Roster_Delete(Roster = $currentObject)
+          )
+        }
+      }
+  };
+  replace grid1 with {
+      datagrid grid1 (
+        DataSource: database from TicketManagement.Ticket where [AssetSystemID = $Asset/SystemID] sort by CreationTime desc,
+        Selection: Single
+      ) {
+        -- Context: $currentObject (TicketManagement.Ticket), $grid1 (selection)
+        column (Attribute: TicketID, Caption: 'Ticket ID')
+        column (Attribute: CreationTime, Caption: 'Creation date')
+        column (Attribute: Description, Caption: 'Description')
+        column (Attribute: Ticket_TicketType/Name, Caption: 'Type')
+        column (Attribute: Ticket_Priority/Description, Caption: 'Priority')
+        column (Attribute: Status, Caption: 'Status')
+        column (Caption: ' ', ShowContentAs: customContent) {
+          actionbutton actionButton6 (
+            Caption: 'Open',
+            Action: show page TicketManagement.Ticket_View(Ticket = $currentObject)
+          )
+        }
+      }
+  };
+};
+-- the asset-level SLA walked SLA_Asset/MonoAsset (gone): that level is skipped (hand-off), customer/contract/standard remain
+drop microflow AssetManagement.ACT_Asset_Delete;
+create or modify microflow AssetManagement.ACT_Asset_Delete (
+  $Asset: AssetManagement.Asset
+)
+folder 'Pages/Asset'
+begin
+  retrieve $TicketList from TicketManagement.Ticket
+    where AssetSystemID = $Asset/SystemID;
+  if $TicketList = empty then
+    call microflow AssetManagement.Asset_Delete(Asset = $Asset);
+    return;
+  else
+    show message 'This asset cannot de deleted, because it is associated to one or more tickets.' type Warning blocking;
+    return;
+  end if;
+end;
+
+grant execute on microflow AssetManagement.ACT_Asset_Delete to AssetManagement.EditAsset;
+drop microflow AssetManagement.Asset_GetRelevantSLA;
+create or modify microflow AssetManagement.Asset_GetRelevantSLA (
+  $Asset: AssetManagement.Asset
+)
+returns TicketManagement.SLA
+folder 'Objects/Asset'
+export level api
+begin
+  @position(360, 200)
+  retrieve $SLA_Asset from TicketManagement.SLA
+    where PublicID = -1
+    first;
+  @position(520, 200)
+  if $SLA_Asset != empty then
+    @position(690, 300)
+    return $SLA_Asset;
+  end if;
+  @position(690, 200)
+  retrieve $Contract from $Asset/AssetManagement.Asset_Contract;
+  @position(850, 200)
+  @merge(1375, 200)
+  if $Contract != empty then
+    @position(1020, 350)
+    retrieve $SLA_Contract from TicketManagement.SLA
+    where TicketManagement.SLA_Contract/TicketManagement.Contract/PublicID = $Contract/PublicID
+    first;
+    @position(1180, 350)
+    if $SLA_Contract != empty then
+      @position(1350, 450)
+      return $SLA_Contract;
+    end if;
+  end if;
+  join shared1;
+  @position(1375, 200)
+  merge shared1;
+  @position(1495, 200)
+  retrieve $Umbrella from $Asset/AssetManagement.Asset_UmbrellaContract;
+  @position(1655, 200)
+  @merge(2180, 200)
+  if $Umbrella != empty then
+    @position(1825, 350)
+    retrieve $SLA_Umbrella from TicketManagement.SLA
+    where TicketManagement.SLA_UmbrellaContract/TicketManagement.Contract/PublicID = $Umbrella/PublicID
+    first;
+    @position(1985, 350)
+    if $SLA_Umbrella != empty then
+      @position(2155, 450)
+      return $SLA_Umbrella;
+    end if;
+  end if;
+  join shared2;
+  @position(2180, 200)
+  merge shared2;
+  @position(2300, 200)
+  retrieve $Customer from $Asset/AssetManagement.Asset_Customer;
+  @position(2460, 200)
+  @merge(2985, 200)
+  if $Customer != empty then
+    @position(2630, 350)
+    retrieve $SLA_Customer from TicketManagement.SLA
+    where TicketManagement.SLA_Customer/TicketManagement.Customer/PublicID = $Customer/PublicID
+    first;
+    @position(2790, 350)
+    if $SLA_Customer != empty then
+      @position(2960, 450)
+      return $SLA_Customer;
+    end if;
+  end if;
+  join shared3;
+  @position(2985, 200)
+  merge shared3;
+  @position(3105, 200)
+  retrieve $SLA_Standard from TicketManagement.SLA
+    where SLAtype = 'Standard'
+    first;
+  @position(3265, 200)
+  return $SLA_Standard;
+end;
+

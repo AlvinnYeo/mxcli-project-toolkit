@@ -1,0 +1,175 @@
+mdl 1;
+-- Increment 7, monolith step 6: the REST-fed native copies (pull) and the web used-part entry.
+-- Native offline profiles cannot hold external entities, so the device keeps its local copies (NativeMobileAsset,
+-- NativeMobilePart, NativeMobileWarehouse). They used to be pushed from the AssetManagement/Part/WarehouseManagement
+-- commit flows; those flows are gone, so the monolith PULLS from the slice's OData and feeds the unchanged
+-- Synchronization chains (now typed on the external entities). Invoked headlessly: POST rest/core/v1/nativesync.
+
+create or modify microflow AssetsClient.NativeSync_PullAllAssets ()
+returns Integer
+begin
+  retrieve $AssetListAll from AssetsClient.Asset;
+  call microflow Synchronization.AssetList_UpdateNativeAssets(AssetList_ToCommit = $AssetListAll);
+  $Count = count($AssetListAll);
+  return $Count;
+end;
+
+create or modify microflow AssetsClient.NativeSync_PullAssets ($SystemID: String)
+returns Integer
+begin
+  if $SystemID = empty or $SystemID = '' then
+    $All = call microflow AssetsClient.NativeSync_PullAllAssets();
+    return $All;
+  end if;
+  retrieve $AssetList from AssetsClient.Asset
+    where SystemID = $SystemID;
+  call microflow Synchronization.AssetList_UpdateNativeAssets(AssetList_ToCommit = $AssetList);
+  $Count = count($AssetList);
+  return $Count;
+end;
+
+
+create or modify microflow AssetsClient.NativeSync_PullAllParts ()
+returns Integer
+begin
+  retrieve $PartListAll from AssetsClient.Part;
+  call microflow Synchronization.PartList_UpdateNativeParts(PartList = $PartListAll);
+  $Count = count($PartListAll);
+  return $Count;
+end;
+
+create or modify microflow AssetsClient.NativeSync_PullParts ($SystemID: String)
+returns Integer
+begin
+  if $SystemID = empty or $SystemID = '' then
+    $All = call microflow AssetsClient.NativeSync_PullAllParts();
+    return $All;
+  end if;
+  retrieve $PartList from AssetsClient.Part
+    where SystemID = $SystemID;
+  call microflow Synchronization.PartList_UpdateNativeParts(PartList = $PartList);
+  $Count = count($PartList);
+  return $Count;
+end;
+
+
+create or modify microflow CoreSeam.API_NativeSync ($AssetSystemID: String, $PartSystemID: String)
+returns String
+begin
+  $Assets = call microflow AssetsClient.NativeSync_PullAssets(SystemID = $AssetSystemID);
+  $Parts = call microflow AssetsClient.NativeSync_PullParts(SystemID = $PartSystemID);
+  return 'native copies fed from the slice: assets ' + toString($Assets) + ', parts ' + toString($Parts);
+end;
+grant execute on microflow CoreSeam.API_NativeSync to CoreSeam.APIClient;
+
+create or modify published rest service CoreSeam.CoreActions (
+  Path: 'rest/core/v1',
+  Version: '1.0.0',
+  ServiceName: 'FSM core seam (writes)',
+  Authentication: (basic)
+)
+{
+  resource 'rosters' {
+    post '' microflow CoreSeam.API_Roster_Create;
+    post 'delete' microflow CoreSeam.API_Roster_Delete;
+    post 'delete-for-asset' microflow CoreSeam.API_Rosters_DeleteForAsset;
+  }
+  resource 'nativesync' {
+    post '' microflow CoreSeam.API_NativeSync;
+  }
+};
+
+-- web entry for used parts on an appointment (the slice owns UsedPart; the write goes over REST)
+create non-persistent entity AssetsClient.UsedPartDraft (
+  InventoryID: String(200),
+  Quantity: Integer default 1,
+  IsFromWarehouse: Boolean default true,
+  Result: String(400)
+);
+create association AssetsClient.UsedPartDraft_Appointment from AssetsClient.UsedPartDraft to TicketManagement.Appointment;
+create module role AssetsClient.User description 'Reads slice data over OData, adds used parts over REST';
+grant create, read (InventoryID, Quantity, IsFromWarehouse, Result, UsedPartDraft_Appointment), write (InventoryID, Quantity, IsFromWarehouse, Result, UsedPartDraft_Appointment) on entity AssetsClient.UsedPartDraft to AssetsClient.User;
+
+create or modify microflow AssetsClient.ACT_UsedPartDraft_Save ($UsedPartDraft: AssetsClient.UsedPartDraft)
+begin
+  retrieve $Appointment from $UsedPartDraft/AssetsClient.UsedPartDraft_Appointment;
+  retrieve $Inventory from AssetsClient.Inventory
+    where InventoryID = $UsedPartDraft/InventoryID
+    first;
+  if $Inventory = empty then
+    change $UsedPartDraft (Result = 'unknown inventory ' + $UsedPartDraft/InventoryID) refresh;
+    return;
+  end if;
+  $NewID = call java action CommunityCommons.RandomHash();
+  $Ok = call microflow AssetsClient.REST_UpsertUsedPart(SystemID = $NewID, InventorySystemID = $Inventory/SystemID, AppointmentPublicID = $Appointment/PublicID, Quantity = $UsedPartDraft/Quantity, IsFromWarehouse = $UsedPartDraft/IsFromWarehouse);
+  if $Ok then
+    change $UsedPartDraft (Result = 'used part ' + $NewID + ' added in Assets & Parts') refresh;
+  else
+    change $UsedPartDraft (Result = 'adding the used part failed (see log)') refresh;
+  end if;
+  return;
+end;
+grant execute on microflow AssetsClient.ACT_UsedPartDraft_Save to AssetsClient.User;
+
+create or modify page AssetsClient.Appointment_UsedParts (
+  Title: 'Used parts (Assets & Parts)',
+  Layout: Atlas_Core.PopupLayout,
+  Params: ( $UsedPartDraft: AssetsClient.UsedPartDraft )
+) {
+  dataview dvUsedPartDraft (DataSource: $UsedPartDraft) {
+    textbox tbInventoryID (Label: 'Inventory ID', Attribute: InventoryID)
+    textbox tbQuantity (Label: 'Quantity', Attribute: Quantity)
+    checkbox cbFromWarehouse (Label: 'From warehouse', Attribute: IsFromWarehouse)
+    dynamictext txtResult (Content: '{1}', ContentParams: [{1} = Result])
+    footer {
+      actionbutton btnAddUsedPart (Caption: 'Add used part', Action: call microflow AssetsClient.ACT_UsedPartDraft_Save(UsedPartDraft = $UsedPartDraft), ButtonStyle: Primary)
+      actionbutton btnCloseUsedParts (Caption: 'Close', Action: close page)
+    }
+  }
+};
+grant view on page AssetsClient.Appointment_UsedParts to AssetsClient.User;
+
+create or modify microflow AssetsClient.ACT_Appointment_UsedParts ($Appointment: TicketManagement.Appointment)
+begin
+  $Draft = create AssetsClient.UsedPartDraft (AssetsClient.UsedPartDraft_Appointment = $Appointment);
+  show page AssetsClient.Appointment_UsedParts(UsedPartDraft = $Draft);
+  return;
+end;
+grant execute on microflow AssetsClient.ACT_Appointment_UsedParts to AssetsClient.User;
+
+-- external entities: read for AssetsClient.User (the web user role) and for the native-sync flows
+grant read (SystemID, AssetID, "Description", CustomerName) on entity AssetsClient.Asset to AssetsClient.User;
+grant read (PublicID, SystemID, InventoryID, Amount) on entity AssetsClient.Inventory to AssetsClient.User;
+grant read (UsedPartKey, Quantity, IsFromWarehouse, AppointmentPublicID) on entity AssetsClient.UsedPart to AssetsClient.User;
+alter user role FunctionalAdministrator add module roles (AssetsClient.User);
+
+-- the monolith asset MIRROR is gone (it was AssetManagement.Asset): rosters now reference the slice's asset directly
+drop microflow CoreSeam.Asset_UpsertMirror;
+create or modify microflow CoreSeam.Asset_UpsertMirror ($AssetSystemID: String, $AssetID: String, $AssetDescription: String)
+returns AssetsClient.Asset
+begin
+  -- increment 7: no local mirror any more; the roster associates the slice's asset (external, read over OData)
+  retrieve $Asset from AssetsClient.Asset
+    where SystemID = $AssetSystemID
+    first;
+  return $Asset;
+end;
+grant execute on microflow CoreSeam.Asset_UpsertMirror to CoreSeam.APIClient;
+
+drop microflow CoreSeam.API_Rosters_DeleteForAsset;
+create or modify microflow CoreSeam.API_Rosters_DeleteForAsset ($AssetSystemID: String)
+returns String
+begin
+  retrieve $Asset from AssetsClient.Asset
+    where SystemID = $AssetSystemID
+    first;
+  if $Asset = empty then
+    return 'deleted 0';
+  end if;
+  retrieve $RosterList from RosterManagement.Roster
+    where RosterManagement.Roster_Asset = $Asset;
+  $Count = count($RosterList);
+  delete $RosterList;
+  return 'deleted ' + toString($Count);
+end;
+grant execute on microflow CoreSeam.API_Rosters_DeleteForAsset to CoreSeam.APIClient;

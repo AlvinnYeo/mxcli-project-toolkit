@@ -1,0 +1,7 @@
+$ mxcli exec mono-strangle-coreapi.mdl
+All specified roles already have access on OData service CoreSeam.CoreAPI
+Granted access on RosterManagement.Roster to RosterManagement.CoreAPI
+  Result: create, delete, read (StartTime, EndTime, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday, PublicID, AssetSystemID, SystemID, StartDate, EndDate, Roster_Asset), write (SystemID, StartDate, EndDate, Roster_Asset)
+$ mx(10.24) check fsm.mpr
+Checking app for errors...
+The app contains: 0 errors.

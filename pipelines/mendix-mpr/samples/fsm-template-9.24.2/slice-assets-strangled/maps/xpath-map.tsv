@@ -1,0 +1,2 @@
+# literal XPath edits: cross-app disjuncts removed (hand-off rows in inedge-ledger)
+\nor\nTicketManagement.Ticket_Asset/AssetsClient.Asset/AssetManagement.Asset_Technician_Preferred/Technician.Technician/Administration.Account_Technician = '[%CurrentUser%]'\n	

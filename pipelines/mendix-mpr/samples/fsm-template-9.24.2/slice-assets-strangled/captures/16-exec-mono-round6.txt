@@ -1,0 +1,7 @@
+$ mxcli exec mono-strangle-round6.mdl
+Connected to: fsm.mpr (Mendix 10.24.0.73019)
+Dropped rule: Synchronization.Rule_Inventory_HasChanged
+Created rule: Synchronization.Rule_Inventory_HasChanged
+Altered page CustomerManagement.ContactPerson_Overview
+$ mxcli fix widgets
+Updated widget definitions. The project is MPR v1, which this tool writes natively.

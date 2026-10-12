@@ -1,0 +1,18 @@
+$ mxcli exec mono-strangle-pages2.mdl
+Connected to: fsm.mpr (Mendix 10.24.0.73019)
+Altered page TicketManagement.WorkOrder_View
+$ mxcli fix widgets -p fsm.mpr
+Updating widget definitions in fsm.mpr (Mendix 10.24.0.73019)...
+
+Updated widget definitions. The project is MPR v1, which this tool writes natively.
+$ mxcli exec mono-strangle-pages3.mdl
+Connected to: fsm.mpr (Mendix 10.24.0.73019)
+Error: failed to resolve snippet target: widget "referenceSetSelector2" not found
+$ mxcli fix widgets
+Updated widget definitions. The project is MPR v1, which this tool writes natively.
+$ mxcli exec mono-strangle-pages3.mdl  (second run)
+Connected to: fsm.mpr (Mendix 10.24.0.73019)
+Altered snippet CustomerManagement.Snippet_ContactPerson_Details
+Altered page CustomerManagement.ContactPerson_Overview
+$ mxcli fix widgets
+Updated widget definitions. The project is MPR v1, which this tool writes natively.

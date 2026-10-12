@@ -1,0 +1,4 @@
+$ mxcli exec mono-strangle-security.mdl
+Added module roles AssetsClient.User to user role CallCenterEmployee
+Added module roles AssetsClient.User to user role ServiceDeskEmployee
+Added module roles AssetsClient.User to user role FSMAPIConsumer

@@ -1,0 +1,62 @@
+$ mxcli exec mono-strangle-keys.mdl -p fsm.mpr
+Connected to: fsm.mpr (Mendix 10.24.0.73019)
+Added attribute 'AssetSystemID' to entity TicketManagement.Ticket
+Warning: TicketManagement.Ticket.AssetSystemID is not readable by TicketManagement.CoreAPI, TicketManagement.TicketEditAll, TicketManagement.TicketEditAllAdmin, TicketManagement.TicketViewAll
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (AssetSystemID) on entity TicketManagement.Ticket to TicketManagement.CoreAPI;
+    grant read (AssetSystemID) on entity TicketManagement.Ticket to TicketManagement.TicketEditAll;
+    grant read (AssetSystemID) on entity TicketManagement.Ticket to TicketManagement.TicketEditAllAdmin;
+    grant read (AssetSystemID) on entity TicketManagement.Ticket to TicketManagement.TicketViewAll;
+Added attribute 'AssetID' to entity TicketManagement.Ticket
+Warning: TicketManagement.Ticket.AssetID is not readable by TicketManagement.CoreAPI, TicketManagement.TicketEditAll, TicketManagement.TicketEditAllAdmin, TicketManagement.TicketViewAll
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (AssetID) on entity TicketManagement.Ticket to TicketManagement.CoreAPI;
+    grant read (AssetID) on entity TicketManagement.Ticket to TicketManagement.TicketEditAll;
+    grant read (AssetID) on entity TicketManagement.Ticket to TicketManagement.TicketEditAllAdmin;
+    grant read (AssetID) on entity TicketManagement.Ticket to TicketManagement.TicketViewAll;
+Added attribute 'AssetDescription' to entity TicketManagement.Ticket
+Warning: TicketManagement.Ticket.AssetDescription is not readable by TicketManagement.CoreAPI, TicketManagement.TicketEditAll, TicketManagement.TicketEditAllAdmin, TicketManagement.TicketViewAll
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (AssetDescription) on entity TicketManagement.Ticket to TicketManagement.CoreAPI;
+    grant read (AssetDescription) on entity TicketManagement.Ticket to TicketManagement.TicketEditAll;
+    grant read (AssetDescription) on entity TicketManagement.Ticket to TicketManagement.TicketEditAllAdmin;
+    grant read (AssetDescription) on entity TicketManagement.Ticket to TicketManagement.TicketViewAll;
+Added attribute 'AssetFullAddress' to entity TicketManagement.Ticket
+Warning: TicketManagement.Ticket.AssetFullAddress is not readable by TicketManagement.CoreAPI, TicketManagement.TicketEditAll, TicketManagement.TicketEditAllAdmin, TicketManagement.TicketViewAll
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (AssetFullAddress) on entity TicketManagement.Ticket to TicketManagement.CoreAPI;
+    grant read (AssetFullAddress) on entity TicketManagement.Ticket to TicketManagement.TicketEditAll;
+    grant read (AssetFullAddress) on entity TicketManagement.Ticket to TicketManagement.TicketEditAllAdmin;
+    grant read (AssetFullAddress) on entity TicketManagement.Ticket to TicketManagement.TicketViewAll;
+Added attribute 'AssetSystemID' to entity RosterManagement.Roster
+Warning: RosterManagement.Roster.AssetSystemID is not readable by RosterManagement.CoreAPI, RosterManagement.EditAll, RosterManagement.ViewAll, RosterManagement.ViewMy
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (AssetSystemID) on entity RosterManagement.Roster to RosterManagement.CoreAPI;
+    grant read (AssetSystemID) on entity RosterManagement.Roster to RosterManagement.EditAll;
+    grant read (AssetSystemID) on entity RosterManagement.Roster to RosterManagement.ViewAll;
+    grant read (AssetSystemID) on entity RosterManagement.Roster to RosterManagement.ViewMy;
+Created microflow: TicketManagement.Ticket_SetAssetKey
+Added event handler Before Commit on TicketManagement.Ticket
+Created microflow: RosterManagement.Roster_SetAssetKey
+Added event handler Before Commit on RosterManagement.Roster
+Granted access on TicketManagement.Ticket to TicketManagement.CoreAPI
+  Result: read (TicketID, "Status", ShortDescription, "Description", CallerName, CreationTime, DueDate, PublicID, AssetSystemID, AssetID, AssetDescription, AssetFullAddress, Ticket_Priority, Ticket_TicketType, Ticket_Asset)
+Dropped microflow: AssetsClient.Asset_GetRelevantSLA
+  Removed its execute grants to AssetsClient.User. A create of AssetsClient.Asset_GetRelevantSLA later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow AssetsClient.Asset_GetRelevantSLA to AssetsClient.User;
+Created microflow: AssetsClient.Asset_GetRelevantSLA
+Dropped microflow: Synchronization.UsedPart_DeleteNativeUsedPart
+Dropped microflow: Synchronization.SuggestedPart_UpdateNativeSuggestedPart
+Dropped microflow: Synchronization.SuggestedPart_DeleteNativeSuggestedPart
+Dropped microflow: Synchronization.SuggestedPart_ProcessUpdatingNativeSuggestedPart
+Dropped rule: Synchronization.Rule_SuggestedPart_HasChanged
+real 10.93 s

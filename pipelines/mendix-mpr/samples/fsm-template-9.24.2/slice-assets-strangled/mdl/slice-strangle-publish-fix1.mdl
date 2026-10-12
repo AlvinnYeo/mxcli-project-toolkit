@@ -1,0 +1,40 @@
+mdl 1;
+-- fix for captures/02: inherited UsedPart/SuggestedPart attributes published as Part.UsedPart.PublicID (CE1613);
+-- own AutoNumber keys on each specialization, inherited members dropped from the publish
+alter entity Part.UsedPart add attribute if not exists UsedPartKey: AutoNumber default 1;
+alter entity Part.SuggestedPart add attribute if not exists SuggestedPartKey: AutoNumber default 1;
+grant read (UsedPartKey, IsFromWarehouse, Quantity, AppointmentPublicID, UsedPart_Inventory) on entity Part.UsedPart to Part.APIConsumer;
+grant read (SuggestedPartKey, Quantity, IsUsed, WorkOrderPublicID, SuggestedPart_Part) on entity Part.SuggestedPart to Part.APIConsumer;
+create or modify published odata service AssetManagement.AssetsAPIv2 (
+  Path: 'odata/assets/v2/',
+  Version: '2.0.0',
+  ODataVersion: OData4,
+  Namespace: 'FSM.Assets.v2',
+  ServiceName: 'AssetsAPIv2',
+  PublishAssociations: Yes,
+  Authentication: (basic)
+)
+{
+  publish entity AssetManagement.Asset as 'Asset' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (SystemID (KEY, Filterable, Sortable), AssetID (Filterable, Sortable), Description (Filterable, Sortable), Notes, Address (Filterable), ZipCode, City (Filterable), FullAddress (Filterable, Sortable), HasOpeningTimes (Filterable), CustomerName (Filterable, Sortable), CustomerPublicID (Filterable), PreferredTechnicianID (Filterable), Asset_Manufacturer as 'Asset_Manufacturer');
+  publish entity AssetManagement.Manufacturer as 'Manufacturer' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported)
+  expose (PublicID (KEY, Filterable, Sortable), Name (Filterable, Sortable));
+  publish entity Part.Part as 'Part' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (SystemID (KEY, Filterable, Sortable), PartID (Filterable, Sortable), Name (Filterable, Sortable), Description (Filterable), Price (Filterable, Sortable), Vendor (Filterable, Sortable), IsActive (Filterable), IsAdditionalPart (Filterable), Part_UnitOfMeasure as 'Part_UnitOfMeasure');
+  publish entity Part.UnitOfMeasure as 'UnitOfMeasure' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported)
+  expose (SystemID (KEY, Filterable, Sortable), UnitName (Filterable, Sortable), Abbreviation);
+  publish entity Part.AssetPart as 'AssetPart' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), SystemID (Filterable), Quantity, AssetPart_Asset as 'AssetPart_Asset', AssetPart_Part as 'AssetPart_Part');
+  publish entity Part.UsedPart as 'UsedPart' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (UsedPartKey (KEY, Filterable, Sortable), IsFromWarehouse (Filterable), Quantity, AppointmentPublicID (Filterable), UsedPart_Inventory as 'UsedPart_Inventory');
+  publish entity Part.SuggestedPart as 'SuggestedPart' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (SuggestedPartKey (KEY, Filterable, Sortable), Quantity, IsUsed (Filterable), WorkOrderPublicID (Filterable), SuggestedPart_Part as 'SuggestedPart_Part');
+  publish entity WarehouseManagement.Warehouse as 'Warehouse' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported)
+  expose (SystemID (KEY, Filterable, Sortable), WarehouseID (Filterable, Sortable), Description (Filterable, Sortable));
+  publish entity WarehouseManagement.Inventory as 'Inventory' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), SystemID (Filterable), InventoryID (Filterable, Sortable), Amount (Filterable, Sortable), Inventory_Part as 'Inventory_Part', Inventory_Warehouse as 'Inventory_Warehouse');
+  publish entity Tool.Tool as 'Tool' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported)
+  expose (PublicID (KEY, Filterable, Sortable), ToolID (Filterable, Sortable), Name (Filterable, Sortable), Description, IsActive (Filterable));
+  publish entity Tool.SelectedTool as 'SelectedTool' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), SelectedToolID (Filterable), Quantity, WorkOrderPublicID (Filterable), SelectedTool_Tool as 'SelectedTool_Tool');
+};

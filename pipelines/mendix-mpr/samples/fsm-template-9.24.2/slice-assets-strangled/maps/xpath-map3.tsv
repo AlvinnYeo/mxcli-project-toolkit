@@ -1,0 +1,16 @@
+# literal XPath edits, round 3: local -> external comparisons become key-copy comparisons (Ticket.AssetSystemID / AssetID /
+# AssetDescription / AssetFullAddress, Roster.AssetSystemID, set before commit); paths no service can carry are removed (hand-off)
+TicketManagement.Ticket_Asset/AssetsClient.Asset[contains(AssetID, $SearchString) or contains(Description, $SearchString) or contains(FullAddress, $SearchString)]	contains(AssetID, $SearchString) or contains(AssetDescription, $SearchString) or contains(AssetFullAddress, $SearchString)
+TicketManagement.Ticket_Asset/AssetsClient.Asset[contains(FullAddress, $SearchString) or contains(Description, $SearchString) or AssetManagement.Asset_Customer/CustomerManagement.Customer[contains(CustomerName, $SearchString)]]	contains(AssetFullAddress, $SearchString) or contains(AssetDescription, $SearchString)
+TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/AssetID	TicketManagement.Ticket/AssetID
+TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/FullAddress	TicketManagement.Ticket/AssetFullAddress
+TicketManagement.Ticket/TicketManagement.Ticket_Asset = $Asset	TicketManagement.Ticket/AssetSystemID = $Asset/SystemID
+[TicketManagement.Ticket_Asset = $Asset]	[AssetSystemID = $Asset/SystemID]
+[TicketManagement.Ticket_Asset = $Ticket]	[SystemID = $Ticket/AssetSystemID]
+[RosterManagement.Roster_Asset = $Asset]	[AssetSystemID = $Asset/SystemID]
+[AssetsClient.Asset_Manufacturer = $Asset]	[false()]
+\n[AssetsClient.Inventory_Warehouse/AssetsClient.Warehouse/Technician.Technician_Warehouse/Technician.Technician/Administration.Account_Technician = '[%CurrentUser%]']	
+[AssetsClient.Inventory_Part/AssetsClient.Inventory/AssetsClient.Inventory_Warehouse/AssetsClient.Warehouse/Technician.Technician_Warehouse/Technician.Technician/Administration.Account_Technician = '[%CurrentUser%]']	
+[RosterManagement.Roster_Asset/AssetsClient.Asset/	=[false()]
+[CustomerManagement.ContactPerson_Asset/AssetsClient.Asset/	=[false()]
+[not(Technician.Technician_Warehouse = '[%CurrentObject%]')]	=

@@ -1,0 +1,5 @@
+$ mxcli exec mono-strangle-feed2.mdl
+Created microflow: AssetsClient.NativeSync_PullReferenceData
+Created microflow: CoreSeam.API_NativeSyncReference
+Granted execute access on CoreSeam.API_NativeSyncReference to CoreSeam.APIClient
+Modified published rest service CoreSeam.CoreActions

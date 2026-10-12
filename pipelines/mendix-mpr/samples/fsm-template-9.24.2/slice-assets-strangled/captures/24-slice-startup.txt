@@ -1,0 +1,3 @@
+WARNING: This is a vibe-coded PoC, alpha quality, use with caution.
+stopped (was not running)
+running: http://127.0.0.1:8480/ (pid 7042, no watch, log .mxcli/run.log)

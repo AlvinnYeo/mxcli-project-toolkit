@@ -1,0 +1,14 @@
+  PASS  [slice login] logged in to the slice as journey_fnadm
+  PASS  [slice: technician served by the monolith] combo box lists "Journey Technician" from external entity Technician.Technician (monolith OData CoreAPI) — ledger: out Technician.Technician -> resolved:odata (slice-core-external.mdl)
+  PASS  [slice: technician served by the monolith] asset AJ-261012154136 committed in the slice database — [{"AssetID":"AJ-261012154136","SystemID":"e37cffac-a56f-40a3-90a0-75022222f90d"}]
+  PASS  [slice -> monolith: roster created over REST] asset details show preferred technician "Journey Technician" (local -> external association, slice-owned)
+  PASS  [slice -> monolith: roster created over REST] roster committed in the MONOLITH database on the slice's asset (external) with key copy AssetSystemID = slice asset — [{"AssetSystemID":"e37cffac-a56f-40a3-90a0-75022222f90d","PublicID":"11","StartDate":"Sun Oct 11 22:00:00 UTC 2026"}] — ledger: out RosterManagement.Roster -> resolved:rest (CoreSeam.Roster_CreateRemote)
+  PASS  [monolith -> slice: roster read over OData] asset tab grid lists the roster from external entity TicketManagement.Roster (AssetSystemID = asset SystemID filter; MonoAsset gone) — rows 0 -> 1
+  PASS  [slice -> monolith: roster deleted over REST] roster gone from the monolith database (RosterManagement.ACT_Roster_Delete -> POST rosters/delete) — [] — ledger: check-only RosterManagement.ACT_Roster_Delete -> resolved:rest
+  PASS  [monolith -> slice: tickets and contacts tabs over OData] Tickets tab grid (external entity, tickets by AssetSystemID, contacts by the asset's customer) renders with no error dialog — error dialogs: 0 (monolith holds no tickets/contacts for this asset: an empty grid is the expected content)
+  PASS  [monolith -> slice: tickets and contacts tabs over OData] Contacts tab grid (external entity, tickets by AssetSystemID, contacts by the asset's customer) renders with no error dialog — error dialogs: 0 (monolith holds no tickets/contacts for this asset: an empty grid is the expected content)
+
+core-seam journey: 9/9 assertions passed in 8.0 s — PASS
+  ids: asset=AJ-261012154136
+  trace rung: NOT RUN (no OTel exporter on either app)
+exit=0 wall 8 s

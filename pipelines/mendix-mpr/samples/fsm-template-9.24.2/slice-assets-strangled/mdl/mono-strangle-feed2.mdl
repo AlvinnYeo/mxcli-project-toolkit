@@ -1,0 +1,53 @@
+mdl 1;
+-- Increment 7, monolith step 10: pull entry for the remaining native reference copies (units of measure, warehouses,
+-- inventories, asset BOM). Their Synchronization chains were rebound to the external entities by the move/swap but
+-- had no trigger left (they ran from the deleted modules' commit flows).
+create or modify microflow AssetsClient.NativeSync_PullReferenceData ()
+returns String
+begin
+  retrieve $UnitList from AssetsClient.UnitOfMeasure;
+  call microflow Synchronization.UnitOfMeasureList_UpdateNativeUnitOfMeasure(UnitOfMeasureList = $UnitList);
+  retrieve $WarehouseList from AssetsClient.Warehouse;
+  loop $IteratorWarehouse in $WarehouseList
+  begin
+    call microflow Synchronization.Warehouse_UpdateNativeWarehouse(Warehouse = $IteratorWarehouse);
+  end loop;
+  retrieve $InventoryList from AssetsClient.Inventory;
+  loop $IteratorInventory in $InventoryList
+  begin
+    call microflow Synchronization.Inventory_UpdateNativeInventory(Inventory = $IteratorInventory);
+  end loop;
+  retrieve $AssetPartList from AssetsClient.AssetPart;
+  call microflow Synchronization.AssetPartList_UpdateNativeAssetPart(AssetPartList = $AssetPartList);
+  $Units = count($UnitList);
+  $Warehouses = count($WarehouseList);
+  $Inventories = count($InventoryList);
+  $AssetParts = count($AssetPartList);
+  return 'units ' + toString($Units) + ', warehouses ' + toString($Warehouses) + ', inventories ' + toString($Inventories) + ', asset parts ' + toString($AssetParts);
+end;
+
+create or modify microflow CoreSeam.API_NativeSyncReference ()
+returns String
+begin
+  $Result = call microflow AssetsClient.NativeSync_PullReferenceData();
+  return 'native reference copies fed from the slice: ' + $Result;
+end;
+grant execute on microflow CoreSeam.API_NativeSyncReference to CoreSeam.APIClient;
+
+create or modify published rest service CoreSeam.CoreActions (
+  Path: 'rest/core/v1',
+  Version: '1.0.0',
+  ServiceName: 'FSM core seam (writes)',
+  Authentication: (basic)
+)
+{
+  resource 'rosters' {
+    post '' microflow CoreSeam.API_Roster_Create;
+    post 'delete' microflow CoreSeam.API_Roster_Delete;
+    post 'delete-for-asset' microflow CoreSeam.API_Rosters_DeleteForAsset;
+  }
+  resource 'nativesync' {
+    post '' microflow CoreSeam.API_NativeSync;
+    post 'reference' microflow CoreSeam.API_NativeSyncReference;
+  }
+};

@@ -1,0 +1,3 @@
+# whole-string replacement (value starts with =): cross-app "My" access rules -> [false()] (hand-off)
+[AssetManagement.Asset_Customer/AssetsClient.Asset	=[false()]
+[AssetManagement.Asset_Contract/AssetsClient.Asset/	=[false()]

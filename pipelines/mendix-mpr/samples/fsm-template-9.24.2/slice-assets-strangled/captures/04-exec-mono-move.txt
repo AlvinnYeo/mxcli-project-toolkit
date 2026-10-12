@@ -1,0 +1,87 @@
+$ mxcli exec mono-strangle-move.mdl -p fsm.mpr
+Connected to: fsm.mpr (Mendix 10.24.0.73019)
+2026/10/12 14:20:19 info: user definition "barcodescanner.def.json" overrides built-in barcodescanner (widgetId: com.mendix.widget.web.barcodescanner.BarcodeScanner → com.mendix.widget.native.barcodescanner.BarcodeScanner)
+2026/10/12 14:20:19 info: user definition "gallery.def.json" overrides built-in gallery (widgetId: com.mendix.widget.web.gallery.Gallery → com.mendix.widget.native.gallery.Gallery)
+2026/10/12 14:20:19 info: user definition "image.def.json" overrides built-in image (widgetId: com.mendix.widget.web.image.Image → com.mendix.widget.native.image.Image)
+Created module: AssetsClient
+Updated references in 105 document(s): AssetManagement.Asset → AssetsClient.Asset
+Updated references in 4 document(s): AssetManagement.Asset_Dossier → AssetsClient.Asset_Dossier
+Updated references in 3 document(s): AssetManagement.Asset_Structure → AssetsClient.Asset_Structure
+Updated references in 5 document(s): AssetManagement.Asset_AgreementGroup → AssetsClient.Asset_AgreementGroup
+Updated references in 6 document(s): AssetManagement.Asset_Manufacturer → AssetsClient.Asset_Manufacturer
+Updated references in 5 document(s): AssetManagement.Asset_Technician_Preferred → AssetsClient.Asset_Technician_Preferred
+Updated references in 3 document(s): AssetManagement.Asset_Contract → AssetsClient.Asset_Contract
+Updated references in 3 document(s): AssetManagement.Asset_UmbrellaContract → AssetsClient.Asset_UmbrellaContract
+Updated references in 7 document(s): AssetManagement.Asset_Customer → AssetsClient.Asset_Customer
+Moved entity AssetManagement.Asset to AssetsClient
+Converted 8 association(s) to cross-module associations:
+  - Asset_Dossier
+  - Asset_Structure
+  - Asset_AgreementGroup
+  - Asset_Manufacturer
+  - Asset_Technician_Preferred
+  - Asset_Contract
+  - Asset_UmbrellaContract
+  - Asset_Customer
+Updated references in 6 document(s): AssetManagement.Manufacturer → AssetsClient.Manufacturer
+Moved entity AssetManagement.Manufacturer to AssetsClient
+Converted 1 cross-module association(s) to associations within AssetsClient:
+  - Asset_Manufacturer
+Updated references in 65 document(s): Part.Part → AssetsClient.Part
+Updated references in 13 document(s): Part.Part_UnitOfMeasure → AssetsClient.Part_UnitOfMeasure
+Moved entity Part.Part to AssetsClient
+Converted 3 association(s) to cross-module associations:
+  - SuggestedPart_Part
+  - AssetPart_Part
+  - Part_UnitOfMeasure
+Updated references in 33 document(s): Part.UnitOfMeasure → AssetsClient.UnitOfMeasure
+Moved entity Part.UnitOfMeasure to AssetsClient
+Converted 1 cross-module association(s) to associations within AssetsClient:
+  - Part_UnitOfMeasure
+Updated references in 27 document(s): Part.AssetPart → AssetsClient.AssetPart
+Updated references in 8 document(s): Part.AssetPart_Asset → AssetsClient.AssetPart_Asset
+Updated references in 10 document(s): Part.AssetPart_Part → AssetsClient.AssetPart_Part
+Moved entity Part.AssetPart to AssetsClient
+Converted 2 cross-module association(s) to associations within AssetsClient:
+  - AssetPart_Asset
+  - AssetPart_Part
+Updated references in 34 document(s): Part.UsedPart → AssetsClient.UsedPart
+Updated references in 9 document(s): Part.UsedPart_Appointment → AssetsClient.UsedPart_Appointment
+Updated references in 11 document(s): Part.UsedPart_Inventory → AssetsClient.UsedPart_Inventory
+Moved entity Part.UsedPart to AssetsClient
+Converted 2 association(s) to cross-module associations:
+  - UsedPart_Appointment
+  - UsedPart_Inventory
+Updated references in 32 document(s): Part.SuggestedPart → AssetsClient.SuggestedPart
+Updated references in 12 document(s): Part.SuggestedPart_WorkOrder → AssetsClient.SuggestedPart_WorkOrder
+Updated references in 13 document(s): Part.SuggestedPart_Part → AssetsClient.SuggestedPart_Part
+Moved entity Part.SuggestedPart to AssetsClient
+Converted 1 association(s) to cross-module associations:
+  - SuggestedPart_WorkOrder
+Converted 1 cross-module association(s) to associations within AssetsClient:
+  - SuggestedPart_Part
+Updated references in 38 document(s): WarehouseManagement.Warehouse → AssetsClient.Warehouse
+Moved entity WarehouseManagement.Warehouse to AssetsClient
+Converted 1 association(s) to cross-module associations:
+  - Inventory_Warehouse
+Updated references in 38 document(s): WarehouseManagement.Inventory → AssetsClient.Inventory
+Updated references in 12 document(s): WarehouseManagement.Inventory_Part → AssetsClient.Inventory_Part
+Updated references in 7 document(s): WarehouseManagement.Inventory_Warehouse → AssetsClient.Inventory_Warehouse
+Moved entity WarehouseManagement.Inventory to AssetsClient
+Converted 3 cross-module association(s) to associations within AssetsClient:
+  - Inventory_Part
+  - Inventory_Warehouse
+  - UsedPart_Inventory
+Updated references in 20 document(s): Tool.Tool → AssetsClient.Tool
+Moved entity Tool.Tool to AssetsClient
+Converted 1 association(s) to cross-module associations:
+  - SelectedTool_Tool
+Updated references in 16 document(s): Tool.SelectedTool → AssetsClient.SelectedTool
+Updated references in 8 document(s): Tool.SelectedTool_WorkOrder → AssetsClient.SelectedTool_WorkOrder
+Updated references in 6 document(s): Tool.SelectedTool_Tool → AssetsClient.SelectedTool_Tool
+Moved entity Tool.SelectedTool to AssetsClient
+Converted 1 association(s) to cross-module associations:
+  - SelectedTool_WorkOrder
+Converted 1 cross-module association(s) to associations within AssetsClient:
+  - SelectedTool_Tool
+real 62.22 s

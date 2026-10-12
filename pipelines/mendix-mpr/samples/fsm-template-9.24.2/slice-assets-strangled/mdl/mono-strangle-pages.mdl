@@ -1,0 +1,147 @@
+mdl 1;
+-- Increment 7, monolith step 7: pages, navigation, access rules. Pages are altered IN PLACE (alter page/snippet):
+-- most of them hold legacy widgets mxcli cannot re-author, so a describe -> exec round-trip would drop them.
+
+-- work-order edit: suggested parts and tools are planned in the Assets & Parts app (hand-off: no REST create yet)
+alter snippet TicketManagement.Snippet_WorkOrder_Edit { drop actionButton11, listView8, actionButton17, listView6; };
+alter snippet TicketManagement.Snippet_WorkOrder_BulkEdit { drop actionButton11, listView8, actionButton17, listView6; };
+-- asset details on a new ticket: notes snippet and the selectors over slice-owned associations to unpublished data
+alter snippet TicketManagement.Snippet_Asset_Details_TicketNP { drop snippetCall3, referenceSelector17, referenceSelector18, referenceSelector22, referenceSelector29, referenceSelector30, referenceSelector31, referenceSelector32; };
+-- links to slice pages (the slice has its own navigation; hand-off: deep link)
+alter page TicketManagement.Ticket_View { drop actionButton9; };
+alter page Dashboard.DashboardExternal { drop actionButton12; };
+alter page AppSettings.Script_Overview { drop actionButton8, actionButton9, actionButton10; };
+-- contact person / SLA: asset pickers used the slice's selection pages (gone); dossier is not published
+alter snippet CustomerManagement.Snippet_ContactPerson_Details { drop referenceSetSelector4, referenceSetSelector5; };
+alter snippet CustomerManagement.Snippet_SLA_Details { drop referenceSelector4; };
+alter page TicketManagement.WorkOrder_AdminDetails { drop referenceSelector6; };
+
+-- used parts of an appointment: read over OData by the key copy, added over REST (the journey's monolith step)
+alter page TicketManagement.Appointment_View {
+  replace grid3 with {
+    datagrid gridUsedParts (
+      DataSource: database from AssetsClient.UsedPart where [AppointmentPublicID = $currentObject/PublicID]
+    ) {
+      column (Attribute: Quantity, Caption: 'Quantity')
+      column (Attribute: IsFromWarehouse, Caption: 'From warehouse')
+      column (Attribute: UsedPart_Inventory/InventoryID, Caption: 'Inventory')
+    }
+    actionbutton btnUsedPartsSlice (Caption: 'Add used part', Action: call microflow AssetsClient.ACT_Appointment_UsedParts(Appointment = $currentObject))
+  };
+};
+alter page TicketManagement.WorkOrder_View {
+  replace grid3 with {
+    datagrid gridSuggestedParts (
+      DataSource: database from AssetsClient.SuggestedPart where [WorkOrderPublicID = $currentObject/PublicID]
+    ) {
+      column (Attribute: Quantity, Caption: 'Quantity')
+      column (Attribute: SuggestedPart_Part/Name, Caption: 'Part')
+      column (Attribute: IsUsed, Caption: 'Used')
+    }
+  };
+  replace grid5 with {
+    datagrid gridSelectedTools (
+      DataSource: database from AssetsClient.SelectedTool where [WorkOrderPublicID = $currentObject/PublicID]
+    ) {
+      column (Attribute: Quantity, Caption: 'Quantity')
+      column (Attribute: SelectedTool_Tool/Name, Caption: 'Tool')
+    }
+  };
+};
+alter page CustomerManagement.ContactPerson_Overview {
+  replace grid1 with {
+    datagrid grid1 (
+      DataSource: database from CustomerManagement.ContactPerson sort by Name asc,
+      Selection: Single
+    ) {
+      column (Attribute: Name, Caption: 'Name')
+      column (Attribute: PhoneNumber, Caption: 'Phone number')
+      column (Attribute: EmailAddress, Caption: 'Email')
+      column (Attribute: ContactPerson_Customer/CustomerName, Caption: 'Customer(s)')
+      column (Caption: ' ', ShowContentAs: customContent) {
+        actionbutton btnOpenContact (Caption: 'Open', Action: show page CustomerManagement.ContactPerson_View(ContactPerson = $currentObject))
+      }
+    }
+  };
+};
+
+-- MasterData admin page that only led to the retired appointment admin page
+drop page MasterData.WorkOrder_NewEdit_MxAdmin;
+
+-- "My" access rules that walked Customer/Contract <- slice Asset <- Ticket: XPath cannot cross apps (hand-off, as in
+-- increment 6: a REST-fed copy of the asset -> customer key on the ticket would carry it)
+grant read (CustomerID, CustomerName, "Email", PhoneNumber, ReferenceNumber) on entity CustomerManagement.Customer to CustomerManagement.ViewMy where [false()];
+grant read (Number, "Description") on entity CustomerManagement.Contract to CustomerManagement.ViewMy where [false()];
+
+-- data removal of slice-owned rows is the slice's job
+drop microflow AppSettings.DataRemoval_RemoveWebData;
+create or modify microflow AppSettings.DataRemoval_RemoveWebData ()
+folder 'Objects/DataRemoval/Web'
+export level api
+begin
+  call microflow AppSettings.DataRemoval_TimeRegistrationList();
+  call microflow AppSettings.DataRemoval_AppointmentList();
+  call microflow AppSettings.DataRemoval_WorkOrderAssignmentList();
+  call microflow AppSettings.DataRemoval_WorkOrderList();
+  call microflow AppSettings.DataRemoval_ImageList();
+  call microflow AppSettings.DataRemoval_DocumentList();
+  call microflow AppSettings.DataRemoval_AttachmentList();
+  call microflow AppSettings.DataRemoval_TicketLogList();
+  call microflow AppSettings.DataRemoval_InstanceOptionList();
+  call microflow AppSettings.DataRemoval_InstanceItemImageList();
+  call microflow AppSettings.DataRemoval_InstanceItemList();
+  call microflow AppSettings.DataRemoval_InstanceFormList();
+  call microflow AppSettings.DataRemoval_SelectedFormList();
+  call microflow AppSettings.DataRemoval_RosterList();
+  call microflow AppSettings.DataRemoval_TicketList();
+  return;
+end;
+
+-- navigation: menu items to slice pages and retired modules removed
+create or modify navigation Responsive
+  home page General.Login_Web
+  home page TicketManagement.Ticket_Overview_ServiceDesk for TechnicalAdministrator
+  home microflow Dashboard.NAV_DashboardInternal for ServiceRegionManager
+  home page General.Login_Web for Anonymous
+  home page TicketManagement.Ticket_Overview_ServiceDesk for FunctionalAdministrator
+  home microflow Dashboard.NAV_DashboardAll for ServiceDeskEmployee
+  home microflow Dashboard.NAV_DashboardExternal for CallCenterEmployee
+  home microflow Technician.NAV_Technician_Home for Mechanic
+  login page General.Login_Web
+{
+  menu item 'Dashboard' ( OnClick: show page Dashboard.DashboardAll, Icon: glyph 57665 )
+  menu item 'Dashboard' ( OnClick: show page Dashboard.DashboardExternal, Icon: glyph 57665 )
+  menu item 'Dashboard' ( OnClick: show page Dashboard.DashboardInternal, Icon: glyph 57665 )
+  menu item 'Tickets' ( OnClick: show page TicketManagement.Ticket_Overview_Technician, Icon: glyph 57862 )
+  menu item 'Tickets' ( OnClick: show page TicketManagement.Ticket_Overview_ServiceDesk, Icon: glyph 57862 )
+  menu item 'Scheduler' ( OnClick: call microflow Scheduler.NAV_Planner, Icon: glyph 57609 )
+  menu item 'Work orders' ( OnClick: show page TicketManagement.WorkOrder_Overview, Icon: glyph 57657 )
+  menu item 'Forms' ( OnClick: show page Form.Form_Overview, Icon: glyph 57378 )
+  menu item 'Alerts' ( OnClick: show page Visualizations.Ticket_Overview_NeedsAction, Icon: glyph 57635 )
+  menu item 'Switch user' ( OnClick: show page DemoUserSwitcher.User_SelectDemoUser, Icon: glyph 57720 )
+  menu 'Administration' ( Icon: glyph 57369 ) {
+    menu item 'Accounts' ( OnClick: show page ModuleIntegration_Administration_Impl.Account_Overview )
+    menu item 'Application settings' ( OnClick: call microflow AppSettings.NAV_ApplicationSettings_Overview )
+    menu item 'Contracts' ( OnClick: show page CustomerManagement.Contract_Overview )
+    menu item 'Deeplink' ( OnClick: show page ModuleIntegration_DeepLink_Impl.Deeplink_Overview )
+    menu item 'Customers' ( OnClick: show page CustomerManagement.Customer_Overview )
+    menu item 'Technicians' ( OnClick: show page Technician.Technician_Overview )
+    menu item 'Technician groups' ( OnClick: show page Technician.TechnicianGroup_Overview )
+    menu item 'Offline actions' ( OnClick: show page Synchronization.OfflineAction_Overview )
+    menu item 'Reasons' ( OnClick: show page Reason.Reason_Overview )
+    menu item 'Priorities' ( OnClick: show page TicketManagement.Priority_Overview )
+    menu item 'Scheduled Events' ( OnClick: show page Administration.ScheduledEvents )
+    menu item 'Scripts' ( OnClick: show page AppSettings.Script_Overview )
+    menu item 'SLA''s' ( OnClick: show page CustomerManagement.SLA_Overview )
+    menu item 'Snap settings' ( OnClick: call microflow Scheduler.NAV_SnapSetting_Open )
+    menu item 'Systemlogs' ( OnClick: show page ModuleIntegration_Logging_Impl.Message_Overview_2 )
+    menu item 'Ticket types' ( OnClick: show page TicketManagement.TicketType_Overview )
+    menu item 'Registration codes' ( OnClick: show page TimeRegistration.RegistrationCode_Overview )
+    menu item 'Skills' ( OnClick: call microflow Skill.NAV_Skill )
+    menu item 'Business contacts' ( OnClick: show page CustomerManagement.ContactPerson_Overview )
+    menu item 'Feature toggles' ( OnClick: show page FeatureToggle.FeatureToggle_Overview )
+  }
+  menu item 'Grids templates' ( OnClick: show page Dashboard.Grids, Icon: glyph 57362 )
+  menu item 'Sign out' ( OnClick: sign out, Icon: glyph 57699 )
+};
+

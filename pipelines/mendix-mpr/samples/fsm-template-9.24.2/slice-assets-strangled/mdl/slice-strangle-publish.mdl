@@ -1,0 +1,229 @@
+mdl 1;
+-- Increment 7, slice side (AssetsApp, 11.13): publish what the monolith needs once AssetManagement, Part,
+-- WarehouseManagement and Tool are DELETED from it (decompose-app.md Stage 6 level 3, mendix-service-seam.md).
+-- Reads: OData AssetManagement.AssetsAPIv2 (odata/assets/v2/, P10 new path; v1 kept for the increment 5 consumer).
+-- Writes with behaviour: REST Part.SeamAPIv2 (rest/assets/v2): used parts upsert/delete, inventory adjust.
+-- Keys (P1): SystemID where it has a unique rule (Asset, Part, UnitOfMeasure, Warehouse), PublicID AutoNumber elsewhere.
+-- Cross-app keys: an association from a slice entity to an EXTERNAL entity (Asset_Customer, UsedPart_Appointment,
+-- SuggestedPart_WorkOrder, SelectedTool_WorkOrder, Asset_Technician_Preferred) cannot be published, so each gets a
+-- stored key/name copy filled by a before-commit handler; the monolith filters on that attribute.
+
+alter entity WarehouseManagement.Inventory add attribute if not exists PublicID: AutoNumber default 1;
+alter entity Part.AssetPart add attribute if not exists PublicID: AutoNumber default 1;
+alter entity Part.SelectedPart add attribute if not exists PublicID: AutoNumber default 1;
+-- inherited attributes cannot be published through mxcli (stored as Part.UsedPart.PublicID -> CE1613, captures/02):
+-- each specialization gets its own key
+alter entity Part.UsedPart add attribute if not exists UsedPartKey: AutoNumber default 1;
+alter entity Part.SuggestedPart add attribute if not exists SuggestedPartKey: AutoNumber default 1;
+alter entity AssetManagement.Manufacturer add attribute if not exists PublicID: AutoNumber default 1;
+alter entity Tool.Tool add attribute if not exists PublicID: AutoNumber default 1;
+alter entity Tool.SelectedTool add attribute if not exists PublicID: AutoNumber default 1;
+
+alter entity AssetManagement.Asset add attribute if not exists CustomerName: String(200);
+alter entity AssetManagement.Asset add attribute if not exists CustomerPublicID: Long;
+alter entity AssetManagement.Asset add attribute if not exists PreferredTechnicianID: Long;
+alter entity Part.UsedPart add attribute if not exists AppointmentPublicID: Long;
+alter entity Part.SuggestedPart add attribute if not exists WorkOrderPublicID: Long;
+alter entity Tool.SelectedTool add attribute if not exists WorkOrderPublicID: Long;
+
+create or modify microflow AssetManagement.Asset_SetCrossKeys ($Asset: AssetManagement.Asset)
+returns Boolean
+begin
+  retrieve $Customer from $Asset/AssetManagement.Asset_Customer;
+  if $Customer != empty then
+    change $Asset (CustomerName = $Customer/CustomerName, CustomerPublicID = $Customer/PublicID);
+  else
+    change $Asset (CustomerName = empty, CustomerPublicID = empty);
+  end if;
+  retrieve $Technician from $Asset/AssetManagement.Asset_Technician_Preferred;
+  if $Technician != empty then
+    change $Asset (PreferredTechnicianID = $Technician/TechnicianID);
+  else
+    change $Asset (PreferredTechnicianID = empty);
+  end if;
+  return true;
+end;
+alter entity AssetManagement.Asset add event handler on before commit call AssetManagement.Asset_SetCrossKeys($currentObject) raise error;
+
+create or modify microflow Part.UsedPart_SetCrossKeys ($UsedPart: Part.UsedPart)
+returns Boolean
+begin
+  retrieve $Appointment from $UsedPart/Part.UsedPart_Appointment;
+  if $Appointment != empty then
+    change $UsedPart (AppointmentPublicID = $Appointment/PublicID);
+  end if;
+  return true;
+end;
+alter entity Part.UsedPart add event handler on before commit call Part.UsedPart_SetCrossKeys($currentObject) raise error;
+
+create or modify microflow Part.SuggestedPart_SetCrossKeys ($SuggestedPart: Part.SuggestedPart)
+returns Boolean
+begin
+  retrieve $WorkOrder from $SuggestedPart/Part.SuggestedPart_WorkOrder;
+  if $WorkOrder != empty then
+    change $SuggestedPart (WorkOrderPublicID = $WorkOrder/PublicID);
+  end if;
+  return true;
+end;
+alter entity Part.SuggestedPart add event handler on before commit call Part.SuggestedPart_SetCrossKeys($currentObject) raise error;
+
+create or modify microflow Tool.SelectedTool_SetCrossKeys ($SelectedTool: Tool.SelectedTool)
+returns Boolean
+begin
+  retrieve $WorkOrder from $SelectedTool/Tool.SelectedTool_WorkOrder;
+  if $WorkOrder != empty then
+    change $SelectedTool (WorkOrderPublicID = $WorkOrder/PublicID);
+  end if;
+  return true;
+end;
+alter entity Tool.SelectedTool add event handler on before commit call Tool.SelectedTool_SetCrossKeys($currentObject) raise error;
+
+-- machine role read grants (P2: exactly the published members)
+grant read (SystemID, AssetID, "Description", Notes, Address, ZipCode, City, FullAddress, HasOpeningTimes, CustomerName, CustomerPublicID, PreferredTechnicianID, Asset_Manufacturer) on entity AssetManagement.Asset to AssetManagement.APIConsumer;
+grant read (PublicID, Name) on entity AssetManagement.Manufacturer to AssetManagement.APIConsumer;
+grant read (SystemID, PartID, Name, "Description", Price, Vendor, IsActive, IsAdditionalPart, Part_UnitOfMeasure) on entity Part.Part to Part.APIConsumer;
+grant read (SystemID, UnitName, Abbreviation) on entity Part.UnitOfMeasure to Part.APIConsumer;
+grant read (PublicID, SystemID, Quantity, AssetPart_Asset, AssetPart_Part) on entity Part.AssetPart to Part.APIConsumer;
+grant read (UsedPartKey, IsFromWarehouse, Quantity, AppointmentPublicID, UsedPart_Inventory) on entity Part.UsedPart to Part.APIConsumer;
+grant read (SuggestedPartKey, Quantity, IsUsed, WorkOrderPublicID, SuggestedPart_Part) on entity Part.SuggestedPart to Part.APIConsumer;
+grant read (SystemID, WarehouseID, "Description") on entity WarehouseManagement.Warehouse to WarehouseManagement.APIConsumer;
+grant read (PublicID, SystemID, InventoryID, Amount, Inventory_Part, Inventory_Warehouse) on entity WarehouseManagement.Inventory to WarehouseManagement.APIConsumer;
+grant read (PublicID, ToolID, Name, "Description", IsActive) on entity Tool.Tool to Tool.APIConsumer;
+grant read (PublicID, SelectedToolID, Quantity, WorkOrderPublicID, SelectedTool_Tool) on entity Tool.SelectedTool to Tool.APIConsumer;
+
+create or modify published odata service AssetManagement.AssetsAPIv2 (
+  Path: 'odata/assets/v2/',
+  Version: '2.0.0',
+  ODataVersion: OData4,
+  Namespace: 'FSM.Assets.v2',
+  ServiceName: 'AssetsAPIv2',
+  PublishAssociations: Yes,
+  Authentication: (basic)
+)
+{
+  publish entity AssetManagement.Asset as 'Asset' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (SystemID (KEY, Filterable, Sortable), AssetID (Filterable, Sortable), Description (Filterable, Sortable), Notes, Address (Filterable), ZipCode, City (Filterable), FullAddress (Filterable, Sortable), HasOpeningTimes (Filterable), CustomerName (Filterable, Sortable), CustomerPublicID (Filterable), PreferredTechnicianID (Filterable), Asset_Manufacturer as 'Asset_Manufacturer');
+  publish entity AssetManagement.Manufacturer as 'Manufacturer' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported)
+  expose (PublicID (KEY, Filterable, Sortable), Name (Filterable, Sortable));
+  publish entity Part.Part as 'Part' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (SystemID (KEY, Filterable, Sortable), PartID (Filterable, Sortable), Name (Filterable, Sortable), Description (Filterable), Price (Filterable, Sortable), Vendor (Filterable, Sortable), IsActive (Filterable), IsAdditionalPart (Filterable), Part_UnitOfMeasure as 'Part_UnitOfMeasure');
+  publish entity Part.UnitOfMeasure as 'UnitOfMeasure' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported)
+  expose (SystemID (KEY, Filterable, Sortable), UnitName (Filterable, Sortable), Abbreviation);
+  publish entity Part.AssetPart as 'AssetPart' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), SystemID (Filterable), Quantity, AssetPart_Asset as 'AssetPart_Asset', AssetPart_Part as 'AssetPart_Part');
+  publish entity Part.UsedPart as 'UsedPart' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (UsedPartKey (KEY, Filterable, Sortable), IsFromWarehouse (Filterable), Quantity, AppointmentPublicID (Filterable), UsedPart_Inventory as 'UsedPart_Inventory');
+  publish entity Part.SuggestedPart as 'SuggestedPart' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (SuggestedPartKey (KEY, Filterable, Sortable), Quantity, IsUsed (Filterable), WorkOrderPublicID (Filterable), SuggestedPart_Part as 'SuggestedPart_Part');
+  publish entity WarehouseManagement.Warehouse as 'Warehouse' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported)
+  expose (SystemID (KEY, Filterable, Sortable), WarehouseID (Filterable, Sortable), Description (Filterable, Sortable));
+  publish entity WarehouseManagement.Inventory as 'Inventory' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), SystemID (Filterable), InventoryID (Filterable, Sortable), Amount (Filterable, Sortable), Inventory_Part as 'Inventory_Part', Inventory_Warehouse as 'Inventory_Warehouse');
+  publish entity Tool.Tool as 'Tool' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported)
+  expose (PublicID (KEY, Filterable, Sortable), ToolID (Filterable, Sortable), Name (Filterable, Sortable), Description, IsActive (Filterable));
+  publish entity Tool.SelectedTool as 'SelectedTool' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), SelectedToolID (Filterable), Quantity, WorkOrderPublicID (Filterable), SelectedTool_Tool as 'SelectedTool_Tool');
+};
+grant access on published odata service AssetManagement.AssetsAPIv2 to AssetManagement.APIConsumer;
+
+-- REST writes (P3: primitive query params, String result; P7: the owner's own save/delete flows run)
+create or modify microflow Part.SeamAPI_UpsertUsedPart (
+  $SystemID: String,
+  $InventorySystemID: String,
+  $AppointmentPublicID: Long,
+  $Quantity: Integer,
+  $IsFromWarehouse: Boolean
+)
+returns String
+begin
+  retrieve $Inventory from WarehouseManagement.Inventory
+    where SystemID = $InventorySystemID
+    first;
+  if $Inventory = empty then
+    return 'error: unknown inventory ' + $InventorySystemID;
+  end if;
+  retrieve $Appointment from TicketManagement.Appointment
+    where PublicID = $AppointmentPublicID
+    first;
+  retrieve $Existing from Part.UsedPart
+    where SystemID = $SystemID
+    first;
+  if $Existing = empty then
+    $New = create Part.UsedPart (SystemID = $SystemID, Quantity = $Quantity, IsFromWarehouse = $IsFromWarehouse, AppointmentPublicID = $AppointmentPublicID, Part.UsedPart_Inventory = $Inventory, Part.UsedPart_Appointment = $Appointment);
+    call microflow Part.UsedPart_Save(UsedPart = $New);
+    if $IsFromWarehouse then
+      change $Inventory (Amount = $Inventory/Amount - $Quantity);
+      call microflow WarehouseManagement.Inventory_Save(Inventory = $Inventory);
+    end if;
+    return 'created ' + $SystemID;
+  else
+    declare $OldQuantity Integer = $Existing/Quantity;
+    change $Existing (Quantity = $Quantity, IsFromWarehouse = $IsFromWarehouse, AppointmentPublicID = $AppointmentPublicID);
+    call microflow Part.UsedPart_Save(UsedPart = $Existing);
+    if $IsFromWarehouse then
+      change $Inventory (Amount = $Inventory/Amount - ($Quantity - $OldQuantity));
+      call microflow WarehouseManagement.Inventory_Save(Inventory = $Inventory);
+    end if;
+    return 'updated ' + $SystemID;
+  end if;
+end;
+grant execute on microflow Part.SeamAPI_UpsertUsedPart to Part.APIConsumer;
+
+create or modify microflow Part.SeamAPI_DeleteUsedPart ($SystemID: String)
+returns String
+begin
+  retrieve $Existing from Part.UsedPart
+    where SystemID = $SystemID
+    first;
+  if $Existing = empty then
+    return 'absent ' + $SystemID;
+  end if;
+  if $Existing/IsFromWarehouse then
+    retrieve $Inventory from $Existing/Part.UsedPart_Inventory;
+    if $Inventory != empty then
+      change $Inventory (Amount = $Inventory/Amount + $Existing/Quantity);
+      call microflow WarehouseManagement.Inventory_Save(Inventory = $Inventory);
+    end if;
+  end if;
+  call microflow Part.UsedPart_Delete(UsedPart = $Existing);
+  return 'deleted ' + $SystemID;
+end;
+grant execute on microflow Part.SeamAPI_DeleteUsedPart to Part.APIConsumer;
+
+create or modify microflow Part.SeamAPI_SetInventoryAmount ($InventorySystemID: String, $Amount: Integer)
+returns String
+begin
+  retrieve $Inventory from WarehouseManagement.Inventory
+    where SystemID = $InventorySystemID
+    first;
+  if $Inventory = empty then
+    return 'error: unknown inventory ' + $InventorySystemID;
+  end if;
+  change $Inventory (Amount = $Amount);
+  call microflow WarehouseManagement.Inventory_Save(Inventory = $Inventory);
+  return 'updated ' + $InventorySystemID;
+end;
+grant execute on microflow Part.SeamAPI_SetInventoryAmount to Part.APIConsumer;
+
+create or modify published rest service Part.SeamAPIv2 (
+  Path: 'rest/assets/v2',
+  Version: '2.0.0',
+  ServiceName: 'Assets seam v2 (writes)',
+  Authentication: (basic)
+)
+{
+  resource 'parts' {
+    post '' microflow Part.SeamAPI_UpsertPart;
+  }
+  resource 'usedparts' {
+    post '' microflow Part.SeamAPI_UpsertUsedPart;
+    post 'delete' microflow Part.SeamAPI_DeleteUsedPart;
+  }
+  resource 'inventories' {
+    post 'amount' microflow Part.SeamAPI_SetInventoryAmount;
+  }
+};
+grant access on published rest service Part.SeamAPIv2 to Part.APIConsumer;
+
+-- the REST upsert retrieves the external Appointment: the machine user role needs the read grant
+alter user role AssetsAPI add module roles (TicketManagement.User);

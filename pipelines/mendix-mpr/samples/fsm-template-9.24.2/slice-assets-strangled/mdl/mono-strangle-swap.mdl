@@ -1,0 +1,82 @@
+mdl 1;
+-- Increment 7, monolith step 2: retire, delete the four slice modules, swap the moved entities for external entities.
+-- (a) RETIRE: MasterData's MxAdmin pages/flows over slice data (admin of slice data lives in the slice); the
+--     NativeModelCheck and LoadTest helper modules (cut-score: retire).
+drop microflow MasterData.ACT_AssetPart_Delete_MxAdmin;
+drop microflow MasterData.ACT_AssetPart_Save_MxAdmin;
+drop microflow MasterData.ACT_Asset_Delete_MxAdmin;
+drop microflow MasterData.ACT_Asset_Save_MxAdmin;
+drop microflow MasterData.ACT_Inventory_Delete_MxAdmin;
+drop microflow MasterData.ACT_Inventory_Save_MxAdmin;
+drop microflow MasterData.ACT_Part_Delete_MxAdmin;
+drop microflow MasterData.ACT_Part_Save_MxAdmin;
+drop microflow MasterData.ACT_SuggestedPart_Delete_MxAdmin;
+drop microflow MasterData.ACT_SuggestedPart_Save_MxAdmin;
+drop microflow MasterData.ACT_UsedPart_Delete_MxAdmin;
+drop microflow MasterData.ACT_UsedPart_Save_MxAdmin;
+drop microflow MasterData.ACT_Warehouse_Delete_MxAdmin;
+drop microflow MasterData.ACT_Warehouse_Save_MxAdmin;
+drop microflow MasterData.Asset_Delete_MxAdmin;
+drop microflow MasterData.DS_AssetPart_RetrieveNativeAssetPart;
+drop microflow MasterData.DS_Asset_RetrieveNativeAsset;
+drop microflow MasterData.DS_Inventory_RetrieveNativeInventory;
+drop microflow MasterData.DS_Part_RetrieveNativePart;
+drop microflow MasterData.DS_SuggestedPart_RetrieveNativeSuggestedPart;
+drop microflow MasterData.DS_UsedPart_RetrieveNativeUsedPart;
+drop microflow MasterData.DS_Warehouse_RetrieveNativeWarehouse;
+drop page MasterData.Appointment_NewEdit_MxAdmin;
+drop page MasterData.AssetPart_NewEdit_MxAdmin;
+drop page MasterData.Asset_NewEdit_MxAdmin;
+drop page MasterData.Inventory_NewEdit_MxAdmin;
+drop page MasterData.Masterdata_Overview_MxAdmin;
+drop page MasterData.Part_NewEdit_MxAdmin;
+drop page MasterData.SLA_NewEdit_MxAdmin;
+drop page MasterData.SuggestedPart_NewEdit_MxAdmin;
+drop page MasterData.Ticket_NewEdit_MxAdmin;
+drop page MasterData.UsedPart_NewEdit_MxAdmin;
+drop page MasterData.Warehouse_NewEdit_MxAdmin;
+drop module if exists NativeModelCheck;
+drop module if exists LoadTest;
+-- (b) swap (recipe A): drop the moved persistent entities; drop entity also removes every association pointing at
+--     them (Ticket_Asset, Roster_Asset, ... re-created in (d)).
+drop entity AssetsClient.SelectedTool;
+drop entity AssetsClient.Tool;
+drop entity AssetsClient.UsedPart;
+drop entity AssetsClient.SuggestedPart;
+drop entity AssetsClient.AssetPart;
+drop entity AssetsClient.Inventory;
+drop entity AssetsClient.Warehouse;
+drop entity AssetsClient.Part;
+drop entity AssetsClient.UnitOfMeasure;
+drop entity AssetsClient.Asset;
+drop entity AssetsClient.Manufacturer;
+-- (c) DELETE the four slice modules from the monolith
+drop module if exists AssetManagement;
+drop module if exists Part;
+drop module if exists WarehouseManagement;
+drop module if exists Tool;
+-- (d) consume AssetsAPIv2: all external entities in ONE module, AssetsClient (P6), same qualified names as the moved
+-- module (mendix-service-seam.md P6: navigations exist only inside one consumer module). All of them go into the
+-- existing consumer module AssetsSeam (increment 5: v1 entities Assets/Parts/UnitsOfMeasure/Warehouses, kept for now).
+create constant AssetsSeam.ODataV2Url ( Type: String, DefaultValue: 'http://127.0.0.1:8480/odata/assets/v2/' );
+create constant AssetsSeam.RestV2Url ( Type: String, DefaultValue: 'http://127.0.0.1:8480/rest/assets/v2' );
+
+create consumed odata service AssetsSeam.AssetsAPIv2 (
+  Version: '2.0.0',
+  ODataVersion: OData4,
+  MetadataUrl: 'assets-v2-metadata.xml',
+  Timeout: 60,
+  ServiceUrl: AssetsSeam.ODataV2Url,
+  ConfigurationMicroflow: microflow AssetsSeam.GetAuthHeaders
+);
+create external entities from AssetsSeam.AssetsAPIv2 into AssetsClient;
+-- (e) monolith-owned associations to slice entities, re-created local -> external (local owner). Lost: SLA_Asset
+--     owner Both (external side cannot own), Roster_Asset delete cascade (the slice deletes; hand-off),
+--     ContactPerson_Dossier (Dossier not published; hand-off).
+create or modify association TicketManagement.Ticket_Asset from TicketManagement.Ticket to AssetsClient.Asset storage table;
+create or modify association TicketManagement.TicketNP_Asset from TicketManagement.TicketNP to AssetsClient.Asset storage table;
+create or modify association CustomerManagement.SLA_Asset from CustomerManagement.SLA to AssetsClient.Asset storage table;
+create or modify association CustomerManagement.ContactPerson_Asset from CustomerManagement.ContactPerson to AssetsClient.Asset type ReferenceSet storage table;
+create or modify association RosterManagement.Roster_Asset from RosterManagement.Roster to AssetsClient.Asset storage table;
+create or modify association Dashboard.AssetDashboardNP_Asset from Dashboard.AssetDashboardNP to AssetsClient.Asset storage table;
+create or modify association Technician.Technician_Warehouse from Technician.Technician to AssetsClient.Warehouse type ReferenceSet storage table;

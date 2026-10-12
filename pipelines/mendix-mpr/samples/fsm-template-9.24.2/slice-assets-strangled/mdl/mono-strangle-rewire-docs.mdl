@@ -1,0 +1,1374 @@
+mdl 1;
+-- Increment 7, monolith step 5: the referencing microflows, described after the move and edited (fix-cur.py, fix-cur2.py)
+create or modify microflow Dashboard.ACT_AssetDashboardNP_ShowAsset (
+  $AssetDashboardNP: Dashboard.AssetDashboardNP
+)
+folder 'Pages/Dashboards'
+begin
+  retrieve $Asset from $AssetDashboardNP/Dashboard.AssetDashboardNP_Asset;
+  show message 'Asset details live in the Assets & Parts app.' type Information;
+  return;
+end;
+
+grant execute on microflow Dashboard.ACT_AssetDashboardNP_ShowAsset to Dashboard.ViewAll;
+
+create or modify microflow FSMPublishedAPI.Asset_MapToAssetResponse (
+  $Asset: AssetsClient.Asset
+)
+returns FSMPublishedAPI.AssetResponse
+folder 'Objects/Asset'
+export level api
+begin
+  retrieve $Manufacturer from AssetsClient.Manufacturer
+    where AssetsClient.Asset_Manufacturer = $Asset
+    first;
+  retrieve $Customer from CustomerManagement.Customer
+    where PublicID = $Asset/CustomerPublicID
+    first;
+  $NewAssetResponse = create FSMPublishedAPI.AssetResponse (AssetID = $Asset/AssetID, Description = $Asset/Description, Notes = $Asset/Notes, Address = $Asset/Address, ZipCode = $Asset/ZipCode, City = $Asset/City, FullAddress = $Asset/FullAddress, HasOpeningTimes = $Asset/HasOpeningTimes, Manufacturer = $Manufacturer/Name, CustomerName = $Customer/CustomerName);
+  return $NewAssetResponse;
+end;
+
+create or modify microflow FSMPublishedAPI.TicketRequest_ValidateSLA (
+  $Asset: AssetsClient.Asset,
+  $TicketRequest: FSMPublishedAPI.TicketRequest
+)
+returns List of FSMPublishedAPI.ErrorMessage
+folder 'Objects/TicketRequest'
+export level api
+begin
+  $SLA = call microflow AssetsClient.Asset_GetRelevantSLA(Asset = $Asset);
+  @caption 'Has SLA?'
+  if $SLA != empty then
+    $ErrorMessageList = create list of FSMPublishedAPI.ErrorMessage;
+    @merge(1065, 200)
+    @caption 'Customer reference required?'
+    if $SLA/NeedsMandatoryTaskNumber then
+      @merge(1065, 200)
+      @caption 'Customer reference?'
+      if not(trim($TicketRequest/CustomerReference) != '') then
+        @anchor(to: top)
+        $NewErrorMessage = create FSMPublishedAPI.ErrorMessage (Message = 'customerReference is a required field');
+        add $NewErrorMessage to $ErrorMessageList;
+      end if;
+    end if;
+    return $ErrorMessageList;
+  else
+    @anchor(to: top)
+    return empty;
+  end if;
+end;
+
+create or modify microflow FSMPublishedAPI.TicketRequest_ValidateSchedulingOption (
+  $TicketRequest: FSMPublishedAPI.TicketRequest,
+  $Asset: AssetsClient.Asset
+)
+returns List of FSMPublishedAPI.ErrorMessage
+folder 'Objects/TicketRequest'
+export level api
+begin
+  -- WARNING: the merge at (1485, 185) is not represented in this description - it joins no decision and no error handler, so re-executing this MDL DELETES it. The microflow behaves the same either way (a merge with one incoming path is a no-op), but the node disappears from the diagram (mxcli #923)
+  $ErrorMessageList = create list of FSMPublishedAPI.ErrorMessage;
+  @merge(1485, 380)
+  @caption 'Should schedule manually?'
+  if $TicketRequest/ShouldScheduleManually then
+    @merge(770, 185)
+    @caption 'Technician?'
+    if $TicketRequest/TechnicianID != empty then
+    else
+      @anchor(to: top)
+      $NewErrorMessage_TechnicianID = create FSMPublishedAPI.ErrorMessage (Message = 'TechnicianID is a required field');
+      @anchor(from: top)
+      add $NewErrorMessage_TechnicianID to $ErrorMessageList;
+    end if;
+    @merge(1130, 185)
+    @caption 'ExpectedStartTime?'
+    if $TicketRequest/ExpectedArrivalDateTime != empty then
+    else
+      @anchor(to: top)
+      $NewErrorMessage_ExpectedStartTime = create FSMPublishedAPI.ErrorMessage (Message = 'ExpectedStartTime is a required field');
+      @anchor(from: top)
+      add $NewErrorMessage_ExpectedStartTime to $ErrorMessageList;
+    end if;
+  @anchor(to: top)
+  @caption 'Should Notify Directly?'
+  elsif $TicketRequest/ShouldNotifyDirectly then
+    @merge(770, 380)
+    @caption 'Preferred Technician?'
+    if $Asset/PreferredTechnicianID != empty then
+    else
+      @anchor(to: top)
+      $NewErrorMessage_PreferredTechnician = create FSMPublishedAPI.ErrorMessage (Message = 'Asset does not contain a preferred technician');
+      @anchor(from: top)
+      add $NewErrorMessage_PreferredTechnician to $ErrorMessageList;
+    end if;
+    $Technician = call microflow TicketManagement.WorkOrder_TechnicianPicker(Asset = $Asset, WorkOrder_optional = empty);
+    @merge(1335, 380)
+    @caption 'Any?'
+    if $Technician != empty then
+    else
+      @anchor(to: top)
+      $NewErrorMessage_PreferredTechnician_Availability = create FSMPublishedAPI.ErrorMessage (Message = 'Preferred technician is not available');
+      @anchor(from: top)
+      add $NewErrorMessage_PreferredTechnician_Availability to $ErrorMessageList;
+    end if;
+  else
+    @anchor(to: top)
+    return $ErrorMessageList;
+  end if;
+  join shared1;
+  merge shared1;
+  return $ErrorMessageList;
+end;
+
+create or modify microflow General.ASU_General ()
+returns Boolean
+folder 'Resources'
+export level api
+begin
+  @annotation(text: 'Logging module', position: (-3620, 115), size: (110, 40))
+  call microflow Logging.AfterStartup();
+  call microflow AppSettings.ASU_AppSettings();
+  call microflow AppSettings.ASU_FeatureToggle();
+  call microflow General.ASU_Snapshot_Shift();
+  call microflow General.ASU_RegistrationCode_CreateDefaultIfNonExists();
+  call microflow Reason.ASU_CreateStandardReason();
+  call microflow General.ASU_DemoUserList_CreateIfNeeded();
+  $Variable = call microflow MendixSSO.MendixSSO_AfterStartup();
+  -- TEST-ONLY (journey accounts + the slice machine account); remove before real use
+  call microflow AssetsSeam.ASU_EnsureJourneyAccounts();
+  return true;
+end;
+
+create or modify microflow NativeMobileAsset.Asset_RetrieveAppointmentList_ByStatus (
+  $Asset: AssetsClient.Asset,
+  $Search: String,
+  $Page: Integer,
+  $RelatedWorkHelperDownload: NativeMobileRelated.RelatedWorkHelperDownload,
+  $ENUM_AppointmentStatus: enum TicketManagement.ENUM_AppointmentStatus
+)
+returns List of TicketManagement.Appointment
+folder 'Objects/Asset'
+begin
+  @annotation(text: 'This microflow should be used to return the search result when searching for appointments related to an asset on the Native device.', position: (-190, -110), size: (330, 100))
+  declare $SearchString String = trim($Search);
+  declare $Amount Integer = $Page * 10;
+  retrieve $AppointmentList_Total from TicketManagement.Appointment
+    where [Status = $ENUM_AppointmentStatus]
+    [TicketManagement.Appointment_WorkOrder/TicketManagement.WorkOrder[TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset = $Asset][$SearchString = '' or contains(Description, $SearchString) or contains(ShortDescription, $SearchString) or contains(WorkOrderID, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(Description, $SearchString) or contains(ShortDescription, $SearchString) or contains(TicketID, $SearchString)]]];
+  $Count = count $AppointmentList_Total;
+  retrieve $AppointmentList_All from TicketManagement.Appointment
+    where [Status = $ENUM_AppointmentStatus]
+    [TicketManagement.Appointment_WorkOrder/TicketManagement.WorkOrder[TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset = $Asset][$SearchString = '' or contains(Description, $SearchString) or contains(ShortDescription, $SearchString) or contains(WorkOrderID, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(Description, $SearchString) or contains(ShortDescription, $SearchString) or contains(TicketID, $SearchString)]]]
+    limit $Amount;
+  change $RelatedWorkHelperDownload (HasResults = $AppointmentList_All != empty, HasMoreData = $Amount < $Count);
+  return $AppointmentList_All;
+end;
+
+create or modify microflow NativeMobileAsset.Asset_RetrieveUnplannedWorkOrderList (
+  $Asset: AssetsClient.Asset,
+  $Search: String,
+  $Page: Integer,
+  $RelatedWorkHelperDownload: NativeMobileRelated.RelatedWorkHelperDownload
+)
+returns List of TicketManagement.WorkOrder
+folder 'Objects/Asset'
+begin
+  @annotation(text: 'This microflow should be used to return the search result when searching for workorders related to an asset on the Native device.', position: (-315, -145), size: (330, 100))
+  declare $SearchString String = trim($Search);
+  declare $Amount Integer = $Page * 10;
+  retrieve $WorkOrderList_Total from TicketManagement.WorkOrder
+    where [TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset = $Asset]
+    [Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned or Status = TicketManagement.ENUM_WorkOrderStatus._New]
+    [$SearchString = '' or contains(Description, $SearchString) or contains(ShortDescription, $SearchString) or contains(WorkOrderID, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(Description, $SearchString) or contains(ShortDescription, $SearchString) or contains(TicketID, $SearchString)]];
+  $Count = count $WorkOrderList_Total;
+  retrieve $WorkOrderList_All from TicketManagement.WorkOrder
+    where [TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset = $Asset]
+    [Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned or Status = TicketManagement.ENUM_WorkOrderStatus._New]
+    [$SearchString = '' or contains(Description, $SearchString) or contains(ShortDescription, $SearchString) or contains(WorkOrderID, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(Description, $SearchString) or contains(ShortDescription, $SearchString) or contains(TicketID, $SearchString)]]
+    sort by DueDate asc, WorkOrderID asc
+    limit $Amount;
+  change $RelatedWorkHelperDownload (HasResults = $WorkOrderList_All != empty, HasMoreData = $Amount < $Count);
+  return $WorkOrderList_All;
+end;
+
+create or modify microflow NativeMobilePart.PartNP_ValidateUniqueName (
+  $Name: String
+)
+returns Boolean
+folder 'Objects/PartNP'
+begin
+  $NameIsUsed = call microflow AssetsClient.Part_NameIsInUse(Name = $Name);
+  return $NameIsUsed = false;
+end;
+
+grant execute on microflow NativeMobilePart.PartNP_ValidateUniqueName to NativeMobilePart.EditMy;
+
+create or modify microflow NativeMobilePart.PartSearchHelper_SearchInventories (
+  $PartSearchHelper: NativeMobilePart.PartSearchHelper
+)
+folder 'Objects/PartSearchHelper'
+export level api
+begin
+  retrieve $NativeInventoryNPList from $PartSearchHelper/NativeMobileWarehouse.InventoryNP_PartSearchHelper;
+  delete $NativeInventoryNPList;
+  declare $SearchString String = trim($PartSearchHelper/Search);
+  declare $Amount Integer = $PartSearchHelper/NumberOfPages * 10;
+  declare $PartSystemID String = $PartSearchHelper/NativeMobilePart.PartSearchHelper_PartNP_Chosen/NativeMobilePart.PartNP/SystemID;
+  retrieve $InventoryList_Total from AssetsClient.Inventory
+    where [AssetsClient.Inventory_Part/AssetsClient.Part/SystemID = $PartSystemID]
+    [AssetsClient.Inventory_Warehouse/AssetsClient.Warehouse/Technician.Technician_Warehouse/Technician.Technician/Administration.Account_Technician = '[%CurrentUser%]']
+    [$SearchString = '' or contains(AssetsClient.Inventory_Warehouse/AssetsClient.Warehouse/Description, $SearchString)]
+    sort by InventoryID asc
+    limit $Amount;
+  retrieve $InventoryList_Next from AssetsClient.Inventory
+    where [AssetsClient.Inventory_Part/AssetsClient.Part/SystemID = $PartSystemID]
+    [AssetsClient.Inventory_Warehouse/AssetsClient.Warehouse/Technician.Technician_Warehouse/Technician.Technician/Administration.Account_Technician = '[%CurrentUser%]']
+    [$SearchString = '' or contains(AssetsClient.Inventory_Warehouse/AssetsClient.Warehouse/Description, $SearchString)]
+    sort by InventoryID asc
+    limit $Amount + 1
+    offset $Amount;
+  change $PartSearchHelper (IsInventoryFound = $InventoryList_Total != empty, HasMoreData = $InventoryList_Next != empty) refresh;
+  loop $IteratorInventory in $InventoryList_Total
+  begin
+    $NewNativeInventoryNP = create NativeMobileWarehouse.InventoryNP (SystemID = $IteratorInventory/SystemID, Amount = $IteratorInventory/Amount, WarehouseDescription = $IteratorInventory/AssetsClient.Inventory_Warehouse/AssetsClient.Warehouse/Description, InventoryNP_PartSearchHelper = $PartSearchHelper);
+  end loop;
+  return;
+end;
+
+grant execute on microflow NativeMobilePart.PartSearchHelper_SearchInventories to NativeMobilePart.EditMy;
+
+create or modify microflow NativeMobilePart.PartSearchHelper_SearchParts (
+  $PartSearchHelper: NativeMobilePart.PartSearchHelper
+)
+folder 'Objects/PartSearchHelper'
+export level api
+begin
+  retrieve $NativePartNPList from $PartSearchHelper/NativeMobilePart.PartNP_PartSearchHelper;
+  delete $NativePartNPList;
+  declare $SearchString String = trim($PartSearchHelper/Search);
+  declare $Amount Integer = $PartSearchHelper/NumberOfPages * 10;
+  $PartList = create list of AssetsClient.Part;
+  @merge(1525, 255)
+  @caption 'SearchoutsideBOM'
+  if $PartSearchHelper/SearchOutsideBOM then
+    retrieve $PartList_Total from AssetsClient.Part
+    where [AssetsClient.Inventory_Part/AssetsClient.Inventory/AssetsClient.Inventory_Warehouse/AssetsClient.Warehouse/Technician.Technician_Warehouse/Technician.Technician/Administration.Account_Technician = '[%CurrentUser%]']
+    [$SearchString = '' or contains(PartID, $SearchString) or contains(Name, $SearchString) or contains(Description, $SearchString) or contains(Vendor, $SearchString)]
+    sort by Name asc
+    limit $Amount;
+    retrieve $PartList_Next from AssetsClient.Part
+    where [AssetsClient.Inventory_Part/AssetsClient.Inventory/AssetsClient.Inventory_Warehouse/AssetsClient.Warehouse/Technician.Technician_Warehouse/Technician.Technician/Administration.Account_Technician = '[%CurrentUser%]']
+    [$SearchString = '' or contains(PartID, $SearchString) or contains(Name, $SearchString) or contains(Description, $SearchString) or contains(Vendor, $SearchString)]
+    sort by Name asc
+    limit $Amount + 1
+    offset $Amount;
+    change $PartSearchHelper (IsPartFound = $PartList_Total != empty, HasMoreData = $PartList_Next != empty) refresh;
+    add $PartList_Total to $PartList;
+  else
+    $Appointment = call microflow TicketManagement.Appointment_Get_BySystemID(SystemID = $PartSearchHelper/AppointmentID);
+    retrieve $PartList_Total_BOM from AssetsClient.Part
+    where [AssetsClient.Inventory_Part/AssetsClient.Inventory/ AssetsClient.Inventory_Warehouse/AssetsClient.Warehouse/ Technician.Technician_Warehouse/Technician.Technician/Administration.Account_Technician = '[%CurrentUser%]']
+    [AssetsClient.AssetPart_Part/AssetsClient.AssetPart/ AssetsClient.AssetPart_Asset/AssetsClient.Asset/ TicketManagement.Ticket_Asset/TicketManagement.Ticket/ TicketManagement.WorkOrder_Ticket/TicketManagement.WorkOrder/ TicketManagement.Appointment_WorkOrder = $Appointment]
+    [$SearchString = '' or contains(PartID, $SearchString) or contains(Name, $SearchString) or contains(Description, $SearchString) or contains(Vendor, $SearchString)]
+    sort by Name asc
+    limit $Amount;
+    retrieve $PartList_Next_BOM from AssetsClient.Part
+    where [AssetsClient.Inventory_Part/AssetsClient.Inventory/ AssetsClient.Inventory_Warehouse/AssetsClient.Warehouse/ Technician.Technician_Warehouse/Technician.Technician/Administration.Account_Technician = '[%CurrentUser%]']
+    [AssetsClient.AssetPart_Part/AssetsClient.AssetPart/ AssetsClient.AssetPart_Asset/AssetsClient.Asset/ TicketManagement.Ticket_Asset/TicketManagement.Ticket/ TicketManagement.WorkOrder_Ticket/TicketManagement.WorkOrder/ TicketManagement.Appointment_WorkOrder = $Appointment]
+    [$SearchString = '' or contains(PartID, $SearchString) or contains(Name, $SearchString) or contains(Description, $SearchString) or contains(Vendor, $SearchString)]
+    sort by Name asc
+    limit $Amount + 1
+    offset $Amount;
+    change $PartSearchHelper (IsPartFound = $PartList_Total_BOM != empty, HasMoreData = $PartList_Next_BOM != empty) refresh;
+    add $PartList_Total_BOM to $PartList;
+  end if;
+  loop $IteratorPart in $PartList
+  begin
+    $NewAssetSearchResult = create NativeMobilePart.PartNP (PartID = $IteratorPart/PartID, SystemID = $IteratorPart/SystemID, Description = $IteratorPart/Description, Name = $IteratorPart/Name, Vendor = $IteratorPart/Vendor, Price = $IteratorPart/Price, PartNP_PartSearchHelper = $PartSearchHelper, UnitName = $IteratorPart/AssetsClient.Part_UnitOfMeasure/AssetsClient.UnitOfMeasure/UnitName, Abbreviation = $IteratorPart/AssetsClient.Part_UnitOfMeasure/AssetsClient.UnitOfMeasure/Abbreviation);
+  end loop;
+  return;
+end;
+
+grant execute on microflow NativeMobilePart.PartSearchHelper_SearchParts to NativeMobilePart.EditMy;
+
+create or modify microflow NativeMobileRelated.Asset_PopulateRelatedWorkHelper (
+  $AssetSystemID: String,
+  $SearchFinished: String,
+  $PageFinished: Integer,
+  $SearchPlanned: String,
+  $PagePlanned: Integer,
+  $SearchUnplanned: String,
+  $PageUnplanned: Integer
+)
+returns NativeMobileRelated.RelatedWorkAssetHelper
+folder 'Objects/Asset'
+export level api
+begin
+  $Asset = call microflow AssetsClient.Asset_Get_BySystemID(SystemID = $AssetSystemID);
+  @caption 'Asset?'
+  if $Asset != empty then
+    $RelatedWorkAssetHelper = call microflow NativeMobileRelated.RelatedWorkAssetHelper_Create();
+    $RelatedWorkHelperDownload_Finished = create NativeMobileRelated.RelatedWorkHelperDownload (RelatedWorkAssetHelper_RelatedWorkHelperDownload_Finished = $RelatedWorkAssetHelper);
+    $AppointmentList_Finished = call microflow NativeMobileAsset.Asset_RetrieveAppointmentList_ByStatus(Asset = $Asset, Search = $SearchFinished, Page = $PageFinished, RelatedWorkHelperDownload = $RelatedWorkHelperDownload_Finished, ENUM_AppointmentStatus = TicketManagement.ENUM_AppointmentStatus.Finished);
+    $NativeAppointmentNPList_Finished = call microflow NativeMobileRelated.NativeAppointmentNP_CreateList(AppointmentList = $AppointmentList_Finished);
+    loop $IteratorNativeAppointmentNP_Finished in $NativeAppointmentNPList_Finished
+    begin
+      change $IteratorNativeAppointmentNP_Finished (NativeMobile.NativeAppointmentNP_RelatedWorkHelper = $RelatedWorkHelperDownload_Finished);
+    end loop;
+    $RelatedWorkHelperDownload_Planned = create NativeMobileRelated.RelatedWorkHelperDownload (RelatedWorkAssetHelper_RelatedWorkHelperDownload_Planned = $RelatedWorkAssetHelper);
+    $AppointmentList_Planned = call microflow NativeMobileAsset.Asset_RetrieveAppointmentList_ByStatus(Asset = $Asset, Search = $SearchPlanned, Page = $PagePlanned, RelatedWorkHelperDownload = $RelatedWorkHelperDownload_Planned, ENUM_AppointmentStatus = TicketManagement.ENUM_AppointmentStatus.Planned);
+    $NativeAppointmentNPList_Unplanned = call microflow NativeMobileRelated.NativeAppointmentNP_CreateList(AppointmentList = $AppointmentList_Planned);
+    loop $IteratorNativeAppointmentNP_Planned in $NativeAppointmentNPList_Unplanned
+    begin
+      change $IteratorNativeAppointmentNP_Planned (NativeMobile.NativeAppointmentNP_RelatedWorkHelper = $RelatedWorkHelperDownload_Planned);
+    end loop;
+    $RelatedWorkHelperDownload_Unplanned = create NativeMobileRelated.RelatedWorkHelperDownload (RelatedWorkAssetHelper_RelatedWorkHelperDownload_Unplanned = $RelatedWorkAssetHelper);
+    $WorkOrderList_Unplanned = call microflow NativeMobileAsset.Asset_RetrieveUnplannedWorkOrderList(Asset = $Asset, Search = $SearchUnplanned, Page = $PageUnplanned, RelatedWorkHelperDownload = $RelatedWorkHelperDownload_Unplanned);
+    $NativeWorkOrderNPList = call microflow NativeMobileRelated.NativeWorkOrderNP_CreateList(WorkOrderList = $WorkOrderList_Unplanned);
+    loop $IteratorNativeWorkOrderNP in $NativeWorkOrderNPList
+    begin
+      change $IteratorNativeWorkOrderNP (NativeMobile.NativeWorkOrderNP_RelatedWorkHelper = $RelatedWorkHelperDownload_Unplanned);
+    end loop;
+    return $RelatedWorkAssetHelper;
+  else
+    @anchor(to: top)
+    return empty;
+  end if;
+end;
+
+grant execute on microflow NativeMobileRelated.Asset_PopulateRelatedWorkHelper to NativeMobileRelated.ViewRelated;
+
+create or modify microflow NativeMobileRelated.NativeWorkOrderNPSearchHelperDownload_GetRelevantWorkorderList (
+  $NativeWorkOrderNPSearchHelperDownload: NativeMobileRelated.NativeWorkOrderNPSearchHelperDownload,
+  $Search: String,
+  $Page: Integer
+)
+returns List of TicketManagement.WorkOrder
+folder 'Objects/NativeWorkOrderNPSearchHelperDownload'
+begin
+  @annotation(text: 'This microflow should be used to return the search result when searching for unplanned workorders on the Native device.', position: (-1355, -40), size: (330, 100))
+  $Technician_Current = call microflow Technician.Technician_Get_ForCurrentUser();
+  declare $SearchString String = trim($Search);
+  declare $Amount Integer = $Page * 10;
+  retrieve $WorkOrderList_Total from TicketManagement.WorkOrder
+    where [Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned or Status = TicketManagement.ENUM_WorkOrderStatus._New]
+    [(AssignedStatus = TicketManagement.ENUM_AssignedStatus.Unassigned and not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment/Status = 'Pending')) or (TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted' or Status = 'Pending']/TicketManagement.WorkOrderAssignment_Technician = $Technician_Current) or (TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup/Technician.TechnicianGroup_Technician = $Technician_Current)]
+    [TicketManagement.WorkOrder_Skill/Skill.Skill/Technician.Technician_Skill = $Technician_Current or not(TicketManagement.WorkOrder_Skill/Skill.Skill)]
+    [$SearchString = '' or contains(Description, $SearchString) or contains(ShortDescription, $SearchString) or contains(WorkOrderID, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(Description, $SearchString) or contains(ShortDescription, $SearchString) or contains(TicketID, $SearchString)]];
+  $WorkOrderList_RightSkills = call microflow Skill.Technician_CheckWorkOrderListOnSkills(WorkOrderList = $WorkOrderList_Total, Technician = $Technician_Current);
+  $Count = count $WorkOrderList_RightSkills;
+  retrieve $WorkOrderList_All from TicketManagement.WorkOrder
+    where [Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned or Status = TicketManagement.ENUM_WorkOrderStatus._New]
+    [(AssignedStatus = TicketManagement.ENUM_AssignedStatus.Unassigned and not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment/Status = 'Pending')) or (TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted' or Status = 'Pending']/TicketManagement.WorkOrderAssignment_Technician = $Technician_Current) or (TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup/Technician.TechnicianGroup_Technician = $Technician_Current)]
+    [TicketManagement.WorkOrder_Skill/Skill.Skill/Technician.Technician_Skill = $Technician_Current or not(TicketManagement.WorkOrder_Skill/Skill.Skill)]
+    [$SearchString = '' or contains(Description, $SearchString) or contains(ShortDescription, $SearchString) or contains(WorkOrderID, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(Description, $SearchString) or contains(ShortDescription, $SearchString) or contains(TicketID, $SearchString)]]
+    sort by DueDate asc, WorkOrderID asc
+    limit $Amount;
+  $WorkOrderList_ToReturn = call microflow Skill.Technician_CheckWorkOrderListOnSkills(WorkOrderList = $WorkOrderList_All, Technician = $Technician_Current);
+  change $NativeWorkOrderNPSearchHelperDownload (IsWorkOrderFound = $WorkOrderList_All != empty, HasMoreData = $Amount < $Count, UnplannedWorkOrderCount = $Count);
+  return $WorkOrderList_ToReturn;
+end;
+
+create or modify microflow NativeMobileRelated.NativeWorkOrderNP_Create (
+  $WorkOrder: TicketManagement.WorkOrder
+)
+returns NativeMobile.NativeWorkOrderNP
+folder 'Objects/NativeWorkOrderNP'
+begin
+  retrieve $Ticket from $WorkOrder/TicketManagement.WorkOrder_Ticket;
+  retrieve $Asset from $Ticket/TicketManagement.Ticket_Asset;
+  $AssigneesNameString = call microflow TicketManagement.WorkOrder_Get_AssigneeNameString(WorkOrder = $WorkOrder);
+  $NewNativeWorkOrderNP = create NativeMobile.NativeWorkOrderNP (WorkOrderID = $WorkOrder/WorkOrderID, SystemID = $WorkOrder/SystemID, ShortDescription = $WorkOrder/ShortDescription, Description = $WorkOrder/Description, DueDate = $WorkOrder/DueDate, TicketID = $Ticket/TicketID, TicketDescription = $Ticket/Description, TicketTypeDescription = $Ticket/TicketManagement.Ticket_TicketType/TicketManagement.TicketType/Name, TicketPriorityLevel = $Ticket/TicketManagement.Ticket_Priority/TicketManagement.Priority/PriorityLevel, TicketPriorityDescription = $Ticket/TicketManagement.Ticket_Priority/TicketManagement.Priority/Description, TicketCallerName = $Ticket/CallerName, TicketCallerPhoneNumber = $Ticket/CallerPhoneNumber, TicketShortDescription = $Ticket/ShortDescription, AssetID = $Asset/AssetID, AssetFullAddress = $Asset/FullAddress, AssetCustomerName = $Asset/CustomerName, AssetDescription = $Asset/Description, AssetManufacturer = $Asset/AssetsClient.Asset_Manufacturer/AssetsClient.Manufacturer/Name, AssetNotes = $Asset/Notes, TicketDueDate = $Ticket/DueDate, TicketCreatedDate = $Ticket/CreationTime, AssignedStatus = $WorkOrder/AssignedStatus, WorkOrderStatus = $WorkOrder/Status, AssignedTechnicianName = $AssigneesNameString);
+  return $NewNativeWorkOrderNP;
+end;
+
+create or modify microflow Scheduler.PlannerContext_GetWorkOrders (
+  $PlannerContext: Scheduler.PlannerContext,
+  $PageContext: Scheduler.PageContext
+)
+returns List of TicketManagement.WorkOrder
+folder 'Objects/PlannerContext'
+begin
+  declare $Amount Integer = $PageContext/Page * 20;
+  declare $SearchString String = trim($PageContext/SearchString);
+  declare $TicketID_FilterQuery String = trim($PageContext/FilterTicketID);
+  declare $WorkOrderID_FilterQuery String = trim($PageContext/FilterWorkOrderID);
+  declare $AssetID_FilterQuery String = trim($PageContext/FilterAssetID);
+  declare $Technician_FilterQuery String = trim($PageContext/FilterTechnician);
+  declare $Location_FilterQuery String = trim($PageContext/FilterAddress);
+  @merge(-1165, 85)
+  @caption 'User is SDE?'
+  if not(ModuleIntegration_Administration_Impl.Rule_User_HasUserRole_SDE(User = $currentUser/System.owner/Administration.Account)) then
+    @anchor(to: top)
+    @caption 'User is SRM?'
+    if ModuleIntegration_Administration_Impl.Rule_User_HasUserRole_SRM(User = $currentUser/System.owner/Administration.Account) then
+      @anchor(false: (from: top, to: bottom))
+      @caption 'Show all?'
+      if $PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty then
+        retrieve $NextWorkOrder_SRM_1 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = TicketManagement.ENUM_WorkOrderStatus._New or Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned) or ($PageContext/Filter = '_New' and Status = TicketManagement.ENUM_WorkOrderStatus._New) or ($PageContext/Filter = 'PartiallyPlanned' and Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned)]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or TicketManagement.Ticket_Asset/AssetsClient.Asset[contains(AssetID, $SearchString) or contains(Description, $SearchString) or contains(FullAddress, $SearchString)]]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/AssetID, $AssetID_FilterQuery)]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/FullAddress, $Location_FilterQuery)]
+    [($PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty and (not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician) and not(TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup)) or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/Technician.TechnicianGroup_Technician/Technician.TechnicianGroup/Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]' or TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup/Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]') or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup != empty and (TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/Technician.TechnicianGroup_Technician = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup or TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup))]
+    limit 1
+    offset $Amount;
+        change $PageContext (HasMoreData = $NextWorkOrder_SRM_1 != empty);
+        @caption 'Sorting'
+        case $PageContext/Sorting
+          when Ticket_ID___Ascending then
+            retrieve $WorkOrderList_SRM_1 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = TicketManagement.ENUM_WorkOrderStatus._New or Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned) or ($PageContext/Filter = '_New' and Status = TicketManagement.ENUM_WorkOrderStatus._New) or ($PageContext/Filter = 'PartiallyPlanned' and Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned)]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or TicketManagement.Ticket_Asset/AssetsClient.Asset[contains(AssetID, $SearchString) or contains(Description, $SearchString) or contains(FullAddress, $SearchString)]]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/AssetID, $AssetID_FilterQuery)]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/FullAddress, $Location_FilterQuery)]
+    [($PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty and (not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician) and not(TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup)) or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/Technician.TechnicianGroup_Technician/Technician.TechnicianGroup/Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]' or TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup/Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]') or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup != empty and (TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/Technician.TechnicianGroup_Technician = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup or TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup))]
+    sort by TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket.TicketID asc
+    limit $Amount;
+            return $WorkOrderList_SRM_1;
+          when Ticket_ID___Descending then
+            retrieve $WorkOrderList_SRM_2 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = TicketManagement.ENUM_WorkOrderStatus._New or Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned) or ($PageContext/Filter = '_New' and Status = TicketManagement.ENUM_WorkOrderStatus._New) or ($PageContext/Filter = 'PartiallyPlanned' and Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned)]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or TicketManagement.Ticket_Asset/AssetsClient.Asset[contains(AssetID, $SearchString) or contains(Description, $SearchString) or contains(FullAddress, $SearchString)]]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/AssetID, $AssetID_FilterQuery)]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/FullAddress, $Location_FilterQuery)]
+    [($PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty and (not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician) and not(TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup)) or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/Technician.TechnicianGroup_Technician/Technician.TechnicianGroup/Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]' or TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup/Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]') or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup != empty and (TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/Technician.TechnicianGroup_Technician = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup or TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup))]
+    sort by TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket.TicketID desc
+    limit $Amount;
+            return $WorkOrderList_SRM_2;
+          when (empty) then
+            retrieve $WorkOrderList_SRM_3 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = TicketManagement.ENUM_WorkOrderStatus._New or Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned) or ($PageContext/Filter = '_New' and Status = TicketManagement.ENUM_WorkOrderStatus._New) or ($PageContext/Filter = 'PartiallyPlanned' and Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned)]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or TicketManagement.Ticket_Asset/AssetsClient.Asset[contains(AssetID, $SearchString) or contains(Description, $SearchString) or contains(FullAddress, $SearchString)]]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/AssetID, $AssetID_FilterQuery)]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/FullAddress, $Location_FilterQuery)]
+    [($PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty and (not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician) and not(TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup)) or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/Technician.TechnicianGroup_Technician/Technician.TechnicianGroup/Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]' or TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup/Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]') or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup != empty and (TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/Technician.TechnicianGroup_Technician = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup or TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup))]
+    sort by DueDate asc
+    limit $Amount;
+            return $WorkOrderList_SRM_3;
+          when Due_date___Descending then
+            retrieve $WorkOrderList_SRM_4 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = TicketManagement.ENUM_WorkOrderStatus._New or Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned) or ($PageContext/Filter = '_New' and Status = TicketManagement.ENUM_WorkOrderStatus._New) or ($PageContext/Filter = 'PartiallyPlanned' and Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned)]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or TicketManagement.Ticket_Asset/AssetsClient.Asset[contains(AssetID, $SearchString) or contains(Description, $SearchString) or contains(FullAddress, $SearchString)]]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/AssetID, $AssetID_FilterQuery)]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/FullAddress, $Location_FilterQuery)]
+    [($PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty and (not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician) and not(TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup)) or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/Technician.TechnicianGroup_Technician/Technician.TechnicianGroup/Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]' or TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup/Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]') or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup != empty and (TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/Technician.TechnicianGroup_Technician = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup or TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup))]
+    sort by DueDate desc
+    limit $Amount;
+            return $WorkOrderList_SRM_4;
+          when Workorder_ID___Ascending then
+            retrieve $WorkOrderList_SRM_5 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = TicketManagement.ENUM_WorkOrderStatus._New or Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned) or ($PageContext/Filter = '_New' and Status = TicketManagement.ENUM_WorkOrderStatus._New) or ($PageContext/Filter = 'PartiallyPlanned' and Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned)]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or TicketManagement.Ticket_Asset/AssetsClient.Asset[contains(AssetID, $SearchString) or contains(Description, $SearchString) or contains(FullAddress, $SearchString)]]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/AssetID, $AssetID_FilterQuery)]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/FullAddress, $Location_FilterQuery)]
+    [($PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty and (not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician) and not(TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup)) or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/Technician.TechnicianGroup_Technician/Technician.TechnicianGroup/Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]' or TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup/Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]') or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup != empty and (TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/Technician.TechnicianGroup_Technician = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup or TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup))]
+    sort by WorkOrderID asc
+    limit $Amount;
+            return $WorkOrderList_SRM_5;
+          when Workorder_ID___Descending then
+            retrieve $WorkOrderList_SRM_6 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = TicketManagement.ENUM_WorkOrderStatus._New or Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned) or ($PageContext/Filter = '_New' and Status = TicketManagement.ENUM_WorkOrderStatus._New) or ($PageContext/Filter = 'PartiallyPlanned' and Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned)]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or TicketManagement.Ticket_Asset/AssetsClient.Asset[contains(AssetID, $SearchString) or contains(Description, $SearchString) or contains(FullAddress, $SearchString)]]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/AssetID, $AssetID_FilterQuery)]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/FullAddress, $Location_FilterQuery)]
+    [($PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty and (not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician) and not(TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup)) or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/Technician.TechnicianGroup_Technician/Technician.TechnicianGroup/Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]' or TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup/Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]') or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup != empty and (TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/Technician.TechnicianGroup_Technician = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup or TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup))]
+    sort by WorkOrderID desc
+    limit $Amount;
+            return $WorkOrderList_SRM_6;
+        end case;
+      end if;
+    @anchor(to: top)
+    @caption 'User is Technician?'
+    elsif ModuleIntegration_Administration_Impl.Rule_User_HasUserRole_Technician(User = $currentUser/System.owner/Administration.Account) then
+      retrieve $NextWorkOrder_Technician_1 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = TicketManagement.ENUM_WorkOrderStatus._New or Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned) or ($PageContext/Filter = '_New' and Status = TicketManagement.ENUM_WorkOrderStatus._New) or ($PageContext/Filter = 'PartiallyPlanned' and Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned)]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or TicketManagement.Ticket_Asset/AssetsClient.Asset[contains(AssetID, $SearchString) or contains(Description, $SearchString) or contains(FullAddress, $SearchString)]]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/AssetID, $AssetID_FilterQuery)]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/FullAddress, $Location_FilterQuery)]
+    [(not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician) and not(TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup)) or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/Administration.Account_Technician = '[%CurrentUser%]' or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty and TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup/Technician.TechnicianGroup_Technician/Technician.Technician/Administration.Account_Technician = '[%CurrentUser%]') or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup != empty and TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup)]
+    limit 1
+    offset $Amount;
+      change $PageContext (HasMoreData = if $NextWorkOrder_Technician_1 != empty then true
+else false);
+      @caption 'Sorting'
+      case $PageContext/Sorting
+        when Ticket_ID___Ascending then
+          retrieve $WorkOrderList_Technician_1 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = TicketManagement.ENUM_WorkOrderStatus._New or Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned) or ($PageContext/Filter = '_New' and Status = TicketManagement.ENUM_WorkOrderStatus._New) or ($PageContext/Filter = 'PartiallyPlanned' and Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned)]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or TicketManagement.Ticket_Asset/AssetsClient.Asset[contains(AssetID, $SearchString) or contains(Description, $SearchString) or contains(FullAddress, $SearchString)]]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/AssetID, $AssetID_FilterQuery)]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/FullAddress, $Location_FilterQuery)]
+    [(not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician) and not(TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup)) or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/Administration.Account_Technician = '[%CurrentUser%]' or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty and TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup/Technician.TechnicianGroup_Technician/Technician.Technician/Administration.Account_Technician = '[%CurrentUser%]') or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup != empty and TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup)]
+    sort by TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket.TicketID asc
+    limit $Amount;
+          return $WorkOrderList_Technician_1;
+        when Ticket_ID___Descending then
+          retrieve $WorkOrderList_Technician_2 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = TicketManagement.ENUM_WorkOrderStatus._New or Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned) or ($PageContext/Filter = '_New' and Status = TicketManagement.ENUM_WorkOrderStatus._New) or ($PageContext/Filter = 'PartiallyPlanned' and Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned)]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or TicketManagement.Ticket_Asset/AssetsClient.Asset[contains(AssetID, $SearchString) or contains(Description, $SearchString) or contains(FullAddress, $SearchString)]]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/AssetID, $AssetID_FilterQuery)]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/FullAddress, $Location_FilterQuery)]
+    [(not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician) and not(TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup)) or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/Administration.Account_Technician = '[%CurrentUser%]' or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty and TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup/Technician.TechnicianGroup_Technician/Technician.Technician/Administration.Account_Technician = '[%CurrentUser%]') or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup != empty and TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup)]
+    sort by TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket.TicketID desc
+    limit $Amount;
+          return $WorkOrderList_Technician_2;
+        when (empty) then
+          retrieve $WorkOrderList_Technician_3 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = TicketManagement.ENUM_WorkOrderStatus._New or Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned) or ($PageContext/Filter = '_New' and Status = TicketManagement.ENUM_WorkOrderStatus._New) or ($PageContext/Filter = 'PartiallyPlanned' and Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned)]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or TicketManagement.Ticket_Asset/AssetsClient.Asset[contains(AssetID, $SearchString) or contains(Description, $SearchString) or contains(FullAddress, $SearchString)]]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/AssetID, $AssetID_FilterQuery)]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/FullAddress, $Location_FilterQuery)]
+    [(not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician) and not(TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup)) or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/Administration.Account_Technician = '[%CurrentUser%]' or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty and TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup/Technician.TechnicianGroup_Technician/Technician.Technician/Administration.Account_Technician = '[%CurrentUser%]') or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup != empty and TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup)]
+    sort by DueDate asc
+    limit $Amount;
+          return $WorkOrderList_Technician_3;
+        when Due_date___Descending then
+          retrieve $WorkOrderList_Technician_4 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = TicketManagement.ENUM_WorkOrderStatus._New or Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned) or ($PageContext/Filter = '_New' and Status = TicketManagement.ENUM_WorkOrderStatus._New) or ($PageContext/Filter = 'PartiallyPlanned' and Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned)]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or TicketManagement.Ticket_Asset/AssetsClient.Asset[contains(AssetID, $SearchString) or contains(Description, $SearchString) or contains(FullAddress, $SearchString)]]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/AssetID, $AssetID_FilterQuery)]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/FullAddress, $Location_FilterQuery)]
+    [(not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician) and not(TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup)) or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/Administration.Account_Technician = '[%CurrentUser%]' or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty and TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup/Technician.TechnicianGroup_Technician/Technician.Technician/Administration.Account_Technician = '[%CurrentUser%]') or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup != empty and TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup)]
+    sort by DueDate desc
+    limit $Amount;
+          return $WorkOrderList_Technician_4;
+        when Workorder_ID___Ascending then
+          retrieve $WorkOrderList_Technician_5 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = TicketManagement.ENUM_WorkOrderStatus._New or Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned) or ($PageContext/Filter = '_New' and Status = TicketManagement.ENUM_WorkOrderStatus._New) or ($PageContext/Filter = 'PartiallyPlanned' and Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned)]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or TicketManagement.Ticket_Asset/AssetsClient.Asset[contains(AssetID, $SearchString) or contains(Description, $SearchString) or contains(FullAddress, $SearchString)]]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/AssetID, $AssetID_FilterQuery)]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/FullAddress, $Location_FilterQuery)]
+    [(not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician) and not(TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup)) or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/Administration.Account_Technician = '[%CurrentUser%]' or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty and TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup/Technician.TechnicianGroup_Technician/Technician.Technician/Administration.Account_Technician = '[%CurrentUser%]') or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup != empty and TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup)]
+    sort by WorkOrderID asc
+    limit $Amount;
+          return $WorkOrderList_Technician_5;
+        when Workorder_ID___Descending then
+          retrieve $WorkOrderList_Technician_6 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = TicketManagement.ENUM_WorkOrderStatus._New or Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned) or ($PageContext/Filter = '_New' and Status = TicketManagement.ENUM_WorkOrderStatus._New) or ($PageContext/Filter = 'PartiallyPlanned' and Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned)]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or TicketManagement.Ticket_Asset/AssetsClient.Asset[contains(AssetID, $SearchString) or contains(Description, $SearchString) or contains(FullAddress, $SearchString)]]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/AssetID, $AssetID_FilterQuery)]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/FullAddress, $Location_FilterQuery)]
+    [(not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician) and not(TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup)) or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/Administration.Account_Technician = '[%CurrentUser%]' or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty and TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup/Technician.TechnicianGroup_Technician/Technician.Technician/Administration.Account_Technician = '[%CurrentUser%]') or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup != empty and TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup)]
+    sort by WorkOrderID desc
+    limit $Amount;
+          return $WorkOrderList_Technician_6;
+      end case;
+    else
+      @anchor(to: top)
+      return empty;
+    end if;
+  end if;
+  join shared1;
+  merge shared1;
+  retrieve $NextWorkOrder_1 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = TicketManagement.ENUM_WorkOrderStatus._New or Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned) or ($PageContext/Filter = '_New' and Status = TicketManagement.ENUM_WorkOrderStatus._New) or ($PageContext/Filter = 'PartiallyPlanned' and Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned)]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or TicketManagement.Ticket_Asset/AssetsClient.Asset[contains(AssetID, $SearchString) or contains(Description, $SearchString) or contains(FullAddress, $SearchString)]]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/AssetID, $AssetID_FilterQuery)]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/FullAddress, $Location_FilterQuery)]
+    [$PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/Technician.TechnicianGroup_Technician = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup or TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup]
+    limit 1
+    offset $Amount;
+  change $PageContext (HasMoreData = $NextWorkOrder_1 != empty);
+  @caption 'Sorting'
+  case $PageContext/Sorting
+    when Ticket_ID___Ascending then
+      retrieve $WorkOrderList_SDE_1 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = TicketManagement.ENUM_WorkOrderStatus._New or Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned) or ($PageContext/Filter = '_New' and Status = TicketManagement.ENUM_WorkOrderStatus._New) or ($PageContext/Filter = 'PartiallyPlanned' and Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned)]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or TicketManagement.Ticket_Asset/AssetsClient.Asset[contains(AssetID, $SearchString) or contains(Description, $SearchString) or contains(FullAddress, $SearchString)]]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/AssetID, $AssetID_FilterQuery)]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/FullAddress, $Location_FilterQuery)]
+    [$PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/Technician.TechnicianGroup_Technician = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup or TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup]
+    sort by TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket.TicketID asc
+    limit $Amount;
+      return $WorkOrderList_SDE_1;
+    when Ticket_ID___Descending then
+      retrieve $WorkOrderList_2 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = TicketManagement.ENUM_WorkOrderStatus._New or Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned) or ($PageContext/Filter = '_New' and Status = TicketManagement.ENUM_WorkOrderStatus._New) or ($PageContext/Filter = 'PartiallyPlanned' and Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned)]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or TicketManagement.Ticket_Asset/AssetsClient.Asset[contains(AssetID, $SearchString) or contains(Description, $SearchString) or contains(FullAddress, $SearchString)]]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/AssetID, $AssetID_FilterQuery)]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/FullAddress, $Location_FilterQuery)]
+    [$PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/Technician.TechnicianGroup_Technician = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup or TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup]
+    sort by TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket.TicketID desc
+    limit $Amount;
+      return $WorkOrderList_2;
+    when (empty) then
+      retrieve $WorkOrderList_3 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = TicketManagement.ENUM_WorkOrderStatus._New or Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned) or ($PageContext/Filter = '_New' and Status = TicketManagement.ENUM_WorkOrderStatus._New) or ($PageContext/Filter = 'PartiallyPlanned' and Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned)]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or TicketManagement.Ticket_Asset/AssetsClient.Asset[contains(AssetID, $SearchString) or contains(Description, $SearchString) or contains(FullAddress, $SearchString)]]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/AssetID, $AssetID_FilterQuery)]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/FullAddress, $Location_FilterQuery)]
+    [$PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/Technician.TechnicianGroup_Technician = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup or TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup]
+    sort by DueDate asc
+    limit $Amount;
+      return $WorkOrderList_3;
+    when Due_date___Descending then
+      retrieve $WorkOrderList_4 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = TicketManagement.ENUM_WorkOrderStatus._New or Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned) or ($PageContext/Filter = '_New' and Status = TicketManagement.ENUM_WorkOrderStatus._New) or ($PageContext/Filter = 'PartiallyPlanned' and Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned)]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or TicketManagement.Ticket_Asset/AssetsClient.Asset[contains(AssetID, $SearchString) or contains(Description, $SearchString) or contains(FullAddress, $SearchString)]]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/AssetID, $AssetID_FilterQuery)]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/FullAddress, $Location_FilterQuery)]
+    [$PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/Technician.TechnicianGroup_Technician = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup or TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup]
+    sort by DueDate desc
+    limit $Amount;
+      return $WorkOrderList_4;
+    when Workorder_ID___Ascending then
+      retrieve $WorkOrderList_5 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = TicketManagement.ENUM_WorkOrderStatus._New or Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned) or ($PageContext/Filter = '_New' and Status = TicketManagement.ENUM_WorkOrderStatus._New) or ($PageContext/Filter = 'PartiallyPlanned' and Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned)]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or TicketManagement.Ticket_Asset/AssetsClient.Asset[contains(AssetID, $SearchString) or contains(Description, $SearchString) or contains(FullAddress, $SearchString)]]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/AssetID, $AssetID_FilterQuery)]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/FullAddress, $Location_FilterQuery)]
+    [$PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/Technician.TechnicianGroup_Technician = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup or TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup]
+    sort by WorkOrderID asc
+    limit $Amount;
+      return $WorkOrderList_5;
+    when Workorder_ID___Descending then
+      retrieve $WorkOrderList_6 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = TicketManagement.ENUM_WorkOrderStatus._New or Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned) or ($PageContext/Filter = '_New' and Status = TicketManagement.ENUM_WorkOrderStatus._New) or ($PageContext/Filter = 'PartiallyPlanned' and Status = TicketManagement.ENUM_WorkOrderStatus.Partially_planned)]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or TicketManagement.Ticket_Asset/AssetsClient.Asset[contains(AssetID, $SearchString) or contains(Description, $SearchString) or contains(FullAddress, $SearchString)]]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/AssetID, $AssetID_FilterQuery)]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/Technician.Technician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketManagement.Ticket_Asset/AssetsClient.Asset/FullAddress, $Location_FilterQuery)]
+    [$PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Accepted' or Status = 'Auto_accepted']/TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/Technician.TechnicianGroup_Technician = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup or TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup]
+    sort by WorkOrderID desc
+    limit $Amount;
+      return $WorkOrderList_6;
+  end case;
+end;
+
+create or modify microflow Synchronization.Asset_ProcessUpdateNativeAsset (
+  $Asset: AssetsClient.Asset,
+  $NativeAssetList_ToCommit: List of NativeMobileAsset.NativeAsset
+)
+folder 'Objects/Asset/Private'
+begin
+  $NativeAsset = call microflow NativeMobileAsset.NativeAsset_GetOrCreate(SystemID = $Asset/SystemID, NativeAssetList_optional = $NativeAssetList_ToCommit);
+  retrieve $Manufacturer from $Asset/AssetsClient.Asset_Manufacturer;
+  change $NativeAsset (AssetID = $Asset/AssetID, Description = $Asset/Description, Notes = $Asset/Notes, FullAddress = $Asset/FullAddress, CustomerName = $Asset/CustomerName, Manufacturer = $Manufacturer/Name);
+  add $NativeAsset to $NativeAssetList_ToCommit;
+  return;
+end;
+
+create or modify microflow Synchronization.OfflineInventoryAction_Validate (
+  $OfflineInventoryAction: Synchronization.OfflineInventoryAction
+)
+returns Boolean
+folder 'Objects/OfflineInventoryAction/Private'
+begin
+  @annotation(text: 'Daan v. Otterloo 28/06/2022: Not posible to edit inventories etc only to create so no need for the usual validation here.', position: (-210, -5), size: (230, 50))
+  -- WARNING: the merge at (-195, 490) is not represented in this description - it joins no decision and no error handler, so re-executing this MDL DELETES it. The microflow behaves the same either way (a merge with one incoming path is a no-op), but the node disappears from the diagram (mxcli #923)
+  -- WARNING: the merge at (760, 490) is not represented in this description - it joins no decision and no error handler, so re-executing this MDL DELETES it. The microflow behaves the same either way (a merge with one incoming path is a no-op), but the node disappears from the diagram (mxcli #923)
+  declare $IsValid Boolean = true;
+  @merge(760, 180)
+  @caption 'ActionType?'
+  if $OfflineInventoryAction/InventoryActionType != empty then
+    @merge(135, 180)
+    @caption 'Amount?'
+    if $OfflineInventoryAction/Amount != empty then
+    else
+      @anchor(from: bottom, to: top)
+      set $IsValid = false;
+      @anchor(to: top)
+      call microflow Synchronization.OfflineAction_AppendReviewMessage(OfflineAction = $OfflineInventoryAction, Message = 'This offline action does not have the necessary Amount thus could not be processed. This is a system error. Please contact the system administrator.');
+    end if;
+    $Part = call microflow AssetsClient.Part_Get_BySystemID(SystemID = $OfflineInventoryAction/PartSystemID);
+    @merge(760, 180)
+    @caption 'Part?'
+    if not($Part != empty) then
+      @anchor(from: bottom, to: top)
+      set $IsValid = false;
+      @anchor(to: top)
+      call microflow Synchronization.OfflineAction_AppendReviewMessage(OfflineAction = $OfflineInventoryAction, Message = 'The related Part is not available on web, this is a system error, contact your system administrator.');
+    end if;
+  else
+    @anchor(from: bottom, to: top)
+    set $IsValid = false;
+    @anchor(from: bottom, to: top)
+    call microflow Synchronization.OfflineAction_AppendReviewMessage(OfflineAction = $OfflineInventoryAction, Message = 'The type of this offline action could not be identified. 
+This is a system error. Please contact the system administrator.');
+  end if;
+  return $IsValid;
+end;
+
+create or modify microflow Synchronization.OfflineTicketAction_Process (
+  $OfflineTicketAction: Synchronization.OfflineTicketAction
+)
+returns Boolean
+folder 'Objects/OfflineTicketAction/Private'
+begin
+  declare $SuccessfullyProcessed Boolean = false;
+  $Ticket = call microflow TicketManagement.Ticket_GetCreate(SystemID = $OfflineTicketAction/ObjectID);
+  @caption 'ticket action type'
+  case $OfflineTicketAction/TicketActionType
+    when Ticket_created then
+      $TicketNP = call microflow TicketManagement.Ticket_CreateTicketNP(Ticket = $Ticket);
+      $Technician = call microflow Technician.Technician_Get_ForCurrentUser();
+      $Asset_NewTicket = call microflow AssetsClient.Asset_Get_BySystemID(SystemID = $OfflineTicketAction/AssetSystemID);
+      change $TicketNP (ShortDescription = $OfflineTicketAction/ShortDescription, Description = $OfflineTicketAction/Description, CallerName = $Technician/TechnicianName, CallerPhoneNumber = $Technician/TelephoneNumber, TicketManagement.TicketNP_Asset = $Asset_NewTicket);
+      $Ticket = call microflow TicketManagement.TicketNP_Malfunction_Save(TicketNP = $TicketNP);
+    when Asset_confirmed then
+      change $Ticket (AssetConfirmed = $OfflineTicketAction/CreatedDateTime);
+      call microflow TicketManagement.Ticket_Save(Ticket = $Ticket);
+    when Asset_changed then
+      $Asset = call microflow AssetsClient.Asset_Get_BySystemID(SystemID = $OfflineTicketAction/AssetSystemID);
+      change $Ticket (TicketManagement.Ticket_Asset = $Asset, AssetConfirmed = $OfflineTicketAction/CreatedDateTime);
+      call microflow TicketManagement.Ticket_Save(Ticket = $Ticket);
+    when (empty) then
+      @anchor(to: top)
+      return $SuccessfullyProcessed;
+  end case;
+  join shared1;
+  merge shared1;
+  set $SuccessfullyProcessed = true;
+  return $SuccessfullyProcessed;
+end;
+
+create or modify microflow Synchronization.OfflineTicketAction_Validate (
+  $OfflineTicketAction: Synchronization.OfflineTicketAction,
+  $LastDownload: DateTime
+)
+returns Boolean
+folder 'Objects/OfflineTicketAction/Private'
+begin
+  -- WARNING: the merge at (1550, 635) is not represented in this description - it joins no decision and no error handler, so re-executing this MDL DELETES it. The microflow behaves the same either way (a merge with one incoming path is a no-op), but the node disappears from the diagram (mxcli #923)
+  -- WARNING: the merge at (-30, 635) is not represented in this description - it joins no decision and no error handler, so re-executing this MDL DELETES it. The microflow behaves the same either way (a merge with one incoming path is a no-op), but the node disappears from the diagram (mxcli #923)
+  -- WARNING: the merge at (475, -140) is not represented in this description - it joins no decision and no error handler, so re-executing this MDL DELETES it. The microflow behaves the same either way (a merge with one incoming path is a no-op), but the node disappears from the diagram (mxcli #923)
+  -- WARNING: the merge at (635, 145) is not represented in this description - it joins no decision and no error handler, so re-executing this MDL DELETES it. The microflow behaves the same either way (a merge with one incoming path is a no-op), but the node disappears from the diagram (mxcli #923)
+  -- WARNING: the merge at (1550, -140) is not represented in this description - it joins no decision and no error handler, so re-executing this MDL DELETES it. The microflow behaves the same either way (a merge with one incoming path is a no-op), but the node disappears from the diagram (mxcli #923)
+  declare $IsValid Boolean = true;
+  @merge(475, 635)
+  @caption 'TicketActionType'
+  if $OfflineTicketAction/TicketActionType != empty then
+    $Asset_NewTicket = call microflow AssetsClient.Asset_Get_BySystemID(SystemID = $OfflineTicketAction/AssetSystemID);
+    @merge(475, 635)
+    @caption 'Asset available?'
+    if $Asset_NewTicket != empty then
+      @merge(1550, 245)
+      @caption 'Type'
+      case $OfflineTicketAction/TicketActionType
+        when Asset_confirmed, Asset_changed then
+          $Ticket = call microflow TicketManagement.Ticket_Get_BySystemID(SystemID = $OfflineTicketAction/ObjectID);
+          @merge(1550, 245)
+          @caption 'found?'
+          if $Ticket != empty then
+            @merge(1550, 245)
+            @caption 'last changed by current user?'
+            if not($Ticket/TicketManagement.Ticket_Account_LastChangedBy = $currentUser) then
+              @anchor(from: top)
+              @merge(1550, 375)
+              @caption 'sync allowed?'
+              if $LastDownload != empty
+and
+$LastDownload >= $Ticket/changedDate then
+              else
+                @anchor(from: bottom, to: top)
+                set $IsValid = false;
+                @anchor(to: top)
+                call microflow Synchronization.OfflineAction_AppendReviewMessage(OfflineAction = $OfflineTicketAction, Message = 'This object was changed by another user after your last sync date.
+Therefore, this offline action cannot be processed.');
+              end if;
+              join shared5;
+            end if;
+          else
+            @anchor(from: bottom, to: top)
+            set $IsValid = false;
+            @anchor(from: bottom, to: top)
+            call microflow Synchronization.OfflineAction_AppendReviewMessage(OfflineAction = $OfflineTicketAction, Message = 'The related Ticket is not available on web, this is a system error, contact your system administrator.');
+            join shared3;
+          end if;
+        when (empty) then
+          join shared2;
+        when Ticket_created then
+          @anchor(from: bottom)
+          @merge(1550, 145)
+          @caption ' (Short)Description?'
+          if trim($OfflineTicketAction/ShortDescription) != '' and
+trim($OfflineTicketAction/Description) != '' then
+          else
+            @anchor(from: bottom, to: top)
+            set $IsValid = false;
+            @anchor(from: bottom, to: top)
+            call microflow Synchronization.OfflineAction_AppendReviewMessage(OfflineAction = $OfflineTicketAction, Message = 'This offline action does not have the necessary (Short)Description thus could not be processed. This is a system error. Please contact the system administrator.');
+          end if;
+      end case;
+    else
+      @anchor(from: bottom, to: top)
+      set $IsValid = false;
+      @anchor(from: bottom, to: top)
+      call microflow Synchronization.OfflineAction_AppendReviewMessage(OfflineAction = $OfflineTicketAction, Message = 'The related Asset is not available on web.');
+      join shared1;
+    end if;
+  else
+    @anchor(from: bottom, to: top)
+    set $IsValid = false;
+    @anchor(from: bottom, to: top)
+    call microflow Synchronization.OfflineAction_AppendReviewMessage(OfflineAction = $OfflineTicketAction, Message = 'The type of this offline action could not be identified. 
+This is a system error. Please contact the system administrator.');
+    join shared1;
+  end if;
+  join shared4;
+  merge shared1;
+  join shared2;
+  merge shared2;
+  join shared3;
+  merge shared3;
+  join shared5;
+  merge shared4;
+  return $IsValid;
+  merge shared5;
+  join shared4;
+end;
+
+create or modify rule Synchronization.Rule_SuggestedPart_HasChanged (
+  $SuggestedPart: AssetsClient.SuggestedPart,
+  $NativeSuggestedPart: NativeMobilePart.NativeSuggestedPart
+)
+returns Boolean
+folder 'Objects/SuggestedPart'
+begin
+  declare $HasChanged Boolean = false;
+  retrieve $NativeWorkOrder from NativeMobile.NativeWorkOrder
+    where [NativeMobilePart.NativeSuggestedPart_NativeWorkOrder = $NativeSuggestedPart]
+    [IsDeleted = false()]
+    first;
+  retrieve $WorkOrder from TicketManagement.WorkOrder
+    where PublicID = $SuggestedPart/WorkOrderPublicID
+    first;
+  retrieve $NativePart from NativeMobilePart.NativePart
+    where [NativeMobilePart.NativeSuggestedPart_NativePart = $NativeSuggestedPart]
+    [IsDeleted = false()]
+    first;
+  retrieve $Part from $SuggestedPart/AssetsClient.SuggestedPart_Part;
+  @merge(1165, 230)
+  @caption 'values changed?'
+  if $NativePart/SystemID != $Part/SystemID or
+$NativeWorkOrder/SystemID != $WorkOrder/SystemID or
+$NativeSuggestedPart/Quantity != $SuggestedPart/Quantity or
+$NativeSuggestedPart/IsUsed != $SuggestedPart/IsUsed then
+    set $HasChanged = true;
+  end if;
+  return $HasChanged;
+end;
+
+create or modify microflow Synchronization.SuggestedPart_ProcessUpdatingNativeSuggestedPart (
+  $SuggestedPart: AssetsClient.SuggestedPart,
+  $NativeSuggestedPart: NativeMobilePart.NativeSuggestedPart
+)
+folder 'Objects/SuggestedPart'
+export level api
+begin
+  retrieve $Part from $SuggestedPart/AssetsClient.SuggestedPart_Part;
+  $NativePart = call microflow NativeMobilePart.NativePart_Get_BySystemID(SystemID = $Part/SystemID, NativePartList_optional = empty);
+  retrieve $WorkOrder from TicketManagement.WorkOrder
+    where PublicID = $SuggestedPart/WorkOrderPublicID
+    first;
+  $NativeWorkOrder = call microflow NativeMobile.NativeWorkOrder_GetOrCreate(SystemID = $WorkOrder/SystemID, NativeWorkOrderList_optional = empty);
+  change $NativeSuggestedPart (NativeMobilePart.NativeSuggestedPart_NativeWorkOrder = $NativeWorkOrder, NativeMobilePart.NativeSuggestedPart_NativePart = $NativePart, Quantity = $SuggestedPart/Quantity, IsUsed = $SuggestedPart/IsUsed);
+  call microflow NativeMobilePart.NativeSuggestedPart_Save(NativeSuggestedPart = $NativeSuggestedPart);
+  @annotation(text: 'Hotfix to prevent the database from deleting this native workorder due to the status being autocommitted', position: (870, 50), size: (230, 50))
+  call microflow NativeMobile.NativeWorkorder_Save(NativeWorkOrder = $NativeWorkOrder);
+  return;
+end;
+
+create or modify microflow TicketManagement.ACT_Workorder_CancelEdit (
+  $WorkOrder: TicketManagement.WorkOrder
+)
+folder 'Pages/WorkOrder/Edit'
+begin
+  retrieve $SelectedFormList from $WorkOrder/Form.SelectedForm_WorkOrder;
+  loop $IteratorSelectedForm in $SelectedFormList
+  begin
+    rollback $IteratorSelectedForm;
+  end loop;
+  retrieve $WorkOrderAssignmentHelperList from $WorkOrder/TicketManagement.WorkOrderAssignmentHelper_WorkOrder;
+  delete $WorkOrderAssignmentHelperList;
+  rollback $WorkOrder refresh;
+  close page;
+  return;
+end;
+
+grant execute on microflow TicketManagement.ACT_Workorder_CancelEdit to TicketManagement.WorkorderEditAll;
+
+create or modify microflow TicketManagement.AppointmentList_Delete (
+  $AppointmentList: List of TicketManagement.Appointment
+)
+folder 'Objects/Appointment/Delete'
+export level api
+begin
+  $WorkOrderList_ToRecalculate = create list of TicketManagement.WorkOrder;
+  $NativeAppointmentList_ToDelete = create list of NativeMobile.NativeAppointment;
+  $AppointmentAssignment_ToDelete = create list of TicketManagement.AppointmentAssignment;
+  $TimeRegistrationList_ToDelete = create list of TimeRegistration.TimeRegistration;
+  $NotResolvedReasonList_ToDelete = create list of Reason.NotResolvedReason;
+  $OfflineAppointmentActionList_ToDelete = create list of Synchronization.OfflineAppointmentAction;
+  loop $IteratorAppointment in $AppointmentList
+  begin
+    retrieve $AppointmentAssignmentList from $IteratorAppointment/TicketManagement.AppointmentAssignment_Appointment;
+    add $AppointmentAssignmentList to $AppointmentAssignment_ToDelete;
+    retrieve $WorkOrder from $IteratorAppointment/TicketManagement.Appointment_WorkOrder;
+    add $WorkOrder to $WorkOrderList_ToRecalculate;
+    retrieve $NotResolvedReasonList from $IteratorAppointment/Reason.NotResolvedReason_Appointment;
+    add $NotResolvedReasonList to $NotResolvedReasonList_ToDelete;
+    retrieve $OfflineAppointmentActionList from $IteratorAppointment/Synchronization.OfflineAppointmentAction_Appointment;
+    add $OfflineAppointmentActionList to $OfflineAppointmentActionList_ToDelete;
+    retrieve $TimeRegistrationList from $IteratorAppointment/TimeRegistration.TimeRegistration_Appointment;
+    add $TimeRegistrationList to $TimeRegistrationList_ToDelete;
+    $NativeAppointment = call microflow NativeMobile.NativeAppointment_Get_BySystemID(SystemID = $IteratorAppointment/SystemID, NativeAppointmentList_optional = empty);
+    add $NativeAppointment to $NativeAppointmentList_ToDelete;
+  end loop;
+  call microflow NativeMobile.NativeAppointmentList_Delete(NativeAppointmentList = $NativeAppointmentList_ToDelete);
+  call microflow TimeRegistration.TimeRegistrationList_Delete(TimeRegistrationList = $TimeRegistrationList_ToDelete);
+  call microflow Reason.NotResolvedReasonList_Delete(NotResolvedReasonList = $NotResolvedReasonList_ToDelete);
+  call microflow Synchronization.OfflineAppointmentActionList_Delete(OfflineAppointmentActionList = $OfflineAppointmentActionList_ToDelete);
+  call microflow TicketManagement.AppointmentAssignmentList_Delete(AppointmentAssignmentList = $AppointmentAssignment_ToDelete);
+  delete $AppointmentList;
+  call microflow TicketManagement.WorkOrderList_Save(WorkOrderList = $WorkOrderList_ToRecalculate);
+  return;
+end;
+
+create or modify microflow TicketManagement.DS_Asset_GetRelevantSLA (
+  $Asset: AssetsClient.Asset
+)
+returns CustomerManagement.SLA
+folder 'Pages/TicketNP/Malfunction'
+begin
+  $SLA = call microflow AssetsClient.Asset_GetRelevantSLA(Asset = $Asset);
+  @caption 'SLA found?'
+  if $SLA != empty then
+    return $SLA;
+  else
+    @anchor(to: top)
+    return empty;
+  end if;
+end;
+
+grant execute on microflow TicketManagement.DS_Asset_GetRelevantSLA to TicketManagement.TicketEditAll;
+
+create or modify microflow TicketManagement.Private_Ticket_DetermineSLA (
+  $Ticket: TicketManagement.Ticket
+)
+returns Integer
+folder 'Objects/Ticket/Private/Calculations'
+begin
+  declare $SLAResponseTime Integer = empty;
+  @caption 'Not cancelled?'
+  if TicketManagement.Rule_Ticket_IsNotCancelled(Ticket = $Ticket) then
+    @caption 'Malfunction?'
+    if TicketManagement.Rule_TicketType_IsMalfunction(TicketType = $Ticket/TicketManagement.Ticket_TicketType/TicketManagement.TicketType) then
+      retrieve $Asset from $Ticket/TicketManagement.Ticket_Asset;
+      $SLA = call microflow AssetsClient.Asset_GetRelevantSLA(Asset = $Asset);
+      @caption 'SLA?'
+      if $SLA != empty then
+        retrieve $Priority from $Ticket/TicketManagement.Ticket_Priority;
+        @caption 'Priority level?'
+        case $Priority/PriorityLevel
+          when A_High then
+            set $SLAResponseTime = 60 * $SLA/HighPriorityResponseTime;
+            return $SLAResponseTime;
+          when B_Medium then
+            set $SLAResponseTime = 60 * $SLA/MediumPriorityResponseTime;
+            return $SLAResponseTime;
+          when C_Low then
+            set $SLAResponseTime = 60 * $SLA/LowPriorityResponseTime;
+            return $SLAResponseTime;
+          when (empty) then
+            @anchor(to: top)
+            return $SLAResponseTime;
+        end case;
+      else
+        @anchor(to: top)
+        return $SLAResponseTime;
+      end if;
+    else
+      @anchor(to: top)
+      return $SLAResponseTime;
+    end if;
+  else
+    @anchor(to: top)
+    return $SLAResponseTime;
+  end if;
+end;
+
+create or modify microflow TicketManagement.Private_WorkOrder_TechnicianPicker_GetMalfunctionTechnician (
+  $MinimumDate: DateTime,
+  $Asset: AssetsClient.Asset
+)
+returns Technician.Technician
+folder 'Objects/WorkOrder/Private/TechnicianPicker'
+begin
+  @annotation(text: 'Get all Technicians in Region with active malfunction roster', position: (-145, 35), size: (230, 50))
+  retrieve $TechnicianList from Technician.Technician
+    where [Technician.Technician_ServiceRegionManager/Administration.Account /Technician.Technician_ServiceRegionManager/Technician.Technician /TechnicianID = $Asset/PreferredTechnicianID]
+    [RosterManagement.TechnicianRoster_Technician/RosterManagement.TechnicianRoster [RosterType = 'Malfunction'][StartDate < $MinimumDate][EndDate > $MinimumDate]]
+    sort by TechnicianID asc;
+  $TechnicianList_ToPick = create list of Technician.Technician;
+  loop $IteratoTechnician in $TechnicianList
+  begin
+    @caption 'Technician is eligible'
+    @annotation(text: 'Technicians with set appointments, should not be used. If one is found, use it.', position: (260, 20), size: (240, 100))
+    if TicketManagement.Rule_WorkOrder_TechnicianPicker_IsEligible(MinimumDate = $MinimumDate, Technician = $IteratoTechnician, NeedMalfunction = true) then
+      add $IteratoTechnician to $TechnicianList_ToPick;
+      break;
+    else
+      @anchor(to: top)
+      continue;
+    end if;
+  end loop;
+  $Technician = head $TechnicianList_ToPick;
+  return $Technician;
+end;
+
+create or modify microflow TicketManagement.TicketNP_Asset_RequiresContractWarning (
+  $TicketNP: TicketManagement.TicketNP
+)
+returns Boolean
+folder 'Objects/TicketNP/Malfunction'
+export level api
+begin
+  @caption 'asset requires warning'
+  if AssetsClient.Rule_Asset_RequiresNoContractNotification(Asset = $TicketNP/TicketManagement.TicketNP_Asset/AssetsClient.Asset) then
+    return true;
+  else
+    @anchor(to: top)
+    return false;
+  end if;
+end;
+
+create or modify microflow TicketManagement.TicketNP_IsChoosenTechnicianAssigned (
+  $Ticket: TicketManagement.Ticket,
+  $TicketNP: TicketManagement.TicketNP
+)
+folder 'Pages/TicketNP/Malfunction'
+begin
+  @caption 'Notification?'
+  if $TicketNP/AssignTechnician = TicketManagement.ENUM_Malfunction_AssignTechnician.PreferredTechnician then
+    retrieve $TicketAsset from $Ticket/TicketManagement.Ticket_Asset;
+    $Technician_Preferred = call microflow AssetsClient.Asset_GetPreferredTechnician(Asset = $TicketAsset);
+    retrieve $Technician_Assigned from Technician.Technician
+    where TicketManagement.WorkOrderAssignment_Technician/TicketManagement.WorkOrderAssignment /TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrder /TicketManagement.WorkOrder_Ticket = $Ticket
+    first;
+    @caption 'Is Preferred available?'
+    if $Technician_Assigned = $Technician_Preferred then
+      return;
+    else
+      @anchor(from: bottom, to: top)
+      show message 'The preferred technician wasn''t available so another available technician is assigned. Please check the workorder to see the currently assigned technician.' type Information blocking;
+      @anchor(to: top)
+      return;
+    end if;
+  else
+    @anchor(to: top)
+    return;
+  end if;
+end;
+
+create or modify microflow TicketManagement.TicketNP_Malfunction_Validate (
+  $TicketNP: TicketManagement.TicketNP
+)
+returns Boolean
+folder 'Objects/TicketNP/Malfunction/Validations'
+export level api
+begin
+  -- WARNING: the merge at (470, -90) is not represented in this description - it joins no decision and no error handler, so re-executing this MDL DELETES it. The microflow behaves the same either way (a merge with one incoming path is a no-op), but the node disappears from the diagram (mxcli #923)
+  -- WARNING: the merge at (1690, -90) is not represented in this description - it joins no decision and no error handler, so re-executing this MDL DELETES it. The microflow behaves the same either way (a merge with one incoming path is a no-op), but the node disappears from the diagram (mxcli #923)
+  declare $IsValid Boolean = true;
+  $IsValidDraft = call microflow TicketManagement.TicketNP_Malfunction_ValidateDraft(TicketNP = $TicketNP);
+  set $IsValid = $IsValid
+and
+$IsValidDraft;
+  $SLA = call microflow AssetsClient.Asset_GetRelevantSLA(Asset = $TicketNP/TicketManagement.TicketNP_Asset/AssetsClient.Asset);
+  @merge(305, 200)
+  @caption 'Customer reference required?'
+  if $SLA != empty
+and $SLA/NeedsMandatoryTaskNumber then
+    @merge(305, 200)
+    @caption 'Needed now?'
+    if not($TicketNP/AddCustomerReferenceLater) then
+      @merge(305, 200)
+      @caption 'Customer reference?'
+      if not(trim($TicketNP/CustomerReference) != '') then
+        @anchor(to: top)
+        set $IsValid = false;
+        @anchor(from: top)
+        validation feedback $TicketNP/CustomerReference message 'Provide a customer reference.';
+      end if;
+    end if;
+  end if;
+  @merge(1690, 200)
+  @caption 'Send to which Technician?'
+  case $TicketNP/AssignTechnician
+    when Recurring_for_specific_technician, SpecificTechnician then
+      @merge(975, 5)
+      @caption 'Technician?'
+      if $TicketNP/TicketManagement.TicketNP_Technician != empty then
+      else
+        @anchor(to: top)
+        set $IsValid = false;
+        @anchor(from: top)
+        validation feedback $TicketNP/TicketManagement.TicketNP_Technician message 'Select a technician';
+      end if;
+      @merge(1335, 5)
+      @caption 'ExpectedStartTime?'
+      if $TicketNP/ExpectedStartTime != empty then
+      else
+        @anchor(to: top)
+        set $IsValid = false;
+        @anchor(from: top)
+        validation feedback $TicketNP/ExpectedStartTime message 'Select an expected time of arrival.';
+      end if;
+      join shared1;
+    when PreferredTechnician then
+      @merge(975, 200)
+      @caption 'Preferred Technician?'
+      if $TicketNP/TicketManagement.TicketNP_Asset/AssetsClient.Asset/PreferredTechnicianID != empty then
+      else
+        @anchor(to: top)
+        set $IsValid = false;
+        @anchor(from: top)
+        validation feedback $TicketNP/AssignTechnician message 'No preferred technician has been set for this Asset.';
+      end if;
+      $Technician = call microflow TicketManagement.WorkOrder_TechnicianPicker(Asset = $TicketNP/TicketManagement.TicketNP_Asset/AssetsClient.Asset, WorkOrder_optional = empty);
+      @merge(1540, 200)
+      @caption 'Any?'
+      if $Technician != empty then
+      else
+        @anchor(to: top)
+        set $IsValid = false;
+        @anchor(from: top)
+        show message 'Can''t send notification since no technician is available. Please select a technician manually for this malfunction.' type Information blocking;
+      end if;
+    when (empty) then
+      @anchor(to: top)
+      set $IsValid = false;
+      @anchor(from: top)
+      validation feedback $TicketNP/AssignTechnician message 'Choose an option.';
+    when NoWorkorder then
+      join shared1;
+  end case;
+  join shared2;
+  merge shared1;
+  join shared2;
+  merge shared2;
+  @merge(2500, 200)
+  @caption 'is recurring?'
+  if $TicketNP/AssignTechnician = TicketManagement.ENUM_Malfunction_AssignTechnician.Recurring_for_specific_technician then
+    @merge(2180, 200)
+    @caption 'interval?'
+    if $TicketNP/OccurrenceInterval != empty then
+    else
+      @anchor(to: top)
+      set $IsValid = false;
+      @anchor(from: top)
+      validation feedback $TicketNP/OccurrenceInterval message 'Pick an interval.';
+    end if;
+    @merge(2500, 200)
+    @caption 'number of occurrences?'
+    if not($TicketNP/NumberOfOccurrences != empty) then
+      @anchor(to: top)
+      set $IsValid = false;
+      @anchor(from: top)
+      validation feedback $TicketNP/NumberOfOccurrences message 'Enter number of occurrences.';
+    end if;
+  end if;
+  return $IsValid;
+end;
+
+create or modify microflow TicketManagement.TicketNP_Malfunction_ValidateEdit (
+  $TicketNP: TicketManagement.TicketNP
+)
+returns Boolean
+folder 'Objects/TicketNP/Malfunction/Validations'
+export level api
+begin
+  declare $IsValid Boolean = true;
+  $IsValidDraft = call microflow TicketManagement.TicketNP_Malfunction_ValidateDraft(TicketNP = $TicketNP);
+  set $IsValid = $IsValid
+and
+$IsValidDraft;
+  $SLA = call microflow AssetsClient.Asset_GetRelevantSLA(Asset = $TicketNP/TicketManagement.TicketNP_Asset/AssetsClient.Asset);
+  @merge(810, 200)
+  @caption 'Customer reference required?'
+  if $SLA != empty
+and $SLA/NeedsMandatoryTaskNumber then
+    @merge(810, 200)
+    @caption 'Needed now?'
+    if not($TicketNP/AddCustomerReferenceLater) then
+      @merge(810, 200)
+      @caption 'Customer reference?'
+      if not(trim($TicketNP/CustomerReference) != '') then
+        @anchor(to: top)
+        set $IsValid = false;
+        @anchor(from: top)
+        validation feedback $TicketNP/CustomerReference message 'Provide a customer reference.';
+      end if;
+    end if;
+  end if;
+  return $IsValid;
+end;
+
+create or modify microflow TicketManagement.WorkOrderList_Delete (
+  $WorkOrderList: List of TicketManagement.WorkOrder
+)
+folder 'Objects/WorkOrder'
+export level api
+begin
+  $TechnicianList_ToUpdate = create list of Technician.Technician;
+  $TicketList_ToDelete = create list of TicketManagement.Ticket;
+  $AppointmentList_ToDelete = create list of TicketManagement.Appointment;
+  $NativeWorkOrderList_ToDelete = create list of NativeMobile.NativeWorkOrder;
+  $WorkOrderAssignmentList_ToDelete = create list of TicketManagement.WorkOrderAssignment;
+  $SelectedFormList_ToDelete = create list of Form.SelectedForm;
+  $NoteList_ToDelete = create list of Note.Note;
+  loop $IteratorWorkOrder in $WorkOrderList
+  begin
+    $TechnicianList = call microflow TicketManagement.WorkOrder_GetTechniciansToUpdate(WorkOrder = $IteratorWorkOrder);
+    add $TechnicianList to $TechnicianList_ToUpdate;
+    retrieve $Ticket from $IteratorWorkOrder/TicketManagement.WorkOrder_Ticket;
+    add $Ticket to $TicketList_ToDelete;
+    retrieve $AppointmentList from $IteratorWorkOrder/TicketManagement.Appointment_WorkOrder;
+    add $AppointmentList to $AppointmentList_ToDelete;
+    $NativeWorkOrder = call microflow NativeMobile.NativeWorkOrder_Get_BySystemID(SystemID = $IteratorWorkOrder/SystemID, NativeWorkOrderList_optional = empty);
+    add $NativeWorkOrder to $NativeWorkOrderList_ToDelete;
+    retrieve $WorkOrderAssignmentList from $IteratorWorkOrder/TicketManagement.WorkOrderAssignment_WorkOrder;
+    add $WorkOrderAssignmentList to $WorkOrderAssignmentList_ToDelete;
+    retrieve $SelectedFormList from $IteratorWorkOrder/Form.SelectedForm_WorkOrder;
+    add $SelectedFormList to $SelectedFormList_ToDelete;
+    retrieve $NoteList from $IteratorWorkOrder/Note.Note_WorkOrder;
+    add $NoteList to $NoteList_ToDelete;
+    call microflow Synchronization.OfflineAction_DeleteByID(ObjectID = $IteratorWorkOrder/SystemID);
+  end loop;
+  call microflow TicketManagement.WorkOrderAssignmentList_Delete(WorkOrderAssignmentList = $WorkOrderAssignmentList_ToDelete);
+  call microflow Form.SelectedFormList_Delete(SelectedFormList = $SelectedFormList_ToDelete);
+  call microflow Note.NoteList_Delete(NoteList = $NoteList_ToDelete);
+  call microflow TicketManagement.AppointmentList_Delete(AppointmentList = $AppointmentList_ToDelete);
+  call microflow NativeMobile.NativeWorkOrderList_Delete(NativeWorkOrderList = $NativeWorkOrderList_ToDelete);
+  delete $WorkOrderList refresh;
+  call microflow TicketManagement.TicketList_Save(TicketList = $TicketList_ToDelete);
+  call microflow Technician.TechnicianList_UpdateWebSyncHelpers(TechnicianList = $TechnicianList_ToUpdate);
+  return;
+end;
+
+create or modify microflow TicketManagement.WorkOrder_CommitSelectedParts (
+  $WorkOrder: TicketManagement.WorkOrder
+)
+folder 'Objects/WorkOrder'
+export level api
+begin
+  -- increment 7: suggested parts / selected tools are owned by the Assets & Parts app; planning them on a
+  -- work order is a hand-off (no REST create in AssetsAPIv2 yet). Kept as a no-op so callers stay unchanged.
+  return;
+end;
+
+create or modify microflow TicketManagement.WorkOrder_CommitSelectedTools (
+  $WorkOrder: TicketManagement.WorkOrder
+)
+folder 'Objects/WorkOrder'
+export level api
+begin
+  -- increment 7: suggested parts / selected tools are owned by the Assets & Parts app; planning them on a
+  -- work order is a hand-off (no REST create in AssetsAPIv2 yet). Kept as a no-op so callers stay unchanged.
+  return;
+end;
+
+/**
+ * This microflow facilitates the automatic assignment of technicians to work orders. A common implementation is the set a preferred technician for an asset, which then can automatically get assigned if it fits in their roster. Any custom logic for this functionality can be added in this microflow.
+ * The minimumDate is the moment in time which needs to be included in a technician's schedule to be able to plan this work order.
+ */
+create or modify microflow TicketManagement.WorkOrder_TechnicianPicker_GetEligibleLinkedTechnician (
+  $MinimumDate: DateTime,
+  $Asset: AssetsClient.Asset,
+  $WorkOrder_optional: TicketManagement.WorkOrder,
+  $TechnicianList_Declined: List of Technician.Technician
+)
+returns Technician.Technician
+folder 'Objects/WorkOrder'
+begin
+  @annotation(id: n1, text: 'Dummy action to prevent warnings. Please remove when customizing this microflow.', position: (-515, -230), size: (230, 50))
+  declare $DummyVariable Boolean = $WorkOrder_optional !=empty;
+  @annotation(id: n1)
+  set $DummyVariable = true;
+  $Technician_Preferred = call microflow AssetsClient.Asset_GetPreferredTechnician(Asset = $Asset);
+  @anchor(from: bottom)
+  @merge(355, 70)
+  @caption 'Preferred?'
+  if $Technician_Preferred != empty then
+    $Technician_Preferred_Declined = intersect $TechnicianList_Declined with $Technician_Preferred;
+    @anchor(from: bottom)
+    @merge(355, 70)
+    @caption 'Not declined earlier'
+    if $Technician_Preferred_Declined = empty then
+      @caption 'Technician is eligible'
+      if TicketManagement.Rule_WorkOrder_TechnicianPicker_IsEligible(MinimumDate = $MinimumDate, Technician = $Technician_Preferred, NeedMalfunction = false) then
+        return $Technician_Preferred;
+      end if;
+    end if;
+  end if;
+  join shared1;
+  merge shared1;
+  @anchor(to: top)
+  return empty;
+end;
+

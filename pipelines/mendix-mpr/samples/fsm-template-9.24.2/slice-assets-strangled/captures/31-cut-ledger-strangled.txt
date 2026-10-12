@@ -1,0 +1,5 @@
+$ bin/cut-ledger.sh --refs crossing-refs.tsv --slice slice.txt --rules cut-rules.tsv --check-log captures/00-inc5-mxcheck-after-install.txt --extra cut-extra.tsv -o cut-ledger.tsv   # increment 7, strangled
+cut-ledger: 811 crossing refs -> 713 ledger rows (155 out, 536 in from the catalog; 7 check-only; 15 extra) -> cut-ledger.tsv
+  by resolution: handoff 186, platform 6, resolved 285, retire 204, stub 32
+  rules never used (lines): 42, 43, 216
+exit=0 real .118 s

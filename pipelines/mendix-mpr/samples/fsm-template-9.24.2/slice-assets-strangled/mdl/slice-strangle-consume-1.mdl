@@ -1,0 +1,6 @@
+mdl 1;
+-- Increment 7, slice: the monolith no longer has an asset mirror (MonoAsset). Tickets and rosters of a slice asset are
+-- found by the key copy the monolith now publishes (AssetSystemID); contacts by the asset's customer (CustomerPublicID).
+-- SLA_Asset / ContactPerson_Asset cannot be published by the monolith any more (associations to an external entity).
+drop external entity TicketManagement.MonoAsset;
+create external entities from CoreSeam.CoreAPI into TicketManagement entities (Ticket, Roster, ContactPerson, SLA);

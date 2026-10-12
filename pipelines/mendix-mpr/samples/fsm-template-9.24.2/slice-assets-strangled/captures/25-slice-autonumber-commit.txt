@@ -1,0 +1,8 @@
+2026-10-12 15:22:29.267 ERROR - Connector: An error has occurred while handling the request. [User 'journey_fnadm' with session id 'b0544672-XXXX-XXXX-XXXX-XXXXXXXXcf52' and roles 'FunctionalAdministrator']: Failed to commit: Value of auto-number attribute 'PublicID' not available, could be caused by insufficient access rights to serialize the mendix object to the client. Either give the current user role read rights on this attribute or commit the object before it's returned to the client.
+$ mxcli exec slice-strangle-autonumber.mdl
+Granted access on Part.SuggestedPart to Part.ViewAll
+Granted access on Part.SuggestedPart to Part.ViewMy
+Granted access on Part.SuggestedPart to Part._AddOn_SelectParts
+$ mx(11.13) check
+Checking app for errors...
+The app contains: 0 errors.

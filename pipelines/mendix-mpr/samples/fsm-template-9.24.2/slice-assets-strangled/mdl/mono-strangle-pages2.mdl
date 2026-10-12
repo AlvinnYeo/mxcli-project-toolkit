@@ -1,0 +1,3 @@
+mdl 1;
+-- round 4: entity-path widget over a local -> external association (CE6634)
+-- (withdrawn: the widget of that name in WorkOrder_View is the Skill selector; restored with restore-unit.py)

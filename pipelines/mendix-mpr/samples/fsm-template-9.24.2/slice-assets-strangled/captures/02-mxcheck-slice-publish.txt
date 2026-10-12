@@ -1,0 +1,11 @@
+$ mx(11.13) check AssetsApp.mpr
+Checking app for errors...
+[error] [CE1613] "The selected attribute 'Part.UsedPart.PublicID' no longer exists." at Published attribute PublicID from entity Part.UsedPart
+[error] [CE1613] "The selected attribute 'Part.UsedPart.SystemID' no longer exists." at Published attribute SystemID from entity Part.UsedPart
+[error] [CE1613] "The selected attribute 'Part.SuggestedPart.PublicID' no longer exists." at Published attribute PublicID from entity Part.SuggestedPart
+[error] [CE1613] "The selected attribute 'Part.SuggestedPart.SystemID' no longer exists." at Published attribute SystemID from entity Part.SuggestedPart
+The app contains: 4 errors.
+
+$ mx(11.13) check AssetsApp.mpr  (after fix1)
+Checking app for errors...
+The app contains: 0 errors.

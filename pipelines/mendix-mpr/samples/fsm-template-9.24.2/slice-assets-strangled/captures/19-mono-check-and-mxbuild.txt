@@ -1,0 +1,10 @@
+$ mx(10.24) check fsm.mpr
+Checking app for errors...
+The app contains: 0 errors.
+real 25 s
+$ mxbuild(10.24.0) --java-home=<jdk21> --java-exe-path=<jdk21>/bin/java --target=deploy fsm.mpr
+Compiling Java...
+Executing step 'Clean up'
+Cleaning up...
+BUILD SUCCEEDED
+exit=0 real 56 s

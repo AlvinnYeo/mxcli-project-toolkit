@@ -1,0 +1,220 @@
+mdl 1;
+-- Increment 7, monolith step 9: CoreAPI without the asset mirror. The mirror WAS AssetManagement.Asset; after the
+-- swap mx check accepted "publish entity AssetsClient.Asset as 'MonoAsset'" (an external entity), but the runtime
+-- answers 404 for the set (captures/21). The cross-app join now uses the key copy: Ticket and Roster publish
+-- AssetSystemID (+ AssetID/AssetDescription on Ticket); ContactPerson_Asset / SLA_Asset are no longer publishable
+-- (associations to an external entity) -> hand-off. A breaking change to v1 (P10 says version the path): both
+-- consumers are under our control and changed in the same increment.
+create or modify published odata service CoreSeam.CoreAPI (
+  Path: 'odata/core/v1/',
+  Version: '1.0.0',
+  ODataVersion: OData4,
+  Namespace: 'FSM.Core',
+  ServiceName: 'CoreAPI',
+  PublishAssociations: Yes,
+  Authentication: (basic)
+)
+{
+  publish entity Technician.Technician as 'Technician' (
+    ReadMode: ReadFromDatabase,
+    InsertMode: NotSupported,
+    UpdateMode: NotSupported,
+    DeleteMode: NotSupported,
+    UsePaging: Yes,
+    PageSize: 200
+  )
+  expose (
+    TechnicianID as 'TechnicianID' (Filterable, Sortable, KEY),
+    TechnicianName as 'TechnicianName' (Filterable, Sortable),
+    TelephoneNumber as 'TelephoneNumber',
+    EmailAddress as 'EmailAddress',
+    EmployeeNumber as 'EmployeeNumber' (Filterable),
+    CompanyName as 'CompanyName',
+    IsActive as 'IsActive' (Filterable),
+    IsExternal as 'IsExternal' (Filterable)
+  );
+
+  publish entity CustomerManagement.Customer as 'Customer' (
+    ReadMode: ReadFromDatabase,
+    InsertMode: NotSupported,
+    UpdateMode: NotSupported,
+    DeleteMode: NotSupported,
+    UsePaging: Yes,
+    PageSize: 200
+  )
+  expose (
+    PublicID as 'PublicID' (Filterable, Sortable, KEY),
+    CustomerID as 'CustomerID' (Filterable, Sortable),
+    DebtorNumber as 'DebtorNumber',
+    CustomerName as 'CustomerName' (Filterable, Sortable),
+    Email as 'Email',
+    PhoneNumber as 'PhoneNumber',
+    ReferenceNumber as 'ReferenceNumber'
+  );
+
+  publish entity CustomerManagement.Contract as 'Contract' (
+    ReadMode: ReadFromDatabase,
+    InsertMode: NotSupported,
+    UpdateMode: NotSupported,
+    DeleteMode: NotSupported,
+    UsePaging: Yes,
+    PageSize: 200
+  )
+  expose (
+    PublicID as 'PublicID' (Filterable, Sortable, KEY),
+    Number as 'Number' (Filterable, Sortable),
+    Description as 'Description' (Filterable),
+    AdministrativeContactPersonName as 'AdministrativeContactPersonName',
+    AdministrativeEmailAddress as 'AdministrativeEmailAddress'
+  );
+
+  publish entity CustomerManagement.ContactPerson as 'ContactPerson' (
+    ReadMode: ReadFromDatabase,
+    InsertMode: NotSupported,
+    UpdateMode: NotSupported,
+    DeleteMode: NotSupported,
+    UsePaging: Yes,
+    PageSize: 200
+  )
+  expose (
+    PublicID as 'PublicID' (Filterable, Sortable, KEY),
+    Name as 'Name' (Filterable, Sortable),
+    PhoneNumber as 'PhoneNumber',
+    EmailAddress as 'EmailAddress',
+    Description as 'Description',
+    ContactPerson_Customer as 'ContactPerson_Customer',
+    ContactPerson_Contract as 'ContactPerson_Contract'
+  );
+
+  publish entity CustomerManagement.SLA as 'SLA' (
+    ReadMode: ReadFromDatabase,
+    InsertMode: NotSupported,
+    UpdateMode: NotSupported,
+    DeleteMode: NotSupported
+  )
+  expose (
+    PublicID as 'PublicID' (Filterable, Sortable, KEY),
+    Number as 'Number' (Filterable, Sortable),
+    Description as 'Description',
+    SLAtype as 'SLAtype' (Filterable),
+    HighPriorityResponseTime as 'HighPriorityResponseTime',
+    MediumPriorityResponseTime as 'MediumPriorityResponseTime',
+    LowPriorityResponseTime as 'LowPriorityResponseTime',
+    SLA_Contract as 'SLA_Contract',
+    SLA_Customer as 'SLA_Customer',
+    SLA_UmbrellaContract as 'SLA_UmbrellaContract'
+  );
+
+  publish entity TicketManagement.Ticket as 'Ticket' (
+    ReadMode: ReadFromDatabase,
+    InsertMode: NotSupported,
+    UpdateMode: NotSupported,
+    DeleteMode: NotSupported,
+    UsePaging: Yes,
+    PageSize: 200
+  )
+  expose (
+    PublicID as 'PublicID' (Filterable, Sortable, KEY),
+    TicketID as 'TicketID' (Filterable, Sortable),
+    Status as 'Status' (Filterable),
+    ShortDescription as 'ShortDescription' (Filterable, Sortable),
+    Description as 'Description',
+    CallerName as 'CallerName',
+    CreationTime as 'CreationTime' (Filterable, Sortable),
+    DueDate as 'DueDate' (Filterable, Sortable),
+    AssetSystemID as 'AssetSystemID' (Filterable),
+    AssetID as 'AssetID' (Filterable, Sortable),
+    AssetDescription as 'AssetDescription' (Filterable),
+    Ticket_Priority as 'Ticket_Priority',
+    Ticket_TicketType as 'Ticket_TicketType'
+  );
+
+  publish entity TicketManagement.Priority as 'Priority' (
+    ReadMode: ReadFromDatabase,
+    InsertMode: NotSupported,
+    UpdateMode: NotSupported,
+    DeleteMode: NotSupported
+  )
+  expose (
+    PublicID as 'PublicID' (Filterable, Sortable, KEY),
+    Code as 'Code' (Filterable),
+    Description as 'Description' (Filterable, Sortable),
+    IsActive as 'IsActive' (Filterable)
+  );
+
+  publish entity TicketManagement.TicketType as 'TicketType' (
+    ReadMode: ReadFromDatabase,
+    InsertMode: NotSupported,
+    UpdateMode: NotSupported,
+    DeleteMode: NotSupported
+  )
+  expose (
+    PublicID as 'PublicID' (Filterable, Sortable, KEY),
+    Code as 'Code' (Filterable),
+    Name as 'Name' (Filterable, Sortable),
+    ExpectedDuration as 'ExpectedDuration'
+  );
+
+  publish entity TicketManagement.WorkOrder as 'WorkOrder' (
+    ReadMode: ReadFromDatabase,
+    InsertMode: NotSupported,
+    UpdateMode: NotSupported,
+    DeleteMode: NotSupported,
+    UsePaging: Yes,
+    PageSize: 200
+  )
+  expose (
+    PublicID as 'PublicID' (Filterable, Sortable, KEY),
+    WorkOrderID as 'WorkOrderID' (Filterable, Sortable),
+    Status as 'Status' (Filterable),
+    ShortDescription as 'ShortDescription' (Filterable),
+    DueDate as 'DueDate' (Filterable, Sortable),
+    WorkOrder_Ticket as 'WorkOrder_Ticket'
+  );
+
+  publish entity TicketManagement.Appointment as 'Appointment' (
+    ReadMode: ReadFromDatabase,
+    InsertMode: NotSupported,
+    UpdateMode: NotSupported,
+    DeleteMode: NotSupported,
+    UsePaging: Yes,
+    PageSize: 200
+  )
+  expose (
+    PublicID as 'PublicID' (Filterable, Sortable, KEY),
+    AppointmentID as 'AppointmentID' (Filterable),
+    Status as 'Status' (Filterable),
+    PlannedWorkStart as 'PlannedWorkStart' (Filterable, Sortable),
+    PlannedWorkEnd as 'PlannedWorkEnd',
+    Appointment_WorkOrder as 'Appointment_WorkOrder'
+  );
+
+  publish entity RosterManagement.Roster as 'Roster' (
+    ReadMode: ReadFromDatabase,
+    InsertMode: NotSupported,
+    UpdateMode: NotSupported,
+    DeleteMode: NotSupported,
+    UsePaging: Yes,
+    PageSize: 200
+  )
+  expose (
+    PublicID as 'PublicID' (Filterable, Sortable, KEY),
+    StartDate as 'StartDate' (Filterable, Sortable),
+    EndDate as 'EndDate' (Filterable, Sortable),
+    StartTime as 'StartTime' (Sortable),
+    EndTime as 'EndTime',
+    Monday as 'Monday',
+    Tuesday as 'Tuesday',
+    Wednesday as 'Wednesday',
+    Thursday as 'Thursday',
+    Friday as 'Friday',
+    Saturday as 'Saturday',
+    Sunday as 'Sunday',
+    AssetSystemID as 'AssetSystemID' (Filterable)
+  );
+
+};
+
+grant access on published odata service CoreSeam.CoreAPI to CoreSeam.APIClient;
+
+grant read (AssetSystemID) on entity RosterManagement.Roster to RosterManagement.CoreAPI;

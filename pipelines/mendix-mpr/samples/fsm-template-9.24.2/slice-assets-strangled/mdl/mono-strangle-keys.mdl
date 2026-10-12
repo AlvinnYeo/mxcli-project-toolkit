@@ -1,0 +1,64 @@
+mdl 1;
+-- Increment 7, monolith step 8: the cross-app JOIN KEY on the monolith side (mendix-service-seam.md recipe B,
+-- mirrored). XPath on a LOCAL entity cannot compare a local -> external association with an object
+-- ([TicketManagement.Ticket_Asset = $Asset] -> CE0161), so tickets and rosters carry a copy of the slice's key
+-- (plus the two display fields the planner filters on), set before commit from the association.
+alter entity TicketManagement.Ticket add attribute if not exists AssetSystemID: String(200);
+alter entity TicketManagement.Ticket add attribute if not exists AssetID: String(200);
+alter entity TicketManagement.Ticket add attribute if not exists AssetDescription: String(200);
+alter entity TicketManagement.Ticket add attribute if not exists AssetFullAddress: String(600);
+alter entity RosterManagement.Roster add attribute if not exists AssetSystemID: String(200);
+
+create or modify microflow TicketManagement.Ticket_SetAssetKey ($Ticket: TicketManagement.Ticket)
+returns Boolean
+begin
+  retrieve $Asset from $Ticket/TicketManagement.Ticket_Asset;
+  if $Asset != empty then
+    change $Ticket (AssetSystemID = $Asset/SystemID, AssetID = $Asset/AssetID, AssetDescription = $Asset/Description, AssetFullAddress = $Asset/FullAddress);
+  else
+    change $Ticket (AssetSystemID = empty, AssetID = empty, AssetDescription = empty, AssetFullAddress = empty);
+  end if;
+  return true;
+end;
+alter entity TicketManagement.Ticket add event handler on before commit call TicketManagement.Ticket_SetAssetKey($currentObject) raise error;
+
+create or modify microflow RosterManagement.Roster_SetAssetKey ($Roster: RosterManagement.Roster)
+returns Boolean
+begin
+  retrieve $Asset from $Roster/RosterManagement.Roster_Asset;
+  if $Asset != empty then
+    change $Roster (AssetSystemID = $Asset/SystemID);
+  end if;
+  return true;
+end;
+alter entity RosterManagement.Roster add event handler on before commit call RosterManagement.Roster_SetAssetKey($currentObject) raise error;
+
+-- members readable where the old association was
+grant read (AssetSystemID, AssetID, AssetDescription, AssetFullAddress) on entity TicketManagement.Ticket to TicketManagement.CoreAPI;
+
+-- SLA lookup without the asset level (SLA_Asset cannot be compared from the local side; hand-off: SLA.AssetSystemID)
+drop microflow AssetsClient.Asset_GetRelevantSLA;
+create or modify microflow AssetsClient.Asset_GetRelevantSLA ($Asset: AssetsClient.Asset)
+returns CustomerManagement.SLA
+begin
+  if $Asset != empty then
+    retrieve $SLA_Customer from CustomerManagement.SLA
+      where CustomerManagement.SLA_Customer/CustomerManagement.Customer/PublicID = $Asset/CustomerPublicID
+      first;
+    if $SLA_Customer != empty then
+      return $SLA_Customer;
+    end if;
+  end if;
+  retrieve $SLA_Standard from CustomerManagement.SLA
+    where SLAtype = CustomerManagement.Enum_SLAtype.Standard
+    first;
+  return $SLA_Standard;
+end;
+
+-- suggested-part / used-part push to device copies keyed by the inherited SystemID (not publishable via mxcli,
+-- captures/02): retire with a hand-off
+drop microflow Synchronization.UsedPart_DeleteNativeUsedPart;
+drop microflow Synchronization.SuggestedPart_UpdateNativeSuggestedPart;
+drop microflow Synchronization.SuggestedPart_DeleteNativeSuggestedPart;
+drop microflow Synchronization.SuggestedPart_ProcessUpdatingNativeSuggestedPart;
+drop rule Synchronization.Rule_SuggestedPart_HasChanged;

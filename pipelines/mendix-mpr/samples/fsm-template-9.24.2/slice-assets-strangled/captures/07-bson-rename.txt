@@ -1,0 +1,24 @@
+$ bson-rename.py fsm.mpr rename-map.tsv
+rewrote 62 strings in 24 units
+$ bson-rename.py fsm.mpr rename-map2.tsv
+rewrote 2 strings in 1 units
+$ bson-rename.py fsm.mpr xpath-map.tsv --literal
+rewrote 1 strings in 1 units
+$ bson-drop-memberaccess.py fsm.mpr AssetManagement.Asset_Customer AssetManagement.Asset_Contract AssetManagement.Asset_UmbrellaContract
+removed 0 MemberAccess entries in 0 units
+$ bson-rename.py fsm.mpr xpath-map2.tsv --literal
+rewrote 2 strings in 1 units
+$ bson-rename.py fsm.mpr xpath-map3.tsv --literal
+rewrote 42 strings in 16 units
+$ bson-set-memberaccess.py fsm.mpr ReadWrite TicketManagement.TicketNP_Asset   (run before the keys exec)
+set 1 MemberAccess entries in 1 units
+$ bson-rename.py fsm.mpr xpath-map4.tsv --literal
+rewrote 2 strings in 1 units
+$ restore-unit.py fsm.mpr bak/fsm.mpr.after-rename PlannerContext_GetWorkOrders Microflows$Microflow
+restored PlannerContext_GetWorkOrders from <lab>/web-strangled/bak/fsm.mpr.after-rename
+$ bson-rename.py fsm.mpr xpath-map3.tsv --literal  (re-applied to the restored unit)
+rewrote 21 strings in 1 units
+$ restore-unit.py fsm.mpr bak/fsm.mpr.before-r3 WorkOrder_View Forms$Page   (undo pages2: it dropped the Skill selector, a stale-catalog misidentification)
+restored WorkOrder_View from <lab>/web-strangled/bak/fsm.mpr.before-r3
+$ bson-drop-widget.py fsm.mpr Snippet_Technician_DataTabs referenceSetSelector2   (alter snippet: widget not found - nested in a legacy widget)
+removed 1 widget(s) in 1 unit(s)

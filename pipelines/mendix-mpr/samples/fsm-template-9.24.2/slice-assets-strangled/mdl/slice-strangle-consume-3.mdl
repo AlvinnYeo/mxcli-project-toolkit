@@ -1,0 +1,81 @@
+mdl 1;
+-- part 3: `where PublicID = -1` is CE0161 on an external entity (negative literal); the skipped level is false()
+drop microflow AssetManagement.Asset_GetRelevantSLA;
+create or modify microflow AssetManagement.Asset_GetRelevantSLA (
+  $Asset: AssetManagement.Asset
+)
+returns TicketManagement.SLA
+folder 'Objects/Asset'
+export level api
+begin
+  @position(360, 200)
+  retrieve $SLA_Asset from TicketManagement.SLA
+    where false()
+    first;
+  @position(520, 200)
+  if $SLA_Asset != empty then
+    @position(690, 300)
+    return $SLA_Asset;
+  end if;
+  @position(690, 200)
+  retrieve $Contract from $Asset/AssetManagement.Asset_Contract;
+  @position(850, 200)
+  @merge(1375, 200)
+  if $Contract != empty then
+    @position(1020, 350)
+    retrieve $SLA_Contract from TicketManagement.SLA
+    where TicketManagement.SLA_Contract/TicketManagement.Contract/PublicID = $Contract/PublicID
+    first;
+    @position(1180, 350)
+    if $SLA_Contract != empty then
+      @position(1350, 450)
+      return $SLA_Contract;
+    end if;
+  end if;
+  join shared1;
+  @position(1375, 200)
+  merge shared1;
+  @position(1495, 200)
+  retrieve $Umbrella from $Asset/AssetManagement.Asset_UmbrellaContract;
+  @position(1655, 200)
+  @merge(2180, 200)
+  if $Umbrella != empty then
+    @position(1825, 350)
+    retrieve $SLA_Umbrella from TicketManagement.SLA
+    where TicketManagement.SLA_UmbrellaContract/TicketManagement.Contract/PublicID = $Umbrella/PublicID
+    first;
+    @position(1985, 350)
+    if $SLA_Umbrella != empty then
+      @position(2155, 450)
+      return $SLA_Umbrella;
+    end if;
+  end if;
+  join shared2;
+  @position(2180, 200)
+  merge shared2;
+  @position(2300, 200)
+  retrieve $Customer from $Asset/AssetManagement.Asset_Customer;
+  @position(2460, 200)
+  @merge(2985, 200)
+  if $Customer != empty then
+    @position(2630, 350)
+    retrieve $SLA_Customer from TicketManagement.SLA
+    where TicketManagement.SLA_Customer/TicketManagement.Customer/PublicID = $Customer/PublicID
+    first;
+    @position(2790, 350)
+    if $SLA_Customer != empty then
+      @position(2960, 450)
+      return $SLA_Customer;
+    end if;
+  end if;
+  join shared3;
+  @position(2985, 200)
+  merge shared3;
+  @position(3105, 200)
+  retrieve $SLA_Standard from TicketManagement.SLA
+    where SLAtype = 'Standard'
+    first;
+  @position(3265, 200)
+  return $SLA_Standard;
+end;
+

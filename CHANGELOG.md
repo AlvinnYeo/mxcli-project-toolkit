@@ -16,6 +16,7 @@ three commits past it), and a bug report can name a release instead of a sha nob
 Sections dated before 2026-09-19 predate the cycle and stay as they are.
 
 ## Unreleased
+- learn(decompose): increment 7 strangled — AssetManagement, Part, WarehouseManagement and Tool deleted from the FSM 10.24 monolith, which now reads the Assets & Parts slice over OData (AssetsAPIv2, same-name external entities after `move entity`) and writes over REST; in-edge hand-offs 499 → 157 (retire 204, resolved 175), both apps mx check 0 / BUILD SUCCEEDED, ledger 713 rows exit 0, cross-app journey PASS 16/16 twice, increment 6 journey PASS; 8 new mxcli defects to the inbox (`pipelines/mendix-mpr/samples/fsm-template-9.24.2/slice-assets-strangled/`). Credit: Siemens FSM template.
 - process(report): **`process/decompose-and-rehost-report-2026-10-12.html`** — product-head report on the Decompose and Rehost work: approach, app-to-MDL results, seven plan items rebuilt differently, timings, 3,010,761 measured subagent tokens (Opus 1,907,879 / Sonnet 923,951 / Fable 178,931), proven vs not — Siemens FSM template and GenAI Showcase field runs
 
 - fix(skills): **`skills/mendix-service-seam.md` P2 regains the auth guidance from the Mendix docs check** — basic auth is the minimal proven route (TLS only), token-based OIDC client credentials for production, Mendix SSO deprecated 1 May 2026, consumer matches the publisher's method. — MendixMau

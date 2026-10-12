@@ -1,0 +1,129 @@
+$ mxcli exec mono-strangle-swap.mdl -p fsm.mpr
+Connected to: fsm.mpr (Mendix 10.24.0.73019)
+2026/10/12 14:22:11 info: user definition "barcodescanner.def.json" overrides built-in barcodescanner (widgetId: com.mendix.widget.web.barcodescanner.BarcodeScanner → com.mendix.widget.native.barcodescanner.BarcodeScanner)
+2026/10/12 14:22:11 info: user definition "gallery.def.json" overrides built-in gallery (widgetId: com.mendix.widget.web.gallery.Gallery → com.mendix.widget.native.gallery.Gallery)
+2026/10/12 14:22:11 info: user definition "image.def.json" overrides built-in image (widgetId: com.mendix.widget.web.image.Image → com.mendix.widget.native.image.Image)
+Dropped microflow: MasterData.ACT_AssetPart_Delete_MxAdmin
+  Removed its execute grants to MasterData.EditAllAdmin. A create of MasterData.ACT_AssetPart_Delete_MxAdmin later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow MasterData.ACT_AssetPart_Delete_MxAdmin to MasterData.EditAllAdmin;
+Dropped microflow: MasterData.ACT_AssetPart_Save_MxAdmin
+  Removed its execute grants to MasterData.EditAllAdmin. A create of MasterData.ACT_AssetPart_Save_MxAdmin later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow MasterData.ACT_AssetPart_Save_MxAdmin to MasterData.EditAllAdmin;
+Dropped microflow: MasterData.ACT_Asset_Delete_MxAdmin
+  Removed its execute grants to MasterData.EditAllAdmin. A create of MasterData.ACT_Asset_Delete_MxAdmin later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow MasterData.ACT_Asset_Delete_MxAdmin to MasterData.EditAllAdmin;
+Dropped microflow: MasterData.ACT_Asset_Save_MxAdmin
+  Removed its execute grants to MasterData.EditAllAdmin. A create of MasterData.ACT_Asset_Save_MxAdmin later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow MasterData.ACT_Asset_Save_MxAdmin to MasterData.EditAllAdmin;
+Dropped microflow: MasterData.ACT_Inventory_Delete_MxAdmin
+  Removed its execute grants to MasterData.EditAllAdmin. A create of MasterData.ACT_Inventory_Delete_MxAdmin later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow MasterData.ACT_Inventory_Delete_MxAdmin to MasterData.EditAllAdmin;
+Dropped microflow: MasterData.ACT_Inventory_Save_MxAdmin
+  Removed its execute grants to MasterData.EditAllAdmin. A create of MasterData.ACT_Inventory_Save_MxAdmin later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow MasterData.ACT_Inventory_Save_MxAdmin to MasterData.EditAllAdmin;
+Dropped microflow: MasterData.ACT_Part_Delete_MxAdmin
+  Removed its execute grants to MasterData.EditAllAdmin. A create of MasterData.ACT_Part_Delete_MxAdmin later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow MasterData.ACT_Part_Delete_MxAdmin to MasterData.EditAllAdmin;
+Dropped microflow: MasterData.ACT_Part_Save_MxAdmin
+  Removed its execute grants to MasterData.EditAllAdmin. A create of MasterData.ACT_Part_Save_MxAdmin later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow MasterData.ACT_Part_Save_MxAdmin to MasterData.EditAllAdmin;
+Dropped microflow: MasterData.ACT_SuggestedPart_Delete_MxAdmin
+  Removed its execute grants to MasterData.EditAllAdmin. A create of MasterData.ACT_SuggestedPart_Delete_MxAdmin later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow MasterData.ACT_SuggestedPart_Delete_MxAdmin to MasterData.EditAllAdmin;
+Dropped microflow: MasterData.ACT_SuggestedPart_Save_MxAdmin
+  Removed its execute grants to MasterData.EditAllAdmin. A create of MasterData.ACT_SuggestedPart_Save_MxAdmin later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow MasterData.ACT_SuggestedPart_Save_MxAdmin to MasterData.EditAllAdmin;
+Dropped microflow: MasterData.ACT_UsedPart_Delete_MxAdmin
+  Removed its execute grants to MasterData.EditAllAdmin. A create of MasterData.ACT_UsedPart_Delete_MxAdmin later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow MasterData.ACT_UsedPart_Delete_MxAdmin to MasterData.EditAllAdmin;
+Dropped microflow: MasterData.ACT_UsedPart_Save_MxAdmin
+  Removed its execute grants to MasterData.EditAllAdmin. A create of MasterData.ACT_UsedPart_Save_MxAdmin later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow MasterData.ACT_UsedPart_Save_MxAdmin to MasterData.EditAllAdmin;
+Dropped microflow: MasterData.ACT_Warehouse_Delete_MxAdmin
+  Removed its execute grants to MasterData.EditAllAdmin. A create of MasterData.ACT_Warehouse_Delete_MxAdmin later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow MasterData.ACT_Warehouse_Delete_MxAdmin to MasterData.EditAllAdmin;
+Dropped microflow: MasterData.ACT_Warehouse_Save_MxAdmin
+  Removed its execute grants to MasterData.EditAllAdmin. A create of MasterData.ACT_Warehouse_Save_MxAdmin later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow MasterData.ACT_Warehouse_Save_MxAdmin to MasterData.EditAllAdmin;
+Dropped microflow: MasterData.Asset_Delete_MxAdmin
+Dropped microflow: MasterData.DS_AssetPart_RetrieveNativeAssetPart
+  Removed its execute grants to MasterData.EditAllAdmin. A create of MasterData.DS_AssetPart_RetrieveNativeAssetPart later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow MasterData.DS_AssetPart_RetrieveNativeAssetPart to MasterData.EditAllAdmin;
+Dropped microflow: MasterData.DS_Asset_RetrieveNativeAsset
+  Removed its execute grants to MasterData.EditAllAdmin. A create of MasterData.DS_Asset_RetrieveNativeAsset later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow MasterData.DS_Asset_RetrieveNativeAsset to MasterData.EditAllAdmin;
+Dropped microflow: MasterData.DS_Inventory_RetrieveNativeInventory
+  Removed its execute grants to MasterData.EditAllAdmin. A create of MasterData.DS_Inventory_RetrieveNativeInventory later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow MasterData.DS_Inventory_RetrieveNativeInventory to MasterData.EditAllAdmin;
+Dropped microflow: MasterData.DS_Part_RetrieveNativePart
+  Removed its execute grants to MasterData.EditAllAdmin. A create of MasterData.DS_Part_RetrieveNativePart later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow MasterData.DS_Part_RetrieveNativePart to MasterData.EditAllAdmin;
+Dropped microflow: MasterData.DS_SuggestedPart_RetrieveNativeSuggestedPart
+  Removed its execute grants to MasterData.EditAllAdmin. A create of MasterData.DS_SuggestedPart_RetrieveNativeSuggestedPart later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow MasterData.DS_SuggestedPart_RetrieveNativeSuggestedPart to MasterData.EditAllAdmin;
+Dropped microflow: MasterData.DS_UsedPart_RetrieveNativeUsedPart
+  Removed its execute grants to MasterData.EditAllAdmin. A create of MasterData.DS_UsedPart_RetrieveNativeUsedPart later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow MasterData.DS_UsedPart_RetrieveNativeUsedPart to MasterData.EditAllAdmin;
+Dropped microflow: MasterData.DS_Warehouse_RetrieveNativeWarehouse
+  Removed its execute grants to MasterData.EditAllAdmin. A create of MasterData.DS_Warehouse_RetrieveNativeWarehouse later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow MasterData.DS_Warehouse_RetrieveNativeWarehouse to MasterData.EditAllAdmin;
+Dropped page MasterData.Appointment_NewEdit_MxAdmin
+  Removed its view grants to MasterData.EditAllAdmin. A create of MasterData.Appointment_NewEdit_MxAdmin does not carry them; re-grant: grant view on page MasterData.Appointment_NewEdit_MxAdmin to MasterData.EditAllAdmin;
+Dropped page MasterData.AssetPart_NewEdit_MxAdmin
+  Removed its view grants to MasterData.EditAllAdmin. A create of MasterData.AssetPart_NewEdit_MxAdmin does not carry them; re-grant: grant view on page MasterData.AssetPart_NewEdit_MxAdmin to MasterData.EditAllAdmin;
+Dropped page MasterData.Asset_NewEdit_MxAdmin
+  Removed its view grants to MasterData.EditAllAdmin. A create of MasterData.Asset_NewEdit_MxAdmin does not carry them; re-grant: grant view on page MasterData.Asset_NewEdit_MxAdmin to MasterData.EditAllAdmin;
+Dropped page MasterData.Inventory_NewEdit_MxAdmin
+  Removed its view grants to MasterData.EditAllAdmin. A create of MasterData.Inventory_NewEdit_MxAdmin does not carry them; re-grant: grant view on page MasterData.Inventory_NewEdit_MxAdmin to MasterData.EditAllAdmin;
+Dropped page MasterData.Masterdata_Overview_MxAdmin
+  Removed its view grants to MasterData.EditAllAdmin. A create of MasterData.Masterdata_Overview_MxAdmin does not carry them; re-grant: grant view on page MasterData.Masterdata_Overview_MxAdmin to MasterData.EditAllAdmin;
+Dropped page MasterData.Part_NewEdit_MxAdmin
+  Removed its view grants to MasterData.EditAllAdmin. A create of MasterData.Part_NewEdit_MxAdmin does not carry them; re-grant: grant view on page MasterData.Part_NewEdit_MxAdmin to MasterData.EditAllAdmin;
+Dropped page MasterData.SLA_NewEdit_MxAdmin
+  Removed its view grants to MasterData.EditAllAdmin. A create of MasterData.SLA_NewEdit_MxAdmin does not carry them; re-grant: grant view on page MasterData.SLA_NewEdit_MxAdmin to MasterData.EditAllAdmin;
+Dropped page MasterData.SuggestedPart_NewEdit_MxAdmin
+  Removed its view grants to MasterData.EditAllAdmin. A create of MasterData.SuggestedPart_NewEdit_MxAdmin does not carry them; re-grant: grant view on page MasterData.SuggestedPart_NewEdit_MxAdmin to MasterData.EditAllAdmin;
+Dropped page MasterData.Ticket_NewEdit_MxAdmin
+  Removed its view grants to MasterData.EditAllAdmin. A create of MasterData.Ticket_NewEdit_MxAdmin does not carry them; re-grant: grant view on page MasterData.Ticket_NewEdit_MxAdmin to MasterData.EditAllAdmin;
+Dropped page MasterData.UsedPart_NewEdit_MxAdmin
+  Removed its view grants to MasterData.EditAllAdmin. A create of MasterData.UsedPart_NewEdit_MxAdmin does not carry them; re-grant: grant view on page MasterData.UsedPart_NewEdit_MxAdmin to MasterData.EditAllAdmin;
+Dropped page MasterData.Warehouse_NewEdit_MxAdmin
+  Removed its view grants to MasterData.EditAllAdmin. A create of MasterData.Warehouse_NewEdit_MxAdmin does not carry them; re-grant: grant view on page MasterData.Warehouse_NewEdit_MxAdmin to MasterData.EditAllAdmin;
+Removed NativeModelCheck.EditAll from 1 user role(s)
+Dropped module: NativeModelCheck (2 entities, 1 associations, 1 enumerations, 43 microflows, 1 pages, 1 java actions)
+Removed LoadTest.Admin from 1 user role(s)
+Dropped module: LoadTest (2 entities, 24 microflows, 1 pages, 1 java actions)
+Dropped entity: AssetsClient.SelectedTool
+Dropped entity: AssetsClient.Tool
+Dropped entity: AssetsClient.UsedPart
+Dropped entity: AssetsClient.SuggestedPart
+Dropped entity: AssetsClient.AssetPart
+Dropped entity: AssetsClient.Inventory
+Dropped entity: AssetsClient.Warehouse
+Dropped entity: AssetsClient.Part
+Dropped entity: AssetsClient.UnitOfMeasure
+Dropped entity: AssetsClient.Asset
+Dropped entity: AssetsClient.Manufacturer
+Removed AssetManagement.ViewAll from 5 user role(s)
+Removed AssetManagement.EditAsset from 1 user role(s)
+Removed AssetManagement._AddOn_EditNotes from 5 user role(s)
+Removed AssetManagement._AddOn_CreateAssetRosters from 2 user role(s)
+Removed AssetManagement.EditAssetAdmin from 1 user role(s)
+Removed AssetManagement.CoreAPI from 1 user role(s)
+Dropped module: AssetManagement (3 entities, 24 microflows, 10 pages, 3 snippets)
+Removed Part.ViewMy from 1 user role(s)
+Removed Part.ViewAll from 3 user role(s)
+Removed Part.EditAll from 1 user role(s)
+Removed Part._AddOn_SelectParts from 3 user role(s)
+Removed Part.EditAllAdmin from 1 user role(s)
+Dropped module: Part (2 entities, 63 microflows, 10 nanoflows, 7 pages, 3 snippets)
+Removed WarehouseManagement.ViewAll from 5 user role(s)
+Removed WarehouseManagement.ViewMy from 1 user role(s)
+Removed WarehouseManagement._AddOn_WarehouseNavigationItem from 1 user role(s)
+Removed WarehouseManagement.EditAll from 1 user role(s)
+Removed WarehouseManagement.EditAllAdmin from 1 user role(s)
+Dropped module: WarehouseManagement (26 microflows, 5 pages, 2 snippets)
+Removed Tool.EditAll from 2 user role(s)
+Removed Tool.ViewMy from 1 user role(s)
+Removed Tool.ViewAll from 3 user role(s)
+Removed Tool._AddOn_SelectTools from 3 user role(s)
+Dropped module: Tool (24 microflows, 4 pages, 1 snippets)
+Created constant: AssetsSeam.ODataV2Url
+Created constant: AssetsSeam.RestV2Url
+Created OData client: AssetsSeam.AssetsAPIv2
+  Cached $metadata: 11 entity types, 0 actions
+Skipped primitive-collection NPEs (OData primitive collections require Mendix 11.0+; project is 10.24.0.73019)
+Created 9 navigation associations
+
+From AssetsSeam.AssetsAPIv2 into AssetsClient: 11 created, 0 updated, 0 skipped, 0 failed
+Reconciled 1 access rule(s) for new association
+Created association: TicketManagement.Ticket_Asset
+Reconciled 1 access rule(s) for new association
+Created association: TicketManagement.TicketNP_Asset
+Reconciled 4 access rule(s) for new association
+Created association: CustomerManagement.SLA_Asset
+Reconciled 4 access rule(s) for new association
+Created association: CustomerManagement.ContactPerson_Asset
+Created association: RosterManagement.Roster_Asset
+Created association: Dashboard.AssetDashboardNP_Asset
+Created association: Technician.Technician_Warehouse
+real 26.97 s

@@ -1,0 +1,13 @@
+Checking your app for issues...
+Checking the version of the mpr file.
+The mpr file version is '10.24.0.73019'.
+Loading the mpr file.
+The mpr file version is '10.24.0.73019'.
+Checking app for errors...
+[error] [CE0117] "Error(s) in expression." at Decision 'User is SDE?'
+[error] [CE0161] "Error(s) in XPath constraint." at Retrieve activity 'Retrieve Part from database'
+[error] [CE0161] "Error(s) in XPath constraint." at Retrieve activity 'Retrieve Warehouse from database'
+[error] [CE6634] "An association to or from an external entity is not allowed in an entity path source." at Reference set selector 'referenceSetSelector2'
+[error] [CE7247] "Association 'CustomerManagement.ContactPerson_Customer' should be of type 'Reference'." at Columns (4/5) of data grid 2 'grid1'
+[error] [Error] "An attribute is required when filtering or sorting is enabled. Select the 'Attribute' property for column  " at Data grid 2 'grid1'
+The app contains: 6 errors.

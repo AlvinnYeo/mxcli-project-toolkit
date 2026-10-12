@@ -1,0 +1,163 @@
+$ mxcli exec slice-strangle-publish.mdl -p AssetsApp.mpr
+Connected to: AssetsApp.mpr (Mendix 11.13.0)
+Added attribute 'PublicID' to entity WarehouseManagement.Inventory
+Warning: WarehouseManagement.Inventory.PublicID is not readable by WarehouseManagement.EditAll, WarehouseManagement.EditAllAdmin, WarehouseManagement.ViewAll, WarehouseManagement.ViewMy
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (PublicID) on entity WarehouseManagement.Inventory to WarehouseManagement.EditAll;
+    grant read (PublicID) on entity WarehouseManagement.Inventory to WarehouseManagement.EditAllAdmin;
+    grant read (PublicID) on entity WarehouseManagement.Inventory to WarehouseManagement.ViewAll;
+    grant read (PublicID) on entity WarehouseManagement.Inventory to WarehouseManagement.ViewMy;
+Added attribute 'PublicID' to entity Part.AssetPart
+Warning: Part.AssetPart.PublicID is not readable by Part.EditAll, Part.EditAllAdmin, Part.ViewAll, Part.ViewMy
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (PublicID) on entity Part.AssetPart to Part.EditAll;
+    grant read (PublicID) on entity Part.AssetPart to Part.EditAllAdmin;
+    grant read (PublicID) on entity Part.AssetPart to Part.ViewAll;
+    grant read (PublicID) on entity Part.AssetPart to Part.ViewMy;
+Added attribute 'PublicID' to entity Part.SelectedPart
+Warning: Part.SelectedPart.PublicID is not readable by Part.EditAll, Part.EditAllAdmin, Part.ViewAll
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (PublicID) on entity Part.SelectedPart to Part.EditAll;
+    grant read (PublicID) on entity Part.SelectedPart to Part.EditAllAdmin;
+    grant read (PublicID) on entity Part.SelectedPart to Part.ViewAll;
+Added attribute 'PublicID' to entity AssetManagement.Manufacturer
+Warning: AssetManagement.Manufacturer.PublicID is not readable by AssetManagement.EditAsset, AssetManagement.EditAssetAdmin, AssetManagement.ViewAll
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (PublicID) on entity AssetManagement.Manufacturer to AssetManagement.EditAsset;
+    grant read (PublicID) on entity AssetManagement.Manufacturer to AssetManagement.EditAssetAdmin;
+    grant read (PublicID) on entity AssetManagement.Manufacturer to AssetManagement.ViewAll;
+Added attribute 'PublicID' to entity Tool.Tool
+Warning: Tool.Tool.PublicID is not readable by Tool.APIConsumer, Tool.EditAll, Tool.ViewAll, Tool.ViewMy
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (PublicID) on entity Tool.Tool to Tool.APIConsumer;
+    grant read (PublicID) on entity Tool.Tool to Tool.EditAll;
+    grant read (PublicID) on entity Tool.Tool to Tool.ViewAll;
+    grant read (PublicID) on entity Tool.Tool to Tool.ViewMy;
+Added attribute 'PublicID' to entity Tool.SelectedTool
+Warning: Tool.SelectedTool.PublicID is not readable by Tool.EditAll, Tool.ViewAll, Tool.ViewMy, Tool._AddOn_SelectTools
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (PublicID) on entity Tool.SelectedTool to Tool.EditAll;
+    grant read (PublicID) on entity Tool.SelectedTool to Tool.ViewAll;
+    grant read (PublicID) on entity Tool.SelectedTool to Tool.ViewMy;
+    grant read (PublicID) on entity Tool.SelectedTool to Tool._AddOn_SelectTools;
+Added attribute 'CustomerName' to entity AssetManagement.Asset
+Warning: AssetManagement.Asset.CustomerName is not readable by AssetManagement.APIConsumer, AssetManagement.EditAsset, AssetManagement.EditAssetAdmin, AssetManagement.ViewAll, AssetManagement._AddOn_CreateAssetRosters, AssetManagement._AddOn_EditNotes
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (CustomerName) on entity AssetManagement.Asset to AssetManagement.APIConsumer;
+    grant read (CustomerName) on entity AssetManagement.Asset to AssetManagement.EditAsset;
+    grant read (CustomerName) on entity AssetManagement.Asset to AssetManagement.EditAssetAdmin;
+    grant read (CustomerName) on entity AssetManagement.Asset to AssetManagement.ViewAll;
+    grant read (CustomerName) on entity AssetManagement.Asset to AssetManagement._AddOn_CreateAssetRosters;
+    grant read (CustomerName) on entity AssetManagement.Asset to AssetManagement._AddOn_EditNotes;
+Added attribute 'CustomerPublicID' to entity AssetManagement.Asset
+Warning: AssetManagement.Asset.CustomerPublicID is not readable by AssetManagement.APIConsumer, AssetManagement.EditAsset, AssetManagement.EditAssetAdmin, AssetManagement.ViewAll, AssetManagement._AddOn_CreateAssetRosters, AssetManagement._AddOn_EditNotes
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (CustomerPublicID) on entity AssetManagement.Asset to AssetManagement.APIConsumer;
+    grant read (CustomerPublicID) on entity AssetManagement.Asset to AssetManagement.EditAsset;
+    grant read (CustomerPublicID) on entity AssetManagement.Asset to AssetManagement.EditAssetAdmin;
+    grant read (CustomerPublicID) on entity AssetManagement.Asset to AssetManagement.ViewAll;
+    grant read (CustomerPublicID) on entity AssetManagement.Asset to AssetManagement._AddOn_CreateAssetRosters;
+    grant read (CustomerPublicID) on entity AssetManagement.Asset to AssetManagement._AddOn_EditNotes;
+Added attribute 'PreferredTechnicianID' to entity AssetManagement.Asset
+Warning: AssetManagement.Asset.PreferredTechnicianID is not readable by AssetManagement.APIConsumer, AssetManagement.EditAsset, AssetManagement.EditAssetAdmin, AssetManagement.ViewAll, AssetManagement._AddOn_CreateAssetRosters, AssetManagement._AddOn_EditNotes
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (PreferredTechnicianID) on entity AssetManagement.Asset to AssetManagement.APIConsumer;
+    grant read (PreferredTechnicianID) on entity AssetManagement.Asset to AssetManagement.EditAsset;
+    grant read (PreferredTechnicianID) on entity AssetManagement.Asset to AssetManagement.EditAssetAdmin;
+    grant read (PreferredTechnicianID) on entity AssetManagement.Asset to AssetManagement.ViewAll;
+    grant read (PreferredTechnicianID) on entity AssetManagement.Asset to AssetManagement._AddOn_CreateAssetRosters;
+    grant read (PreferredTechnicianID) on entity AssetManagement.Asset to AssetManagement._AddOn_EditNotes;
+Added attribute 'AppointmentPublicID' to entity Part.UsedPart
+Warning: Part.UsedPart.AppointmentPublicID is not readable by Part.EditAll, Part.EditAllAdmin, Part.ViewAll, Part.ViewMy
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (AppointmentPublicID) on entity Part.UsedPart to Part.EditAll;
+    grant read (AppointmentPublicID) on entity Part.UsedPart to Part.EditAllAdmin;
+    grant read (AppointmentPublicID) on entity Part.UsedPart to Part.ViewAll;
+    grant read (AppointmentPublicID) on entity Part.UsedPart to Part.ViewMy;
+Added attribute 'WorkOrderPublicID' to entity Part.SuggestedPart
+Warning: Part.SuggestedPart.WorkOrderPublicID is not readable by Part.EditAll, Part.EditAllAdmin, Part.ViewAll, Part.ViewMy, Part._AddOn_SelectParts
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (WorkOrderPublicID) on entity Part.SuggestedPart to Part.EditAll;
+    grant read (WorkOrderPublicID) on entity Part.SuggestedPart to Part.EditAllAdmin;
+    grant read (WorkOrderPublicID) on entity Part.SuggestedPart to Part.ViewAll;
+    grant read (WorkOrderPublicID) on entity Part.SuggestedPart to Part.ViewMy;
+    grant read (WorkOrderPublicID) on entity Part.SuggestedPart to Part._AddOn_SelectParts;
+Added attribute 'WorkOrderPublicID' to entity Tool.SelectedTool
+Warning: Tool.SelectedTool.WorkOrderPublicID is not readable by Tool.EditAll, Tool.ViewAll, Tool.ViewMy, Tool._AddOn_SelectTools
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (WorkOrderPublicID) on entity Tool.SelectedTool to Tool.EditAll;
+    grant read (WorkOrderPublicID) on entity Tool.SelectedTool to Tool.ViewAll;
+    grant read (WorkOrderPublicID) on entity Tool.SelectedTool to Tool.ViewMy;
+    grant read (WorkOrderPublicID) on entity Tool.SelectedTool to Tool._AddOn_SelectTools;
+Created microflow: AssetManagement.Asset_SetCrossKeys
+Added event handler Before Commit on AssetManagement.Asset
+Created microflow: Part.UsedPart_SetCrossKeys
+Added event handler Before Commit on Part.UsedPart
+Created microflow: Part.SuggestedPart_SetCrossKeys
+Added event handler Before Commit on Part.SuggestedPart
+Created microflow: Tool.SelectedTool_SetCrossKeys
+Added event handler Before Commit on Tool.SelectedTool
+Granted access on AssetManagement.Asset to AssetManagement.APIConsumer
+  Result: read (AssetID, SystemID, "Description", Notes, Address, ZipCode, City, FullAddress, HasOpeningTimes, CustomerName, CustomerPublicID, PreferredTechnicianID, Asset_Manufacturer)
+Granted access on AssetManagement.Manufacturer to AssetManagement.APIConsumer
+  Result: read (Name, PublicID)
+Reconciled 9 access rule(s) in module Part
+Granted access on Part.Part to Part.APIConsumer
+  Result: create, read (IsAdditionalPart, Part_UnitOfMeasure, PartID, SystemID, Name, "Description", Price, IsActive, Vendor), write (PartID, SystemID, Name, "Description", Price, IsActive, Vendor)
+Granted access on Part.UnitOfMeasure to Part.APIConsumer
+  Result: read (SystemID, UnitName, Abbreviation)
+Granted access on Part.AssetPart to Part.APIConsumer
+  Result: read (SystemID, Quantity, PublicID, AssetPart_Part, AssetPart_Asset)
+Granted access on Part.UsedPart to Part.APIConsumer
+  Result: read (IsFromWarehouse, Quantity, AppointmentPublicID, SystemID, PublicID, UsedPart_Inventory)
+Granted access on Part.SuggestedPart to Part.APIConsumer
+  Result: read (Quantity, IsUsed, WorkOrderPublicID, SystemID, PublicID, SuggestedPart_Part)
+Granted access on WarehouseManagement.Warehouse to WarehouseManagement.APIConsumer
+  Result: read (WarehouseID, SystemID, "Description")
+Granted access on WarehouseManagement.Inventory to WarehouseManagement.APIConsumer
+  Result: read (InventoryID, SystemID, Amount, PublicID, Inventory_Warehouse, Inventory_Part)
+Granted access on Tool.Tool to Tool.APIConsumer
+  Result: read (ToolID, Name, "Description", IsActive, PublicID)
+Granted access on Tool.SelectedTool to Tool.APIConsumer
+  Result: read (SelectedToolID, Quantity, PublicID, WorkOrderPublicID, SelectedTool_Tool)
+Created OData service: AssetManagement.AssetsAPIv2
+Granted access on OData service AssetManagement.AssetsAPIv2 to AssetManagement.APIConsumer
+Created microflow: Part.SeamAPI_UpsertUsedPart
+Granted execute access on Part.SeamAPI_UpsertUsedPart to Part.APIConsumer
+Created microflow: Part.SeamAPI_DeleteUsedPart
+Granted execute access on Part.SeamAPI_DeleteUsedPart to Part.APIConsumer
+Created microflow: Part.SeamAPI_SetInventoryAmount
+Granted execute access on Part.SeamAPI_SetInventoryAmount to Part.APIConsumer
+Created published rest service Part.SeamAPIv2
+Granted access on published rest service Part.SeamAPIv2 to Part.APIConsumer
+Added module roles TicketManagement.User to user role AssetsAPI
+real 3.494 s
+
+$ mxcli exec slice-strangle-publish-fix1.mdl
+  Result: read (Quantity, IsUsed, WorkOrderPublicID, SuggestedPartKey, SystemID, PublicID, SuggestedPart_Part)
+Modified OData service: AssetManagement.AssetsAPIv2
+real .8527 s

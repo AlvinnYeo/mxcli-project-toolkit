@@ -1,0 +1,263 @@
+mdl 1;
+-- Increment 7, monolith step 4: helpers over the external entities, REST-forwarded offline actions, the pull feed for
+-- the native copies, retirement of dead push flows. Followed by mono-strangle-rewire-docs.mdl (describe -> edit of
+-- 33 referencing microflows) and mono-strangle-pages.mdl (in-place ALTER PAGE).
+
+-- ---- read helpers replacing the deleted AssetManagement / Part flows (reads: external entities, P5 keys) ----
+create or modify microflow AssetsClient.Asset_Get_BySystemID ($SystemID: String)
+returns AssetsClient.Asset
+begin
+  retrieve $Asset from AssetsClient.Asset
+    where SystemID = $SystemID
+    first;
+  return $Asset;
+end;
+
+create or modify microflow AssetsClient.Part_Get_BySystemID ($SystemID: String)
+returns AssetsClient.Part
+begin
+  retrieve $Part from AssetsClient.Part
+    where SystemID = $SystemID
+    first;
+  return $Part;
+end;
+
+create or modify microflow AssetsClient.Part_NameIsInUse ($Name: String)
+returns Boolean
+begin
+  retrieve $Part from AssetsClient.Part
+    where Name = $Name
+    first;
+  return $Part != empty;
+end;
+
+-- Asset_Technician_Preferred is slice-owned and points at the monolith's Technician: the slice publishes the key copy
+create or modify microflow AssetsClient.Asset_GetPreferredTechnician ($Asset: AssetsClient.Asset)
+returns Technician.Technician
+begin
+  if $Asset = empty then
+    return empty;
+  end if;
+  retrieve $Technician from Technician.Technician
+    where TechnicianID = $Asset/PreferredTechnicianID
+    first;
+  return $Technician;
+end;
+
+-- SLA lookup: asset -> customer -> standard. The contract / umbrella-contract levels walked Asset_Contract and
+-- Asset_UmbrellaContract (slice-owned, not published): hand-off (publish ContractPublicID on the slice's Asset).
+create or modify microflow AssetsClient.Asset_GetRelevantSLA ($Asset: AssetsClient.Asset)
+returns CustomerManagement.SLA
+begin
+  retrieve $SLA_Asset from CustomerManagement.SLA
+    where CustomerManagement.SLA_Asset = $Asset
+    first;
+  if $SLA_Asset != empty then
+    return $SLA_Asset;
+  end if;
+  retrieve $SLA_Customer from CustomerManagement.SLA
+    where CustomerManagement.SLA_Customer/CustomerManagement.Customer/PublicID = $Asset/CustomerPublicID
+    first;
+  if $SLA_Customer != empty then
+    return $SLA_Customer;
+  end if;
+  retrieve $SLA_Standard from CustomerManagement.SLA
+    where SLAtype = CustomerManagement.Enum_SLAtype.Standard
+    first;
+  return $SLA_Standard;
+end;
+
+-- AgreementGroup is not published (not used by the slice's own flows): the contract warning is a hand-off
+create or modify rule AssetsClient.Rule_Asset_RequiresNoContractNotification ($Asset: AssetsClient.Asset)
+returns Boolean
+begin
+  return false;
+end;
+
+-- ---- REST writes to the slice (P3 primitive params, P4 on error without rollback + log) ----
+create or modify microflow AssetsClient.REST_UpsertUsedPart (
+  $SystemID: String,
+  $InventorySystemID: String,
+  $AppointmentPublicID: Long,
+  $Quantity: Integer,
+  $IsFromWarehouse: Boolean
+)
+returns Boolean
+begin
+  $Response = call rest service post '{1}/usedparts?SystemID={2}&InventorySystemID={3}&AppointmentPublicID={4}&Quantity={5}&IsFromWarehouse={6}' with (
+    {1} = @AssetsSeam.RestV2Url,
+    {2} = urlEncode($SystemID),
+    {3} = urlEncode($InventorySystemID),
+    {4} = toString($AppointmentPublicID),
+    {5} = toString($Quantity),
+    {6} = toString($IsFromWarehouse)
+  ) (
+    Authentication: basic (Username: @AssetsSeam.APIUserName, Password: @AssetsSeam.APIUserPassword),
+    Timeout: 30,
+  ) returns String on error without rollback begin
+    log error node 'AssetsClient' 'slice used part upsert {1} failed: {2}' with ({1} = $SystemID, {2} = $latestError/Message);
+    return false;
+  end error;
+  log info node 'AssetsClient' 'slice used part upsert {1}: {2}' with ({1} = $SystemID, {2} = $Response);
+  return not(startsWith($Response, 'error'));
+end;
+
+create or modify microflow AssetsClient.REST_DeleteUsedPart ($SystemID: String)
+returns Boolean
+begin
+  $Response = call rest service post '{1}/usedparts/delete?SystemID={2}' with (
+    {1} = @AssetsSeam.RestV2Url,
+    {2} = urlEncode($SystemID)
+  ) (
+    Authentication: basic (Username: @AssetsSeam.APIUserName, Password: @AssetsSeam.APIUserPassword),
+    Timeout: 30,
+  ) returns String on error without rollback begin
+    log error node 'AssetsClient' 'slice used part delete {1} failed: {2}' with ({1} = $SystemID, {2} = $latestError/Message);
+    return false;
+  end error;
+  log info node 'AssetsClient' 'slice used part delete {1}: {2}' with ({1} = $SystemID, {2} = $Response);
+  return true;
+end;
+
+create or modify microflow AssetsClient.REST_UpsertPart ($PartID: String, $Name: String, $Description: String, $Price: Decimal)
+returns Boolean
+begin
+  $Response = call rest service post '{1}/parts?PartID={2}&Name={3}&Description={4}&Price={5}&Vendor=' with (
+    {1} = @AssetsSeam.RestV2Url,
+    {2} = urlEncode($PartID),
+    {3} = urlEncode(if $Name = empty then '' else $Name),
+    {4} = urlEncode(if $Description = empty then '' else $Description),
+    {5} = toString(if $Price = empty then 0 else $Price)
+  ) (
+    Authentication: basic (Username: @AssetsSeam.APIUserName, Password: @AssetsSeam.APIUserPassword),
+    Timeout: 30,
+  ) returns String on error without rollback begin
+    log error node 'AssetsClient' 'slice part upsert {1} failed: {2}' with ({1} = $PartID, {2} = $latestError/Message);
+    return false;
+  end error;
+  log info node 'AssetsClient' 'slice part upsert {1}: {2}' with ({1} = $PartID, {2} = $Response);
+  return true;
+end;
+
+create or modify microflow AssetsClient.REST_SetInventoryAmount ($InventorySystemID: String, $Amount: Integer)
+returns Boolean
+begin
+  $Response = call rest service post '{1}/inventories/amount?InventorySystemID={2}&Amount={3}' with (
+    {1} = @AssetsSeam.RestV2Url,
+    {2} = urlEncode($InventorySystemID),
+    {3} = toString($Amount)
+  ) (
+    Authentication: basic (Username: @AssetsSeam.APIUserName, Password: @AssetsSeam.APIUserPassword),
+    Timeout: 30,
+  ) returns String on error without rollback begin
+    log error node 'AssetsClient' 'slice inventory amount {1} failed: {2}' with ({1} = $InventorySystemID, {2} = $latestError/Message);
+    return false;
+  end error;
+  log info node 'AssetsClient' 'slice inventory amount {1}: {2}' with ({1} = $InventorySystemID, {2} = $Response);
+  return not(startsWith($Response, 'error'));
+end;
+
+-- ---- offline actions from the device: forwarded to the slice (the slice runs its own save/delete flows, P7) ----
+-- drop + create: a rebuild of an existing flow is refused (MDL-V1-REBUILD); module-role grants carry over
+drop microflow Synchronization.OfflineUsedPartAction_Process;
+create or modify microflow Synchronization.OfflineUsedPartAction_Process ($OfflineUsedPartAction: Synchronization.OfflineUsedPartAction)
+returns Boolean
+folder 'Objects/OfflineUsedPartAction/Private'
+begin
+  if $OfflineUsedPartAction/SelectedPartAction = empty then
+    return false;
+  end if;
+  if $OfflineUsedPartAction/SelectedPartAction = Synchronization.ENUM_UsedPartAction.Part_deleted then
+    $Deleted = call microflow AssetsClient.REST_DeleteUsedPart(SystemID = $OfflineUsedPartAction/ObjectID);
+    return $Deleted;
+  end if;
+  $Appointment = call microflow TicketManagement.Appointment_Get_BySystemID(SystemID = $OfflineUsedPartAction/AppointmentSystemID);
+  $Upserted = call microflow AssetsClient.REST_UpsertUsedPart(SystemID = $OfflineUsedPartAction/ObjectID, InventorySystemID = $OfflineUsedPartAction/InventorySystemID, AppointmentPublicID = $Appointment/PublicID, Quantity = $OfflineUsedPartAction/Quantity, IsFromWarehouse = $OfflineUsedPartAction/IsFromWarehouse);
+  return $Upserted;
+end;
+
+-- drop + create: a rebuild of an existing flow is refused (MDL-V1-REBUILD); module-role grants carry over
+drop microflow Synchronization.OfflineUsedPartAction_Validate;
+create or modify microflow Synchronization.OfflineUsedPartAction_Validate ($OfflineUsedPartAction: Synchronization.OfflineUsedPartAction, $LastDownload: DateTime)
+returns Boolean
+folder 'Objects/OfflineUsedPartAction/Private'
+begin
+  -- increment 7: the "changed by another user after your last sync" check read the used part's changedDate and
+  -- LastChanged account in the monolith; both now live in the slice (hand-off: conflict check in the slice's REST action)
+  declare $IsValid Boolean = true;
+  if $OfflineUsedPartAction/SelectedPartAction = empty then
+    set $IsValid = false;
+    call microflow Synchronization.OfflineAction_AppendReviewMessage(OfflineAction = $OfflineUsedPartAction, Message = 'The type of this offline action could not be identified.');
+  end if;
+  if $OfflineUsedPartAction/Quantity = empty then
+    set $IsValid = false;
+    call microflow Synchronization.OfflineAction_AppendReviewMessage(OfflineAction = $OfflineUsedPartAction, Message = 'This offline action does not have the necessary Quantity thus could not be processed.');
+  end if;
+  retrieve $Inventory from AssetsClient.Inventory
+    where SystemID = $OfflineUsedPartAction/InventorySystemID
+    first;
+  if $Inventory = empty then
+    set $IsValid = false;
+    call microflow Synchronization.OfflineAction_AppendReviewMessage(OfflineAction = $OfflineUsedPartAction, Message = 'The related Inventory is not available on web.');
+  end if;
+  $Appointment = call microflow TicketManagement.Appointment_Get_BySystemID(SystemID = $OfflineUsedPartAction/AppointmentSystemID);
+  if $Appointment = empty then
+    set $IsValid = false;
+    call microflow Synchronization.OfflineAction_AppendReviewMessage(OfflineAction = $OfflineUsedPartAction, Message = 'The related Appointment is not available on web.');
+  end if;
+  return $IsValid;
+end;
+
+-- drop + create: a rebuild of an existing flow is refused (MDL-V1-REBUILD); module-role grants carry over
+drop microflow Synchronization.OfflinePartAction_Process;
+create or modify microflow Synchronization.OfflinePartAction_Process ($OfflinePartAction: Synchronization.OfflinePartAction)
+returns Boolean
+folder 'Objects/OfflinePartAction/Private'
+begin
+  if $OfflinePartAction/PartAction = empty then
+    return false;
+  end if;
+  $Upserted = call microflow AssetsClient.REST_UpsertPart(PartID = $OfflinePartAction/ObjectID, Name = $OfflinePartAction/Name, Description = $OfflinePartAction/Description, Price = $OfflinePartAction/Price);
+  return $Upserted;
+end;
+
+-- drop + create: a rebuild of an existing flow is refused (MDL-V1-REBUILD); module-role grants carry over
+drop microflow Synchronization.OfflineInventoryAction_Process;
+create or modify microflow Synchronization.OfflineInventoryAction_Process ($OfflineInventoryAction: Synchronization.OfflineInventoryAction)
+returns Boolean
+folder 'Objects/OfflineInventoryAction/Private'
+begin
+  -- increment 7: forwarded as an amount update; creating a NEW inventory row from the device is a hand-off
+  if $OfflineInventoryAction/InventoryActionType = empty then
+    return false;
+  end if;
+  $Updated = call microflow AssetsClient.REST_SetInventoryAmount(InventorySystemID = $OfflineInventoryAction/ObjectID, Amount = $OfflineInventoryAction/Amount);
+  return $Updated;
+end;
+
+-- drop + create: a rebuild of an existing flow is refused (MDL-V1-REBUILD); module-role grants carry over
+drop microflow Synchronization.OfflineCustomPartAction_Process;
+create or modify microflow Synchronization.OfflineCustomPartAction_Process ($OfflineCustomPartAction: Synchronization.OfflineCustomPartAction)
+returns Boolean
+folder 'Objects/OfflineCustomPartAction/Private'
+begin
+  -- increment 7: the custom part is created in the slice; its zero-stock inventory and the used part on the
+  -- appointment are a hand-off (needs an inventory-create REST action in the slice)
+  $Upserted = call microflow AssetsClient.REST_UpsertPart(PartID = $OfflineCustomPartAction/ObjectID, Name = $OfflineCustomPartAction/Name, Description = $OfflineCustomPartAction/Description, Price = $OfflineCustomPartAction/Price);
+  return $Upserted;
+end;
+
+-- ---- dead after the cut: helpers of the old offline used-part processing, now done by the slice's REST action ----
+drop microflow Synchronization.OfflineUsedPartAction_Process_PartAdded;
+drop microflow Synchronization.UsedPart_SetSuggestedPartToUsedOrUnused;
+drop microflow Synchronization.UsedPart_UpdateInventory;
+drop microflow Synchronization.UsedPart_UpdateLastChangedBy;
+drop microflow Synchronization.UsedPart_UpdateQuantity;
+-- push of slice-side used-part changes to device copies: triggered only by the slice's commit flows (gone) -> retire
+drop microflow Synchronization.UsedPart_UpdateNativeUsedPart;
+drop microflow Synchronization.UsedPart_ProcessUpdatingNativeUsedPart;
+drop rule Synchronization.Rule_UsedPart_HasChanged;
+-- data retention of slice-owned rows is the slice's job
+drop microflow AppSettings.DataRemoval_SelectedPartList;
+drop microflow AppSettings.DataRemoval_SuggestedPartList;
+drop microflow AppSettings.DataRemoval_UsedPartList;

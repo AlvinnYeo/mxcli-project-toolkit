@@ -1,0 +1,117 @@
+$ mxcli exec mono-strangle-feed-pages.mdl -p fsm.mpr   (= mono-strangle-feed.mdl + mono-strangle-pages.mdl)
+Connected to: fsm.mpr (Mendix 10.24.0.73019)
+(no module)
+-----------
+      at 
+
+      at 
+
+      at 
+
+      at 
+
+      at 
+
+      at 
+
+      at 
+
+      at 
+
+      at 
+
+      at 
+
+      at 
+
+      at 
+
+      at 
+
+      at 
+
+      at 
+
+      at 
+
+      at 
+
+      at 
+
+      at 
+
+      at 
+
+      at 
+
+      at 
+
+      at 
+
+      at 
+
+      at 
+
+      at 
+
+      at 
+
+27 issues: 0 errors, 27 warnings, 0 info
+Created microflow: AssetsClient.NativeSync_PullAllAssets
+  access: granted to auto-created role AssetsClient.User (the module has no other roles; a later grant adds to it — revoke it to narrow access)
+Created microflow: AssetsClient.NativeSync_PullAssets
+  access: granted to auto-created role AssetsClient.User (the module has no other roles; a later grant adds to it — revoke it to narrow access)
+Created microflow: AssetsClient.NativeSync_PullAllParts
+  access: granted to auto-created role AssetsClient.User (the module has no other roles; a later grant adds to it — revoke it to narrow access)
+Created microflow: AssetsClient.NativeSync_PullParts
+  access: granted to auto-created role AssetsClient.User (the module has no other roles; a later grant adds to it — revoke it to narrow access)
+Created microflow: CoreSeam.API_NativeSync
+Granted execute access on CoreSeam.API_NativeSync to CoreSeam.APIClient
+Modified published rest service CoreSeam.CoreActions
+Created entity: AssetsClient.UsedPartDraft
+Created association: AssetsClient.UsedPartDraft_Appointment
+Module role AssetsClient.User already exists (auto-provisioned)
+Granted access on AssetsClient.UsedPartDraft to AssetsClient.User
+  Result: create, read (InventoryID, Quantity, IsFromWarehouse, Result, UsedPartDraft_Appointment), write (InventoryID, Quantity, IsFromWarehouse, Result, UsedPartDraft_Appointment)
+Created microflow: AssetsClient.ACT_UsedPartDraft_Save
+Granted execute access on AssetsClient.ACT_UsedPartDraft_Save to AssetsClient.User
+Created page AssetsClient.Appointment_UsedParts
+Granted view access on AssetsClient.Appointment_UsedParts to AssetsClient.User
+Created microflow: AssetsClient.ACT_Appointment_UsedParts
+Granted execute access on AssetsClient.ACT_Appointment_UsedParts to AssetsClient.User
+Granted access on AssetsClient.Asset to AssetsClient.User
+  Result: read (SystemID, AssetID, "Description", CustomerName)
+Granted access on AssetsClient.Inventory to AssetsClient.User
+  Result: read (PublicID, SystemID, InventoryID, Amount)
+Granted access on AssetsClient.UsedPart to AssetsClient.User
+  Result: read (UsedPartKey, IsFromWarehouse, Quantity, AppointmentPublicID)
+Added module roles AssetsClient.User to user role FunctionalAdministrator
+Dropped microflow: CoreSeam.Asset_UpsertMirror
+Created microflow: CoreSeam.Asset_UpsertMirror
+Granted execute access on CoreSeam.Asset_UpsertMirror to CoreSeam.APIClient
+Dropped microflow: CoreSeam.API_Rosters_DeleteForAsset
+  Removed its execute grants to CoreSeam.APIClient. A create of CoreSeam.API_Rosters_DeleteForAsset later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow CoreSeam.API_Rosters_DeleteForAsset to CoreSeam.APIClient;
+Created microflow: CoreSeam.API_Rosters_DeleteForAsset
+All specified roles already have execute access on CoreSeam.API_Rosters_DeleteForAsset
+Altered snippet TicketManagement.Snippet_WorkOrder_Edit
+Altered snippet TicketManagement.Snippet_WorkOrder_BulkEdit
+Altered snippet TicketManagement.Snippet_Asset_Details_TicketNP
+Altered page TicketManagement.Ticket_View
+Altered page Dashboard.DashboardExternal
+Altered page AppSettings.Script_Overview
+Altered snippet CustomerManagement.Snippet_ContactPerson_Details
+Altered snippet CustomerManagement.Snippet_SLA_Details
+Altered page TicketManagement.WorkOrder_AdminDetails
+Altered page TicketManagement.Appointment_View
+Altered page TicketManagement.WorkOrder_View
+Altered page CustomerManagement.ContactPerson_Overview
+Dropped page MasterData.WorkOrder_NewEdit_MxAdmin
+  Removed its view grants to MasterData.EditAllAdmin. A create of MasterData.WorkOrder_NewEdit_MxAdmin does not carry them; re-grant: grant view on page MasterData.WorkOrder_NewEdit_MxAdmin to MasterData.EditAllAdmin;
+Granted access on CustomerManagement.Customer to CustomerManagement.ViewMy
+  Result: read (CustomerID, CustomerName, "Email", PhoneNumber, ReferenceNumber)
+Granted access on CustomerManagement.Contract to CustomerManagement.ViewMy
+  Result: read (Number, "Description")
+Dropped microflow: AppSettings.DataRemoval_RemoveWebData
+Created microflow: AppSettings.DataRemoval_RemoveWebData
+Navigation profile 'Responsive' updated.
+real 35.88 s

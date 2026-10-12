@@ -1,0 +1,18 @@
+mdl 1;
+-- Increment 7, monolith step 1: MOVE the 11 published slice entities into one consumer module, AssetsClient.
+-- MOVE ENTITY rewrites every by-name reference (microflows, rules, pages, legacy widgets mxcli cannot author,
+-- XPath), so step 3 can swap each persistent entity for an external entity of the same qualified name
+-- (recipe A at module scale). Describe -> sed -> exec was not an option: 25 of the 38 referencing pages/snippets
+-- hold widgets mxcli cannot re-author (34 DataGrid, 21 ReferenceSelector, ...) and re-executing would drop them.
+create module AssetsClient;
+move entity AssetManagement.Asset to AssetsClient;
+move entity AssetManagement.Manufacturer to AssetsClient;
+move entity Part.Part to AssetsClient;
+move entity Part.UnitOfMeasure to AssetsClient;
+move entity Part.AssetPart to AssetsClient;
+move entity Part.UsedPart to AssetsClient;
+move entity Part.SuggestedPart to AssetsClient;
+move entity WarehouseManagement.Warehouse to AssetsClient;
+move entity WarehouseManagement.Inventory to AssetsClient;
+move entity Tool.Tool to AssetsClient;
+move entity Tool.SelectedTool to AssetsClient;

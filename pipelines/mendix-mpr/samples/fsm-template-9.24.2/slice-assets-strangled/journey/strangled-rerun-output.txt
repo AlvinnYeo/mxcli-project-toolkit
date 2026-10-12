@@ -1,0 +1,4 @@
+--- second consecutive run (idempotency), same apps, no reset ---
+strangled journey: 16/16 assertions passed in 20.9 s — PASS
+  ids: asset=AS-261012154115 part=PS-261012154115
+exit=0 wall 21 s

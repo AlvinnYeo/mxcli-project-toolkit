@@ -1,0 +1,20 @@
+mdl 1;
+-- round 5: the contact person contract selector constrained over ContactPerson_Asset (local -> external) - CE6634
+
+alter snippet CustomerManagement.Snippet_ContactPerson_Details { drop referenceSetSelector2; };
+-- ContactPerson_Customer is a reference set: not a DataGrid 2 column path (CE7247)
+alter page CustomerManagement.ContactPerson_Overview {
+  replace grid1 with {
+    datagrid grid1 (
+      DataSource: database from CustomerManagement.ContactPerson sort by Name asc,
+      Selection: Single
+    ) {
+      column (Attribute: Name, Caption: 'Name')
+      column (Attribute: PhoneNumber, Caption: 'Phone number')
+      column (Attribute: EmailAddress, Caption: 'Email')
+      column (Caption: ' ', ShowContentAs: customContent) {
+        actionbutton btnOpenContact (Caption: 'Open', Action: show page CustomerManagement.ContactPerson_View(ContactPerson = $currentObject))
+      }
+    }
+  };
+};

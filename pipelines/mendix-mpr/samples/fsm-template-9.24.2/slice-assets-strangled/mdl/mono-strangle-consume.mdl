@@ -1,0 +1,16 @@
+mdl 1;
+-- Increment 7, monolith side (FSM 10.24 copy), step 1: consume the slice's AssetsAPIv2 as external entities in ONE
+-- module (mendix-service-seam.md P6: navigations exist only inside one consumer module). All of them go into the
+-- existing consumer module AssetsSeam (increment 5: v1 entities Assets/Parts/UnitsOfMeasure/Warehouses, kept for now).
+create constant AssetsSeam.ODataV2Url ( Type: String, DefaultValue: 'http://127.0.0.1:8480/odata/assets/v2/' );
+create constant AssetsSeam.RestV2Url ( Type: String, DefaultValue: 'http://127.0.0.1:8480/rest/assets/v2' );
+
+create consumed odata service AssetsSeam.AssetsAPIv2 (
+  Version: '2.0.0',
+  ODataVersion: OData4,
+  MetadataUrl: 'assets-v2-metadata.xml',
+  Timeout: 60,
+  ServiceUrl: AssetsSeam.ODataV2Url,
+  ConfigurationMicroflow: microflow AssetsSeam.GetAuthHeaders
+);
+create external entities from AssetsSeam.AssetsAPIv2 into AssetsSeam;

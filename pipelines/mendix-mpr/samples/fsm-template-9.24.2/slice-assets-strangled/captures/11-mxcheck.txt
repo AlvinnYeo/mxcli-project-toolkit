@@ -1,0 +1,10 @@
+Checking your app for issues...
+Checking the version of the mpr file.
+The mpr file version is '10.24.0.73019'.
+Loading the mpr file.
+The mpr file version is '10.24.0.73019'.
+Checking app for errors...
+[error] [CE1613] "The selected association 'AssetManagement.Asset_UmbrellaContract' no longer exists." at Access rule of entity 'CustomerManagement.Contract'
+[error] [CE1613] "The selected association 'AssetManagement.Asset_Contract' no longer exists." at Access rule of entity 'CustomerManagement.Contract'
+[error] [CE1613] "The selected association 'AssetManagement.Asset_Customer' no longer exists." at Access rule of entity 'CustomerManagement.Customer'
+The app contains: 3 errors.
