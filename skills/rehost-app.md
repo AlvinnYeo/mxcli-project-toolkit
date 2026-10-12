@@ -116,7 +116,7 @@ Hand-off classes by construction in mxcli 0.26 — record each document, fix in 
 | Class | Why |
 |---|---|
 | Java action type parameters | described with no type parameter; exec writes entity `.Entity` (CE1613) |
-| Message definitions | no document type; every export mapping and flow on one fails |
+| ~~Message definitions~~ | **not a hand-off** (corrected 2026-10-12): `create message definition collection` exists in 0.26.0; the extractor must emit the collection before the export mappings that use it. The GenAI failure was ordering, and the error text does not point at the command |
 | Rules | cannot be described or created; also missing from the denominator |
 | Mutual recursion | exec refuses forward references, so both flows and their callers stay deferred |
 | NOT re-executable widgets | describe marks them; e.g. `Forms$FileManager` |
@@ -128,7 +128,7 @@ If the model will not load (`ArgumentNullException … EntityType.set_EntityId`)
 microflow whose `import from mapping` result has a null entity: `drop microflow` then the source
 `create or modify` in one script (GenAI M1).
 
-Regression parity is **not** a Rehost gate — not reachable headlessly (message definitions, rules,
+Regression parity is **not** a Rehost gate — not reachable headlessly (rules,
 mutual recursion, live credentials). It is a separate, human-run level; say which was reached.
 
 ## Step 6 — Learnings

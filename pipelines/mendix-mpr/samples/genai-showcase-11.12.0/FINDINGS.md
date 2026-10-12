@@ -133,7 +133,7 @@ MCPServer_ExposeToolsPrompts 13, 8 or fewer in each of the other 10 modules, and
   pages.** The extractor fills these in.
 
 ### Not expressible in MDL (mxcli 0.26.0)
-- **N1. Message definitions** have no document type: `export mapping GenAICommons.EM_Reference:
+- **N1. Message definitions** — **CORRECTED 2026-10-12: not a defect.** `create message definition collection` and `describe message definition collection` work on 0.26.0 and an export mapping on one checks and executes (blank 11.13.0 app, staged issue U8 withdrawn). The run failed because the collection was never emitted before the mapping; the extractor's tree fill-in must include it. Original note: `export mapping GenAICommons.EM_Reference:
   message definition "GenAICommons.MD_Reference.Reference" not found — this project has no message
   definitions`. Every export mapping built on one fails (EM_Reference, EM_MCPServer_Ticket,
   EM_FunctionCalling_Ticket), and so does every flow that exports with it (4 build errors).
