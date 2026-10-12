@@ -200,15 +200,19 @@ Studio Pro fills it when it commits; a note hand-written with `"ModelChanges":[]
 **Model changes 0** for every CLI commit. That was this skill's own template until 2026-10-12. The
 field project then had 270 of 270 notes empty, and the "which microflow, which page" history was
 gone. Do not hand-write the note. `bin/install-project-hooks.sh` installs post-commit and post-rewrite
-hooks that run `bin/mx-metadata-note.py write HEAD`. That keeps every key an existing note has,
-reads `ModelerVersion` from the commit's own `.mpr`, and computes `ModelChanges` from the commit's
-changed `.mxunit` files. The installer also adds the notes ref to the Team Server remote's push
+hooks that write the note after every commit, amend and rebase. With mxcli v0.26 or later in the
+project root they call `./mxcli git note -p App.mpr --write <commit>` (mendixlabs/mxcli#1337, the
+better engine: it also notes the root commit and `Moved` units). An older pin falls back to
+`bin/mx-metadata-note.py write <commit>`; on 160 field commits both produced the same 3,594 entries.
+The fallback keeps every key an existing note has, reads `ModelerVersion` from the commit's own `.mpr`,
+and computes `ModelChanges` from the commit's changed `.mxunit` files. The installer also adds the notes ref to the Team Server remote's push
 refspecs, so a plain `git push teamserver` carries the notes.
 
 ```bash
 ./bin/install-project-hooks.sh                 # once; init-project.sh / sync-project.sh run it too
 ./bin/mx-metadata-note.py backfill --dry-run   # history from before the hook: what it would write
 ./bin/mx-metadata-note.py backfill             # fill it (adds note commits; code history untouched)
+                                               # mxcli v0.26+: ./mxcli git note -p App.mpr --write <commits>
 git push teamserver                            # branch + notes (refspecs set by the installer)
 ./bin/mx-metadata-note.py sync teamserver      # only if the notes push was rejected: a colleague's
                                                # Studio Pro noted commits too; 3-way merge, no force

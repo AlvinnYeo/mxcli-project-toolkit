@@ -130,11 +130,11 @@ for h in post-commit post-rewrite; do
     echo "  existing $h hook kept as $h.pre-mxtk and chained first"
   fi
   if [ "$h" = post-commit ]; then
-    RUN='MXTK_HOOK=1 $py "$note" write HEAD || true'
+    RUN='note_one HEAD'
     CHAIN='[ -x "$(dirname "$0")/post-commit.pre-mxtk" ] && "$(dirname "$0")/post-commit.pre-mxtk"'
   else
     # stdin: "<old> <new> [extra]" per rewritten commit (amend, rebase). Read it once, feed both.
-    RUN='printf "%s\n" "$input" | while read -r _old new _rest; do [ -n "$new" ] && MXTK_HOOK=1 $py "$note" write "$new"; done || true'
+    RUN='printf "%s\n" "$input" | while read -r _old new _rest; do [ -n "$new" ] && note_one "$new"; done'
     CHAIN='[ -x "$(dirname "$0")/post-rewrite.pre-mxtk" ] && printf "%s\n" "$input" | "$(dirname "$0")/post-rewrite.pre-mxtk" "$@"'
   fi
   cat > "$HF" <<HOOKEOF
@@ -145,10 +145,19 @@ $NOTE_MARK — written by bin/install-project-hooks.sh (mxcli-project-toolkit). 
 $( [ "$h" = post-rewrite ] && echo 'input="$(cat)"' )
 $CHAIN
 note="\$(git rev-parse --show-toplevel)/$BIN_REL/mx-metadata-note.py"
-[ -f "\$note" ] || exit 0
-py=""
-[ -f "\$(dirname "\$note")/_common.sh" ] && py="\$(PROJECT_ROOT="\$(dirname "\$(dirname "\$note")")" bash -c '. "\$1/_common.sh" >/dev/null 2>&1 && resolve_py' _ "\$(dirname "\$note")" 2>/dev/null)"
-[ -z "\$py" ] && { echo "⚠ no python found — Studio Pro History will show 'Model changes 0' for this commit (bin/mx-metadata-note.py backfill fixes it later)" >&2; exit 0; }  # portability-ok: resolve_py above is the probe
+proj="\$(dirname "\$(dirname "\$note")")"
+# mxcli v0.26+ writes this note itself (mxcli git note, mendixlabs/mxcli#1337): prefer it when the
+# project's pinned binary has the command; older pins fall back to bin/mx-metadata-note.py.
+mx="\$proj/mxcli"; mpr="\$(ls "\$proj"/*.mpr 2>/dev/null | head -1)"
+if [ -x "\$mx" ] && [ -n "\$mpr" ] && "\$mx" git note --help >/dev/null 2>&1; then
+  note_one() { "\$mx" git note -p "\$mpr" --write "\$1" >/dev/null 2>&1 || echo "⚠ mxcli git note failed for \$1 — Studio Pro History will show 'Model changes 0' (re-run: ./mxcli git note -p \$(basename "\$mpr") --write \$1)" >&2; }
+else
+  [ -f "\$note" ] || exit 0
+  py=""
+  [ -f "\$(dirname "\$note")/_common.sh" ] && py="\$(PROJECT_ROOT="\$proj" bash -c '. "\$1/_common.sh" >/dev/null 2>&1 && resolve_py' _ "\$(dirname "\$note")" 2>/dev/null)"
+  [ -z "\$py" ] && { echo "⚠ no python found — Studio Pro History will show 'Model changes 0' for this commit (bin/mx-metadata-note.py backfill fixes it later)" >&2; exit 0; }  # portability-ok: resolve_py above is the probe
+  note_one() { MXTK_HOOK=1 \$py "\$note" write "\$1" || true; }
+fi
 $RUN
 exit 0
 HOOKEOF
