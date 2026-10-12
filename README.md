@@ -523,6 +523,7 @@ Every mxcli project has a `.ai-context/skills/` directory (bundled by `mxcli ini
 | Generating a new project's CLAUDE.md — baseline routing plus project-specific facts | `skills/bootstrap-project.md` |
 | Setting up or resuming an mxcli project in a cloud/ephemeral container — the one-time setup order (mxcli download → mxcli init → init-project.sh → sources decision → push) and the commit-and-push loop that survives container reclaim | `skills/cloud-dev-environment.md` |
 | Changing an EXISTING Mendix app — adding a feature, altering a flow, restructuring a module — when it has no BRDs, no architecture doc and no wireframes: the knowledge base comes from the live model (Path D), stages 2–4 run over what changes plus what it touches, nothing more, and the Track B regression baseline is the precondition; audit-only stays in existing-app-assurance | `skills/existing-app-change.md` |
+| Splitting an existing Mendix monolith into several apps — strangler, "move module X into its own app", carving out a slice, microservices from one .mpr: cut choice on business fit AND coupling (bin/cut-score.sh), cut order by dependency direction, MPK move, every crossing edge on bin/cut-ledger.sh, OData/REST seam, and the build-green / seam-live / strangled level each slice reached | `skills/decompose-app.md` |
 | Setting up or wiring a COMPANY BRAIN — the private tier between the toolkit and a project for own skills, conventions, lint rules, MDL snippets and approved MPKs; and deciding whether something goes to the toolkit, the company brain or docs/brain/ | `skills/company-brain.md` |
 | Cutover and retrospective — promoting proven patterns back into the toolkit | `skills/close-the-loop.md` |
 | Before citing ANY behavioural claim about the harness, the Mendix runtime or a test tool as evidence — a claim not in the register may not be cited | `skills/measured-claims.md` |
@@ -537,6 +538,7 @@ Every mxcli project has a `.ai-context/skills/` directory (bundled by `mxcli ini
 | Reviewing what the extraction actually produced — the Stage 1 surface, and the file the Stage 1 gate looks for. Renders a code-extracted and a document knowledge base alike, so a requirements-driven project gets the surface too; prints no zero that a second record does not agree with | `bin/extraction-report.sh` |
 | Assessing or planning a migration up front, before any pipeline is chosen | `skills/assess-migration.md` |
 | Running the extraction pipeline | `skills/migration-pipeline.md` |
+| Rehosting or regenerating an existing Mendix .mpr as MDL into a fresh app — "port this app to a clean Mendix 11 project", re-platform a whole app, rebuild it from its own model: Rehost vs MPK move, pipelines/mendix-mpr/rehost-extract.sh and its check/quarantine/exec/resume loop, reading the fidelity ledger, done = build-green with named hand-offs | `skills/rehost-app.md` |
 | Migrating from a stack that has no dedicated pipeline | `skills/migrate-general.md` |
 | Migrating an OutSystems app | `skills/migrate-outsystems.md` |
 | Understanding OutSystems 11 source | `skills/source-os11.md` |
