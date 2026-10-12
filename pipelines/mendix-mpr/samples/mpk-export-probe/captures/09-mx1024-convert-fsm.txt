@@ -1,0 +1,18 @@
+$ mx(10.24) convert -p conv1024
+This is mx convert, version 10.24.0.73019.
+
+Found the input mpr file '<lab>/conv1024/fsm.mpr'.
+Getting the metadata of the mpr file.
+Checking the version of the mpr file.
+The mpr file version is '9.24.2.6130'.
+Converting the mpr file.
+Checking project for errors.
+The project contains 289 errors, 240 warnings and 9 deprecations.
+Saving the converted mpr file.
+
+mx convert finished.
+
+real	0m34.063s
+user	0m36.153s
+sys	0m3.051s
+exit=0

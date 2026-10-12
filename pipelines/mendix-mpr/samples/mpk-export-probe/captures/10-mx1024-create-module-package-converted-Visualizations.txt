@@ -1,0 +1,9 @@
+$ mx(10.24) create-module-package -d outB conv1024/fsm.mpr Visualizations
+Exporting module package to '<lab>/outB/Visualizations.mpk'...
+ERROR: The module contains errors. You must solve these errors before exporting. The following errors are found:
+ - In Page 'Ticket_Overview_NeedsAction' (element: Layout grid row): The weights of the columns in a row must add up to 12, but currently they add up to -1.
+
+real	0m24.344s
+user	0m27.285s
+sys	0m1.269s
+exit=1

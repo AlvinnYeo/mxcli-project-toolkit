@@ -1,0 +1,11 @@
+$ mx(10.24) create-module-package -d outB conv1024/fsm.mpr FeatureToggle
+Exporting module package to '<lab>/outB/FeatureToggle.mpk'...
+ERROR: The module contains errors. You must solve these errors before exporting. The following errors are found:
+ - In Page 'FeatureToggle_Overview' (element: Layout grid row): The weights of the columns in a row must add up to 12, but currently they add up to -1.
+ - In Page 'FeatureToggle_Overview' (element: Layout grid row): The weights of the columns in a row must add up to 12, but currently they add up to -2.
+ - In Page 'FeatureToggle_Overview' (element: Layout grid row): The weights of the columns in a row must add up to 12, but currently they add up to -2.
+
+real	0m24.870s
+user	0m27.392s
+sys	0m1.273s
+exit=1

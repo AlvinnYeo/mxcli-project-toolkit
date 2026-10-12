@@ -36,10 +36,52 @@ literals, and a tool that normalises it changes the flow and `exec` refuses the 
 |---|---|---|
 | 2026-10-12 | ako/mxcli-banking `RRNetBanking.mpr` (Mendix 11.13.0, Banking 151 docs + MyFirstModule 4) → `mxcli new --version 11.13.0` | 155/155 documents emitted, 154 identical on target describe, 1 doc-comment drift; `mx check` 0 errors, mxbuild BUILD SUCCEEDED, `diff --format struct` empty. 35 s end to end |
 | 2026-10-12 | FSM template v1.1.1 (Mendix 9.24.2, MPR v1, 64 MB) — **read probe only** | `list modules` 1.6 s, `graph-report` 18 s. Captures in `samples/fsm-template-9.24.2/` |
+| 2026-10-12 | FSM template v1.1.1 — **MPK route** (`export-module-mpk.py`): FeatureToggle, Utils, Visualizations → 10.24 and 11.13 | All installed; every residual `mx check` error a crossing edge; Utils with edges satisfied: `mx check` 0, mxbuild BUILD SUCCEEDED on 11.13 after 3 Java edits. Captures in `samples/mpk-export-probe/` |
 
 Not yet exercised: nanoflows, Java/JavaScript actions, snippets, workflows, REST/OData services,
 `marketplace install` on a target that lacks the source's modules, and the regenerate step on a
 Mendix 9/10 source (the read works; the write into Mendix 11 is increment 2).
+
+## The MPK route — `export-module-mpk.py` (moving a module without regenerating it)
+
+```
+python3 -I pipelines/mendix-mpr/export-module-mpk.py <source.mpr> <Module> <out.mpk> [--no-widgets] [--json]
+mxcli marketplace install --file <out.mpk> -p <target.mpr>      # new modules only; no PAT
+```
+
+The exporter writes a module package in Mendix's own format: a zip with `package.xml` and a
+`project.mpr`. That `project.mpr` holds the source schema and `_MetaData` verbatim, the module's
+unit subtree byte for byte, the project root, the conversion unit and four project documents. Two
+of those documents are **scrubbed of secrets** (demo users, passwords, constants, credentials,
+certificates), and so is navigation. The zip also carries the module's `javasource/`,
+`javascriptsource/`, `themesource/` and `resources/` folders, the userlib jars that have a
+`.<Module>.RequiredLib` marker, and the widget `.mpk` files its pages reference. The script header
+lists what it cannot know. It refuses MPR v2 sources and schemas that differ from the reference.
+
+**Version window (Mendix's, not ours).** `mxcli marketplace install` imports through the target's
+`mx module-import`:
+
+- 9.24's `mx` has no `module-import`.
+- 11.13 refuses packages older than 10.21.
+- So a 9.x → 11.x move has two hops: `mx convert` a copy of the source to 10.24, export, then install.
+
+On Mendix 10 and 11, `mx create-module-package <mpr> <Module>` is the vendor's headless export.
+It refuses modules that have errors, and it **regenerates every unit and entity ID**. This
+exporter keeps them, and mxcli's install keeps them too: measured from 9.24 through 10.24 to 11.13.
+
+**Field run 2026-10-12, FSM template 9.24.2:**
+
+- FeatureToggle, Utils and Visualizations each installed into 10.24 and into 11.13.
+- Every `mx check` error (2 / 7 / 134) was a crossing edge to a module the target lacks. There
+  were 0 version-conversion errors and 0 package-format errors.
+- Utils with its edges satisfied (3 Marketplace modules, 1 constant in MDL) reached `mx check`
+  0 errors. After three Java hand-off edits, mxbuild BUILD SUCCEEDED on 11.13.0. The edits:
+  `this.context()` is a Mendix 9 API; two orphan action files used `CustomJavaAction`; one jar's
+  RequiredLib marker names a former module.
+- The Java bodies arrive byte-identical.
+
+Verbatim captures: `samples/mpk-export-probe/captures/`. The `R*` files are the final run with
+the committed script. For Mendix 9 `mx` on Linux, the container needs `libgdiplus` and JDK 17.
 
 ## mxcli findings from the first run (filed in `contrib/inbox/2026-10-12-decompose-rehost-increment-1-mxcli-findings.md`)
 
