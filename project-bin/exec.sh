@@ -150,6 +150,38 @@ HDR2
   printf '| %s | `%s` | %s | %s | %s |\n' \
     "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$LOG_NAME" \
     "${GATE_STATE:-not-run}" "$1" "$_detail" >> "$BUILD_LOG"
+  record_metrics "$1"
+}
+
+# ── Metrics ledger (added 2026-10-12) ────────────────────────────────────────
+# Every BUILD-LOG row also lands as one TSV row in .claude/loop/metrics-ledger.tsv — outcome
+# class, elapsed seconds, mxbuild error count, lint verdict and total, whether a snapshot was
+# restored, and the `mxcli report` score when one was taken this run. The BUILD-LOG is for a
+# human reading one project; the ledger is for project-bin/metrics-trend.sh ("is the score
+# moving, are gate failures falling, are execs getting faster") and for bin/harvest-learnings.sh,
+# which carries the numbers into the toolkit so the question can be asked across projects.
+# Hooked HERE so no outcome can skip it: a ledger with only the good runs would show a rising
+# score and hide the restores it cost. Failure to append never fails the exec.
+SCORED=0
+record_metrics() {  # $1=status text (as given to log_build)
+  [ -x "$PROJECT_ROOT/bin/metrics-ledger.sh" ] || return 0
+  bash "$PROJECT_ROOT/bin/metrics-ledger.sh" exec \
+    --script "$LOG_NAME" --gate "${GATE_STATE:-not-run}" --result "$1" \
+    --elapsed "$(( $(date +%s) - _T0 ))" --mxbuild-errors "${GATE_ERRORS:-}" \
+    --lint-rc "${LINT_RC_FOR_LEDGER:-}" --restored "${RESTORED:-0}" --scored "$SCORED" 2>/dev/null || true
+}
+# `mxcli report` scores the model (0-100, ≈7 s on an 876-flow model, 2026-10-12). Taken only
+# after a clean mxbuild — a failed write is restored or never happened, so there is nothing
+# new to score. MXTK_NO_SCORE=1 skips it (slow machine, CI); the row still lands, scores empty.
+take_score() {
+  [ -z "${MXTK_NO_SCORE:-}" ] || { echo "  · score skipped (MXTK_NO_SCORE)"; return 0; }
+  [ -x "$PROJECT_ROOT/bin/metrics-ledger.sh" ] || return 0
+  echo "→ Scoring the model (bin/metrics-ledger.sh score → mxcli report)..."
+  if _sc=$(bash "$PROJECT_ROOT/bin/metrics-ledger.sh" score 2>&1); then
+    SCORED=1; echo "  ✓ $_sc"
+  else
+    echo "  ⚠ ${_sc:-score not taken}"
+  fi
 }
 
 # ── Concurrent-writer guard ──────────────────────────────────────────────────
@@ -381,6 +413,8 @@ run_lint_gate() {
 # One place decides the applied-row wording, so both mxbuild-clean branches agree.
 log_applied() {  # $1 = mxbuild detail
   run_lint_gate
+  LINT_RC_FOR_LEDGER="$LINT_RC"
+  take_score
   if [ "$LINT_RC" -eq 1 ]; then
     log_build "⚠️ applied, LINT ROSE" "$1; $LINT_DETAIL"
   else
