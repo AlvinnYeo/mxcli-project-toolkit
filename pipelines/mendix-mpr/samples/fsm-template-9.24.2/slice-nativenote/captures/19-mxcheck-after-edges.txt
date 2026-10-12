@@ -1,0 +1,14 @@
+$ mx(11.13) check NoteSlice.mpr   # after edges A+B+C and the 2 JS file copies
+Checking your app for issues...
+Checking the version of the mpr file.
+The mpr file version is '11.13.0'.
+Loading the mpr file.
+The mpr file version is '11.13.0'.
+Checking app for errors...
+[error] [CE0115] "The arguments that are passed to JavaScript action 'NativeMobile.JS_GetOriginalValue' do not match the expected parameters and need to be refreshed." at Call JavaScript action activity 'JS_GetOriginalValue', JavaScript action 'NativeMobile.JS_GetOriginalValue'
+The app contains: 1 errors.
+
+real	0m10.310s
+user	0m12.460s
+sys	0m0.710s
+exit=1

@@ -1,0 +1,169 @@
+$ ~/.mxcli/mxbuild/11.13.0/modeler/mxbuild --java-home=/usr/lib/jvm/java-21-openjdk-amd64 --java-exe-path=/usr/lib/jvm/java-21-openjdk-amd64/bin/java --target=deploy NoteSlice/NoteSlice.mpr
+
+   __  __      ____        _ _     _
+  |  \/  |    |  _ \      (_) |   | |
+  | \  / |_  _| |_) |_   _ _| | __| |
+  | |\/| \ \/ /  _ <| | | | | |/ _` |
+  | |  | |>  <| |_) | |_| | | | (_| |
+  |_|  |_/_/\_\____/ \__,_|_|_|\__,_|
+
+   v11.13.0
+
+Preparing the web extensibility environment...
+[WebExtensionsRunner] > [Web Socket] Connection established in 0ms!
+[WebExtensionsRunner] > [Component Host] Initializing component host
+[WebExtensionsRunner] > [0m[32mDownload[0m http://localhost:41609/component/ui-dependencies/worker-loader.js?worker=%2Fcomponent%2Fcomponent-host%2Fcomponents.worker.js
+[WebExtensionsRunner] > [Component Worker] Web Worker started! Running in mode: internal
+[WebExtensionsRunner] > [Component Worker] Found built-in components: ["mapping-editor","ide-foundation","workflow-editor","domain-model-editor","page-editor","custom-blob-documents","model-foundation","microflow-editor"]
+Starting build for Mendix Project file: <lab>/slice-nativenote/NoteSlice/NoteSlice.mpr
+Using the following options:
+ * Build target: Deploy
+Reading project file...
+Building project...
+Executing step 'Synchronize with file system'
+Synchronizing with file system...
+Executing step 'Initialize'
+Preparing deployment...
+Executing step 'Check prerequisites'
+Checking for errors...
+Executing step 'Clean deployment directory'
+Cleaning native deployment directory...
+Cleaning app bundle log file...
+Cleaning web deployment directory...
+Cleaning source web deployment directory...
+Cleaning deployment directory...
+Cleaning ml deployment directory...
+Executing step 'Perform model transformations'
+Applying model transformations...
+Executing step 'Generate deployment files'
+Writing files...
+Executing step 'Prepare deployment'
+Cleaning app bundle log file...
+Cleaning web deployment directory...
+Generating styles for icons
+Executing step 'Build deployment structure'
+Exporting pluggable native widgets...
+Exporting native pages
+Exporting microflows model...
+Exporting pluggable web widgets...
+Exporting pages...
+Compiling theme files...
+Exporting a theme...
+Generating font files for icons
+Exporting ml models to ml deployment directory...
+Executing step 'Save model to deployment directory'
+Saving model to deployment directory...
+Executing step 'Finalize deployment structure'
+Post-processing generation results...
+Executing step 'Bundle application'
+Compiling Java...
+Executing step 'Clean up'
+Cleaning up...
+ERROR: An error occurred while compiling Java actions
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStoreType=JKS -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=41895 -Dhttp.nonProxyHosts=localhost|127.0.0.1|::1|127.*|0.*|::|169.254.*|api.anthropic.com|api-staging.anthropic.com|api-pr-preview.anthropic.com|mcp-proxy.anthropic.com|mcp-proxy-staging.anthropic.com|registry.npmjs.org|jsr.io|npm.jsr.io|pypi.org|files.pythonhosted.org|index.crates.io|proxy.golang.org|host.docker.internal|10.*|172.16.*|172.17.*|172.18.*|172.19.*|172.20.*|172.21.*|172.22.*|172.23.*|172.24.*|172.25.*|172.26.*|172.27.*|172.28.*|172.29.*|172.30.*|172.31.*|192.168.*|100.64.0.0/10|*.svc.cluster.local|*.svc.cluster.local -Djdk.http.auth.tunneling.disabledSchemes= -Djdk.http.auth.proxying.disabledSchemes=
+<lab>/slice-nativenote/NoteSlice/javasource/utils/actions/JA_RoundMinutes.java:13: error: cannot find symbol
+import com.mendix.webui.CustomJavaAction;
+                       ^
+  symbol:   class CustomJavaAction
+  location: package com.mendix.webui
+<lab>/slice-nativenote/NoteSlice/javasource/utils/actions/JA_RoundMinutes.java:15: error: cannot find symbol
+public class JA_RoundMinutes extends CustomJavaAction<java.util.Date>
+                                     ^
+  symbol: class CustomJavaAction
+<lab>/slice-nativenote/NoteSlice/javasource/utils/actions/executeInBackgroundImmediately.java:13: error: cannot find symbol
+import com.mendix.webui.CustomJavaAction;
+                       ^
+  symbol:   class CustomJavaAction
+  location: package com.mendix.webui
+<lab>/slice-nativenote/NoteSlice/javasource/utils/actions/executeInBackgroundImmediately.java:16: error: cannot find symbol
+public class executeInBackgroundImmediately extends CustomJavaAction<java.lang.Boolean>
+                                                    ^
+  symbol: class CustomJavaAction
+<lab>/slice-nativenote/NoteSlice/javasource/utils/impl/FileTypeChecker.java:3: error: package org.apache.tika does not exist
+import org.apache.tika.Tika;
+                      ^
+<lab>/slice-nativenote/NoteSlice/javasource/utils/impl/FileTypeChecker.java:4: error: package org.apache.tika.io does not exist
+import org.apache.tika.io.TikaInputStream;
+                         ^
+<lab>/slice-nativenote/NoteSlice/javasource/utils/impl/FileTypeChecker.java:5: error: package org.apache.tika.metadata does not exist
+import org.apache.tika.metadata.Metadata;
+                               ^
+<lab>/slice-nativenote/NoteSlice/javasource/communitycommons/StringUtils.java:484: warning: [deprecation] removeEnd(String,String) in StringUtils has been deprecated
+		return org.apache.commons.lang3.StringUtils.removeEnd(str, toRemove);
+		                                           ^
+<lab>/slice-nativenote/NoteSlice/javasource/utils/actions/GetFileType.java:38: error: cannot find symbol
+		IContext context = this.context();
+		                       ^
+  symbol: method context()
+<lab>/slice-nativenote/NoteSlice/javasource/utils/actions/JA_RoundMinutes.java:27: error: method does not override or implement a method from a supertype
+	@java.lang.Override
+	^
+<lab>/slice-nativenote/NoteSlice/javasource/utils/actions/JA_RoundMinutes.java:38: error: method does not override or implement a method from a supertype
+	@java.lang.Override
+	^
+<lab>/slice-nativenote/NoteSlice/javasource/utils/actions/executeInBackgroundImmediately.java:28: error: method does not override or implement a method from a supertype
+	@java.lang.Override
+	^
+<lab>/slice-nativenote/NoteSlice/javasource/utils/actions/executeInBackgroundImmediately.java:39: error: method does not override or implement a method from a supertype
+	@java.lang.Override
+	^
+<lab>/slice-nativenote/NoteSlice/javasource/utils/impl/FileTypeChecker.java:16: error: cannot find symbol
+		TikaInputStream tikaStream = null;
+		^
+  symbol:   class TikaInputStream
+  location: class FileTypeChecker
+<lab>/slice-nativenote/NoteSlice/javasource/utils/impl/FileTypeChecker.java:20: error: cannot find symbol
+			Tika tika = new Tika();
+			^
+  symbol:   class Tika
+  location: class FileTypeChecker
+<lab>/slice-nativenote/NoteSlice/javasource/utils/impl/FileTypeChecker.java:20: error: cannot find symbol
+			Tika tika = new Tika();
+			                ^
+  symbol:   class Tika
+  location: class FileTypeChecker
+<lab>/slice-nativenote/NoteSlice/javasource/utils/impl/FileTypeChecker.java:22: error: cannot find symbol
+			tikaStream = TikaInputStream.get(inputStream);
+			             ^
+  symbol:   variable TikaInputStream
+  location: class FileTypeChecker
+<lab>/slice-nativenote/NoteSlice/javasource/utils/impl/FileTypeChecker.java:23: error: cannot find symbol
+			Metadata metadata = new Metadata();
+			^
+  symbol:   class Metadata
+  location: class FileTypeChecker
+<lab>/slice-nativenote/NoteSlice/javasource/utils/impl/FileTypeChecker.java:23: error: cannot find symbol
+			Metadata metadata = new Metadata();
+			                        ^
+  symbol:   class Metadata
+  location: class FileTypeChecker
+<lab>/slice-nativenote/NoteSlice/javasource/utils/impl/FileTypeChecker.java:24: warning: [removal] getMember(IContext,String) in IMendixObject has been deprecated and marked for removal
+			String fileName = inputFile.getMember(context, "Name").getValue(context).toString();
+			                           ^
+<lab>/slice-nativenote/NoteSlice/javasource/utils/impl/FileTypeChecker.java:25: error: cannot find symbol
+			metadata.set(Metadata.RESOURCE_NAME_KEY, fileName);
+			             ^
+  symbol:   variable Metadata
+  location: class FileTypeChecker
+19 errors
+2 warnings
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':compile'.
+> Compilation failed; see the compiler error output for details.
+
+* Try:
+> Run with --scan to get full insights.
+
+BUILD FAILED in 2s
+
+Writing list of app errors...
+ * App errors written to file 'captures/22-mxbuild-errors.json'
+BUILD FAILED
+
+real	0m18.331s
+user	0m25.049s
+sys	0m1.955s
+exit=3

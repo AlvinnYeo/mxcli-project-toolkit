@@ -1,0 +1,13 @@
+$ mx(11.13) check NoteSlice.mpr   # final, after Java edits
+Checking your app for issues...
+Checking the version of the mpr file.
+The mpr file version is '11.13.0'.
+Loading the mpr file.
+The mpr file version is '11.13.0'.
+Checking app for errors...
+The app contains: 0 errors.
+
+real	0m9.083s
+user	0m11.049s
+sys	0m0.811s
+exit=0

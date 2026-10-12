@@ -1,0 +1,731 @@
+mdl 1;
+-- increment 3: NativeNote slice out of FSM 9.24.2 -> NoteSlice (Mendix 11.13.0).
+-- Crossing edges of the NativeNote MPK, satisfied in MDL. Every line marked
+--   CUT STUB  = placeholder for a doc that stays in the monolith (behaviour NOT carried)
+--   CUT COPY  = the monolith doc copied verbatim from describe (tiny, no further edges)
+--   CUT MOVE  = a Synchronization_Note flow that moves with the slice (describe -> exec)
+--   CUT RETARGET = a reference rewritten to a copy in another module
+-- The ledger (cut-ledger.tsv) is the authority; this script is its execution.
+
+-- ---- modules and roles (names kept so NativeNote's qualified references resolve unedited)
+create or modify module NativeMobile;
+create or modify module role NativeMobile.EditMy description 'CUT STUB: role of the monolith module NativeMobile';
+create or modify module NativeTechnician;
+create or modify module role NativeTechnician.ViewAll description 'CUT STUB: role of the monolith module NativeTechnician';
+create or modify module General;
+create or modify module role General._AddOn_AccessDoNothing description 'Allows access to the "do nothing" microflow';
+create or modify module FSM_Specific;
+create or modify module Synchronization;
+create or modify module role Synchronization.CreateMy description 'This allows native users to create offline actions';
+create or modify module role Synchronization.ViewAll description 'This allows admins to view offline actions created by native users';
+
+-- ---- CUT STUB entities (attributes: only those the slice reads)
+/** CUT STUB: NativeMobile.NativeWorkOrder stays in the monolith (24 attributes there). Slice reads SystemID only. */
+create or modify persistent entity NativeMobile.NativeWorkOrder (
+  SystemID: String(200)
+);
+/** CUT STUB: NativeMobile.NativeTicket stays in the monolith. Slice reads DisplayEnd (XPath in *_DeleteOld). */
+create or modify persistent entity NativeMobile.NativeTicket (
+  DisplayEnd: DateTime
+);
+-- CUT COPY
+create or modify enumeration NativeMobile.ENUM_LoadingType (
+  UnplannedWorkOrders 'UnplannedWorkOrders',
+  PickUpWorkOrder 'PickUpWorkOrders',
+  FinishingAppointment 'FinishingAppointment',
+  Synchronize 'Synchronize',
+  ConfirmAsset 'ConfirmAsset',
+  SelectPart 'SelectPart',
+  CreateTicket 'CreateTicket',
+  StartTravel 'StartTravel',
+  StartAppointment 'StartAppointment',
+  AddingAppointment 'AddingAppointment',
+  AppointmentNotResolved 'AppointmentNotResolved',
+  DeletingPart 'DeletingPart',
+  InitialDownload 'InitialDownload',
+  SavingForm 'SavingForm',
+  CreateNote 'CreateNote',
+  DeletingNote 'DeletingNote',
+  SaveTime 'SaveTime'
+) folder 'Resources';
+/** CUT STUB: NativeMobile.AppointmentDetailsHelper stays in the monolith. Slice writes NoteCount only. */
+create or modify non-persistent entity NativeMobile.AppointmentDetailsHelper (
+  NoteCount: Integer
+);
+/** CUT STUB: NativeTechnician.NativeTechnician stays in the monolith. Slice reads SystemID, TechnicianName. */
+create or modify persistent entity NativeTechnician.NativeTechnician (
+  SystemID: String(200),
+  TechnicianName: String(200)
+);
+/** CUT STUB: Synchronization.Synchronize is the app-wide sync nanoflow of the monolith; body not carried. */
+create or modify nanoflow Synchronization.Synchronize (
+  $ShowMessageIfOffline: Boolean
+)
+folder 'CutStubs'
+begin
+  return;
+end;
+
+create or modify nanoflow NativeMobile.StorageItem_CreateKey (
+  @position(-940, 30)
+  $StorageItemString: String
+)
+returns String
+folder 'Objects/StorageItem'
+begin
+  @start(-940, 200)
+  @position(-800, 200)
+  @curve(from: (30, 0), to: (-30, 0))
+  $Account = call nanoflow Utils.Account_GetCurrent_NF();
+  @position(-610, 200)
+  @curve(from: (30, 0), to: (-30, 0))
+  $Account_guid = call javascript action NanoflowCommons.GetGuid(EntityObject = $Account);
+  @position(-420, 200)
+  declare $StorageItemKey String = $Account_guid + '_' + $StorageItemString;
+  @position(-230, 200)
+  return $StorageItemKey;
+end;
+-- CUT COPY + CUT RETARGET: Note.JS_CloneFileDocument (web module Note) -> Synchronization.JS_CloneFileDocument
+create or modify javascript action Synchronization.JS_CloneFileDocument folder 'Resources'(SourceFileDocument: System.FileDocument not null, TargetFileDocument: System.FileDocument not null)
+  returns Void
+  platform All
+as $$
+
+
+	return new Promise((resolve, reject) => {
+		try {
+			const fileUrl = (Platform.OS === "android" ? 'file://' : '') + mx.data.getDocumentUrl(sourceFileDocument.getGuid(), sourceFileDocument.get("changedDate"));
+					
+			fetch(fileUrl)
+			.then((response) => response ? response.blob() : console.error("no response"))
+			.then(blob => {
+				mx.data.saveDocument(targetFileDocument.getGuid(), sourceFileDocument.get("Name"), {}, blob, () => {
+					//success
+					resolve();
+				}, (e) => {
+					console.error(e);
+					reject(e);
+				});
+			});
+		} catch (e) {
+			console.error(e);
+			reject(e);
+		}
+	});
+
+$$;
+-- return NAME: 'ReturnValueName'
+-- export level: API
+-- EXTRA CODE:
+-- import {Platform} from "react-native";
+-- CUT COPY: FSM_Specific native layouts + the 4 icons they and NativeNote pages use
+-- CUT COPY with drift: SafeAreaView wrapper dropped (mxcli refuses a layout whose placeholders sit inside a pluggable-widget slot)
+create or modify layout FSM_Specific.NativePhone_FullPage_NoScroll_Custom (
+  layouttype: 'Default'
+) {
+      container container2 (Class: 'topbar defaultMarginWidth', DesignProperties: ('Render children horizontal': on)) {
+        container container7 (Class: 'topbarLeft') {
+          placeholder HeaderActionLeft
+        }
+        container container6 (Class: 'topbarRight', DesignProperties: ('Render children horizontal': on)) {
+          placeholder HeaderActionRight
+        }
+      }
+      placeholder Main
+};
+
+
+/** CUT STUB: NativeMobile.LoadHelper (loading-overlay helper) stays in the monolith. */
+create or modify non-persistent entity NativeMobile.LoadHelper (
+  Start: DateTime,
+  IsManuallyClosed: Boolean default false,
+  LoadingType: Enumeration(NativeMobile.ENUM_LoadingType)
+);
+-- CUT STUB associations
+/** CUT STUB */
+create or modify association NativeMobile.NativeWorkOrder_NativeTicket
+from NativeMobile.NativeWorkOrder to NativeMobile.NativeTicket;
+/** CUT STUB */
+create or modify association NativeMobile.AppointmentDetailsHelper_NativeWorkOrder
+from NativeMobile.AppointmentDetailsHelper to NativeMobile.NativeWorkOrder;
+/** CUT STUB: used in NativeNote/NativeImage access-rule XPath */
+create or modify association NativeMobile._NativeWorkOrder_NativeTechnician_EditMy
+from NativeMobile.NativeWorkOrder to NativeTechnician.NativeTechnician
+type ReferenceSet;
+/** CUT STUB: lives in the monolith's (modified) Administration module; used in NativeNote access-rule XPath and NativeNote_SetCreated */
+create or modify association Administration.Account_NativeTechnician
+from Administration.Account to NativeTechnician.NativeTechnician
+owner Both;
+
+create or modify nanoflow NativeMobile.StorageItem_Check (
+  @position(-260, 35)
+  $StorageItemKey: String
+)
+returns Boolean
+folder 'Objects/StorageItem'
+begin
+  @position(-100, 200)
+  @curve(from: (30, 0), to: (-15, 0))
+  $Exists = call javascript action NanoflowCommons.StorageItemExists(Key = $StorageItemKey);
+  @position(95, 200)
+  return $Exists;
+end;
+
+grant execute on nanoflow NativeMobile.StorageItem_Check to NativeMobile.EditMy;
+create or modify nanoflow General.ACT_DoNothing_NF ()
+folder 'Pages'
+begin
+  -- WARNING: the merge at (40, 200) is not represented in this description - it joins no decision and no error handler, so re-executing this MDL DELETES it. The microflow behaves the same either way (a merge with one incoming path is a no-op), but the node disappears from the diagram (mxcli #923)
+  @start(-85, 200)
+  @position(300, 200)
+  return;
+end;
+
+grant execute on nanoflow General.ACT_DoNothing_NF to General._AddOn_AccessDoNothing;
+-- CUT COPY with drift: SafeAreaView wrapper dropped (mxcli refuses a layout whose placeholders sit inside a pluggable-widget slot)
+create or modify layout FSM_Specific.NativePhone_FullPage_Back (
+  layouttype: 'Default'
+) {
+      scrollcontainer scrollContainer1 (DesignProperties: ('Size': 'Maximum space')) {
+        region center {
+          container container2 (
+            Class: 'topbar defaultMarginWidth',
+            DesignProperties: ('Render children horizontal': on)
+          ) {
+            container container7 (Class: 'topbarLeft') {
+              actionbutton actionButton5 (
+                Action: close page,
+                Icon: image 'FSM_Specific.Material_Design_Icons.chevron_left_FILL0_wght400_GRAD0_opsz24_2',
+                Class: 'iconOnlyBtn topbarBtnLeft'
+              )
+            }
+            container container6 (Class: 'topbarRight', DesignProperties: ('Render children horizontal': on)) {
+              placeholder HeaderActionRight
+            }
+          }
+          placeholder Main
+        }
+      }
+};
+
+@Position(460, 1950)
+create or modify non-persistent entity Synchronization.UploadHelper (
+  LastOfflineActionCreated: DateTime,
+  LastUploadStarted: DateTime
+);
+
+grant read (LastOfflineActionCreated, LastUploadStarted), write (LastOfflineActionCreated, LastUploadStarted) on entity Synchronization.UploadHelper to Synchronization.CreateMy;
+create or modify nanoflow Synchronization.UploadHelper_Create_StorageItemKey ()
+returns String
+folder 'Objects/UploadHelper'
+begin
+  @start(-40, 200)
+  @position(135, 200)
+  $StorageItemKey = call nanoflow NativeMobile.StorageItem_CreateKey(StorageItemString = 'UploadHelper');
+  @position(320, 200)
+  return $StorageItemKey;
+end;
+-- ---- CUT STUB nanoflows (signatures verbatim, bodies empty)
+/** CUT STUB: shows the monolith's loading pages; body not carried. */
+create or modify nanoflow NativeMobile.LoadHelper_StartLoading (
+  $ENUM_LoadingType: enum NativeMobile.ENUM_LoadingType
+)
+returns NativeMobile.LoadHelper
+folder 'CutStubs'
+begin
+  $LoadHelper = create NativeMobile.LoadHelper (LoadingType = $ENUM_LoadingType);
+  return $LoadHelper;
+end;
+/** CUT STUB: closes the monolith's loading pages; body not carried. */
+create or modify nanoflow NativeMobile.LoadHelper_StopLoading (
+  $LoadHelper: NativeMobile.LoadHelper,
+  $ExtraPagesToClose: Integer,
+  $CloseAllPages: Boolean,
+  $ShowAllDonePage: Boolean,
+  $ShowErrorPage: Boolean
+)
+folder 'CutStubs'
+begin
+  return;
+end;
+-- CUT STUB (copy with drift): describe emits Name<Entity>(Entity: "Entity") — a type-parameter-typed object
+-- parameter — which mxcli's own parser refuses, and `entity <Entity>` (entity-TYPE parameter) fails mx check CE0115
+-- at the caller. The slice's only caller passes a NativeNote.NativeNote, so the parameter is typed concretely.
+-- Same JS body. Studio Pro can restore the type parameter if the action is ever reused for another entity.
+/** CUT STUB: generic type parameter narrowed to NativeNote.NativeNote (see cut-ledger.tsv) */
+create or modify javascript action NativeMobile.JS_GetOriginalValue folder 'Resources'(Entity: NativeNote.NativeNote not null, AttributeName: String not null)
+  returns String
+  platform All
+as $$
+
+	return entity.getOriginalValue(attributeName).toString();
+
+$$;
+-- return NAME: 'ReturnValueName'
+-- export level: API
+create or modify nanoflow NativeMobile.NativeWorkorder_AppointmentDetailsHelper_AddNoteCount (
+  @position(45, 90)
+  $NativeWorkOrder: NativeMobile.NativeWorkOrder
+)
+folder 'Objects/NativeWorkOrder'
+begin
+  @start(45, 200)
+  @position(235, 200)
+  @curve(from: (30, 0), to: (-30, 0))
+  retrieve $AppointmentDetailsHelperList from $NativeWorkOrder/NativeMobile.AppointmentDetailsHelper_NativeWorkOrder;
+  @position(425, 200)
+  @curve(from: (30, 0), to: (-30, 0))
+  $AppointmentDetailsHelper = head $AppointmentDetailsHelperList;
+  @position(615, 200)
+  @curve(from: (30, 0), to: (-30, 0))
+  retrieve $NativeNoteList from $NativeWorkOrder/NativeNote.NativeNote_NativeWorkOrder;
+  @position(805, 200)
+  @curve(from: (30, 0), to: (-30, 0))
+  $NoteCount = count $NativeNoteList;
+  @position(995, 200)
+  @curve(to: (-30, 0))
+  change $AppointmentDetailsHelper (NoteCount = $NoteCount) refresh;
+  @position(1185, 200)
+  @curve(from: (30, 0), to: (-15, 0))
+  $ReturnValueName = call javascript action NanoflowCommons.RefreshObject(ObjectToRefresh = $NativeWorkOrder);
+  @position(1325, 200)
+  return;
+end;
+create or modify nanoflow Synchronization.UploadHelper_Get (
+  @position(-260, 60)
+  $StorageItemKey: String
+)
+returns Synchronization.UploadHelper
+folder 'Objects/UploadHelper'
+begin
+  @start(-260, 200)
+  @position(-120, 200)
+  @curve(from: (30, 0), to: (-15, 0))
+  $UploadHelper = call javascript action NanoflowCommons.GetStorageItemObject(Key = $StorageItemKey, Entity = Synchronization.UploadHelper);
+  @position(-5, 200)
+  return $UploadHelper;
+end;
+create or modify nanoflow Synchronization.UploadHelper_Set_LastOfflineCreatedDate (
+  @position(-285, -105)
+  $NewUploadHelper: Synchronization.UploadHelper,
+  @position(-285, -15)
+  $LastOfflineActionCreated: DateTime
+)
+folder 'Objects/UploadHelper'
+begin
+  @start(-255, 200)
+  @position(-80, 200)
+  change $NewUploadHelper (LastOfflineActionCreated = $LastOfflineActionCreated) refresh;
+  @position(110, 200)
+  return;
+end;
+create or modify nanoflow Synchronization.UploadHelper_Store (
+  @position(-780, 90)
+  $UploadHelper: Synchronization.UploadHelper
+)
+folder 'Objects/UploadHelper'
+begin
+  @position(-620, 200)
+  @curve(from: (30, 0), to: (-30, 0))
+  $StorageItemKey = call nanoflow Synchronization.UploadHelper_Create_StorageItemKey();
+  @position(-415, 200)
+  @curve(from: (30, 0), to: (-15, 0))
+  $ReturnValueName = call javascript action NanoflowCommons.SetStorageItemObject(Key = $StorageItemKey, Value = $UploadHelper);
+  @position(-275, 200)
+  return;
+end;
+create or modify nanoflow Synchronization.UploadHelper_CheckAndGet ()
+returns Synchronization.UploadHelper
+folder 'Objects/UploadHelper'
+begin
+  @position(250, 200)
+  @curve(from: (30, 0), to: (-30, 0))
+  $StorageItemKey = call nanoflow Synchronization.UploadHelper_Create_StorageItemKey();
+  @position(470, 200)
+  @curve(from: (30, 0), to: (-15, 0))
+  $Exists = call nanoflow NativeMobile.StorageItem_Check(StorageItemKey = $StorageItemKey);
+  @position(665, 200)
+  @curve(from: (15, 0), to: (-30, 0))
+  @caption 'Exists?'
+  if $Exists then
+    @position(870, 200)
+    $UploadHelper = call nanoflow Synchronization.UploadHelper_Get(StorageItemKey = $StorageItemKey);
+    @position(1040, 200)
+    return $UploadHelper;
+  else
+    @position(665, 355)
+    @anchor(to: top)
+    return empty;
+  end if;
+end;
+create or modify nanoflow Synchronization.UploadHelper_GetOrCreate ()
+returns Synchronization.UploadHelper
+folder 'Objects/UploadHelper'
+begin
+  @start(-315, 200)
+  @position(-165, 200)
+  @curve(from: (30, 0), to: (-15, 0))
+  $UploadHelper = call nanoflow Synchronization.UploadHelper_CheckAndGet();
+  @position(5, 200)
+  @curve(from: (15, 0))
+  @caption 'UploadHelper?'
+  if $UploadHelper != empty then
+    @position(200, 200)
+    return $UploadHelper;
+  else
+    @position(5, 330)
+    @anchor(from: bottom, to: top)
+    @curve(from: (0, 30), to: (0, -15))
+    $NewUploadHelper = create Synchronization.UploadHelper refresh;
+    @position(5, 435)
+    @anchor(to: top)
+    return $NewUploadHelper;
+  end if;
+end;
+create or modify nanoflow Synchronization.UploadHelper_Update_LastOfflineCreatedDate (
+  @position(-40, -25)
+  $LastOfflineActionCreated: DateTime
+)
+folder 'Objects/UploadHelper'
+begin
+  @start(-40, 200)
+  @position(135, 200)
+  @curve(from: (30, 0), to: (-30, 0))
+  $UploadHelper = call nanoflow Synchronization.UploadHelper_GetOrCreate();
+  @position(355, 200)
+  @curve(from: (30, 0), to: (-30, 0))
+  call nanoflow Synchronization.UploadHelper_Set_LastOfflineCreatedDate(NewUploadHelper = $UploadHelper, LastOfflineActionCreated = $LastOfflineActionCreated);
+  @position(570, 200)
+  call nanoflow Synchronization.UploadHelper_Store(UploadHelper = $UploadHelper);
+  @position(715, 200)
+  return;
+end;
+
+-- ---- CUT MOVE: the Synchronization_Note flows (closure of the 3 entry nanoflows NativeNote calls)
+@Position(250, 10)
+create or modify persistent entity Synchronization.OfflineAction (
+  ObjectID: String(200),
+  CreatedDateTime: DateTime,
+  ProcessedDate: DateTime,
+  NeedsReview: Boolean default false,
+  ReviewMessage: String(unlimited),
+  HasBeenUploaded: Boolean default false,
+  Owner: AutoOwner,
+  ChangedDate: AutoChangedDate
+);
+
+grant read (ObjectID, CreatedDateTime, ProcessedDate, NeedsReview, ReviewMessage) on entity Synchronization.OfflineAction to Synchronization.ViewAll;
+
+grant read (ObjectID, CreatedDateTime, HasBeenUploaded) on entity Synchronization.OfflineAction to Synchronization.CreateMy where [System.owner='[%CurrentUser%]'];
+@Position(250, 1640)
+create or modify persistent entity Synchronization.OfflineNoteAction extends Synchronization.OfflineAction (
+  Title: String(200),
+  Description: String(500),
+  CreatedOn: DateTime,
+  WorkOrderSystemID: String(200),
+  TechnicianSystemID: String(200),
+  NrOfPictures: Integer,
+  NoteAction: Enumeration(NativeNote.ENUM_NoteAction)
+);
+
+grant create, read (ProcessedDate, NeedsReview, ReviewMessage, "Title", "Description", CreatedOn, WorkOrderSystemID, TechnicianSystemID, NrOfPictures, NoteAction, ObjectID, CreatedDateTime, HasBeenUploaded), write ("Title", "Description", CreatedOn, WorkOrderSystemID, TechnicianSystemID, NrOfPictures, NoteAction, ObjectID, CreatedDateTime, HasBeenUploaded) on entity Synchronization.OfflineNoteAction to Synchronization.CreateMy where [System.owner='[%CurrentUser%]'][HasBeenUploaded = false()];
+
+grant read ("Title", "Description", CreatedOn, WorkOrderSystemID, TechnicianSystemID, NrOfPictures, NoteAction, ObjectID, CreatedDateTime, ProcessedDate, NeedsReview, ReviewMessage) on entity Synchronization.OfflineNoteAction to Synchronization.ViewAll;
+@Position(490, 1530)
+create or modify persistent entity Synchronization.OfflineImageAction extends Synchronization.OfflineAction (
+  ImageAction: Enumeration(NativeNote.ENUM_ImageAction),
+  NoteID: String(200)
+);
+
+@Position(490, 1690)
+create or modify persistent entity Synchronization.NoteImage extends System.Image (
+  HasBeenUploaded: Boolean default false
+);
+
+grant read (PublicThumbnailPath, FileID, Name, DeleteAfterDownload, Contents, HasContents, Size) on entity Synchronization.NoteImage to Synchronization.ViewAll;
+
+grant create, read (PublicThumbnailPath, FileID, HasContents, Size, HasBeenUploaded, Name, DeleteAfterDownload, Contents), write (HasBeenUploaded, Name, DeleteAfterDownload, Contents) on entity Synchronization.NoteImage to Synchronization.CreateMy where [System.owner='[%CurrentUser%]'][HasBeenUploaded = false()];
+@anchor(from: (0, 100), to: (0, 0))
+create or modify association Synchronization.OfflineImageAction_NoteImage
+from Synchronization.OfflineImageAction to Synchronization.NoteImage
+storage table;
+
+grant create, read (ProcessedDate, NeedsReview, ReviewMessage, ImageAction, NoteID, ObjectID, CreatedDateTime, HasBeenUploaded, OfflineImageAction_NoteImage), write (ImageAction, NoteID, ObjectID, CreatedDateTime, HasBeenUploaded, OfflineImageAction_NoteImage) on entity Synchronization.OfflineImageAction to Synchronization.CreateMy where [System.owner='[%CurrentUser%]'][HasBeenUploaded = false()];
+
+grant read (ImageAction, NoteID, ObjectID, CreatedDateTime, ProcessedDate, NeedsReview, ReviewMessage, OfflineImageAction_NoteImage) on entity Synchronization.OfflineImageAction to Synchronization.ViewAll;
+create or modify microflow Synchronization.ACO_OfflineAction_SetHasBeenUploadedTrue (
+  @position(100, 90)
+  $OfflineAction: Synchronization.OfflineAction
+)
+folder 'Objects/OfflineAction'
+begin
+  @start(100, 200)
+  @position(195, 200)
+  @curve(from: (15, 0), to: (-30, 0))
+  @caption 'Has been uploaded false?'
+  if $OfflineAction/HasBeenUploaded = false then
+    @position(390, 200)
+    @curve(from: (30, 0), to: (-15, 0))
+    change $OfflineAction (HasBeenUploaded = true) commit without events;
+    @position(520, 200)
+    return;
+  else
+    @position(195, 290)
+    @anchor(to: top)
+    return;
+  end if;
+end;
+create or modify nanoflow Synchronization.OfflineActionList_Commit (
+  @position(200, 55)
+  $OfflineActionList: List of Synchronization.OfflineAction
+)
+folder 'Objects/OfflineAction'
+begin
+  @start(195, 200)
+  @position(395, 200)
+  commit $OfflineActionList refresh;
+  @position(615, 200)
+  return;
+end;
+create or modify nanoflow Synchronization.OfflineActionList_Save_NF (
+  @position(230, 95)
+  $OfflineActionList: List of Synchronization.OfflineAction
+)
+folder 'Objects/OfflineAction'
+begin
+  @start(230, 200)
+  @position(445, 200)
+  call nanoflow Synchronization.OfflineActionList_Commit(OfflineActionList = $OfflineActionList);
+  @position(695, 200)
+  call nanoflow Synchronization.UploadHelper_Update_LastOfflineCreatedDate(LastOfflineActionCreated = [%CurrentDateTime%]);
+  @position(890, 200)
+  return;
+end;
+create or modify nanoflow Synchronization.OfflineNoteAction_Create (
+  @position(100, 75)
+  $NativeNote: NativeNote.NativeNote,
+  @position(100, -15)
+  $ENUM_NoteAction: enum NativeNote.ENUM_NoteAction
+)
+returns Synchronization.OfflineNoteAction
+folder 'Objects/OfflineNoteAction/Private'
+begin
+  @start(100, 200)
+  @position(250, 200)
+  $NewOfflineNoteAction = create Synchronization.OfflineNoteAction (Title = $NativeNote/Title, Description = $NativeNote/Description, CreatedOn = $NativeNote/CreatedOn, CreatedDateTime = [%CurrentDateTime%], NoteAction = $ENUM_NoteAction, NrOfPictures = $NativeNote/NrOfPictures, ObjectID = $NativeNote/SystemID) refresh;
+  return $NewOfflineNoteAction;
+end;
+create or modify nanoflow Synchronization.OfflineNoteAction_SetTechnicianSystemID (
+  @position(50, 65)
+  $NativeNote: NativeNote.NativeNote,
+  @position(50, -15)
+  $OfflineNoteAction: Synchronization.OfflineNoteAction
+)
+folder 'Objects/OfflineNoteAction/Private'
+begin
+  @start(50, 200)
+  @position(175, 200)
+  @curve(from: (30, 0), to: (-30, 0))
+  retrieve $NativeTechnician from $NativeNote/NativeNote.NativeNote_NativeTechnician;
+  @position(325, 200)
+  change $OfflineNoteAction (TechnicianSystemID = $NativeTechnician/SystemID) refresh;
+  @position(425, 200)
+  return;
+end;
+create or modify nanoflow Synchronization.OfflineNoteAction_SetWorkOrderSystemID (
+  @position(50, 65)
+  $NativeNote: NativeNote.NativeNote,
+  @position(50, -15)
+  $OfflineNoteAction: Synchronization.OfflineNoteAction
+)
+folder 'Objects/OfflineNoteAction/Private'
+begin
+  @start(50, 200)
+  @position(265, 200)
+  @curve(from: (30, 0), to: (-30, 0))
+  retrieve $NativeWorkOrder from $NativeNote/NativeNote.NativeNote_NativeWorkOrder;
+  @position(440, 200)
+  change $OfflineNoteAction (WorkOrderSystemID = $NativeWorkOrder/SystemID) refresh;
+  @position(665, 200)
+  return;
+end;
+create or modify nanoflow Synchronization.OfflineAction_Save (
+  @position(-105, 95)
+  $OfflineAction: Synchronization.OfflineAction
+)
+folder 'Objects/OfflineAction'
+begin
+  @start(-105, 200)
+  @position(40, 200)
+  @curve(from: (30, 0), to: (-30, 0))
+  $OfflineActionList = create list of Synchronization.OfflineAction;
+  @position(230, 200)
+  add $OfflineAction to $OfflineActionList;
+  @position(455, 200)
+  call nanoflow Synchronization.OfflineActionList_Save_NF(OfflineActionList = $OfflineActionList);
+  @position(635, 200)
+  return;
+end;
+create or modify nanoflow Synchronization.NativeNote_SetupOfflineNoteAction (
+  @position(-315, -80)
+  $NativeNote: NativeNote.NativeNote,
+  @position(-315, 15)
+  $ENUM_NoteAction: enum NativeNote.ENUM_NoteAction
+)
+folder 'Objects/OfflineNoteAction'
+begin
+  @start(-315, 200)
+  @position(-125, 200)
+  $OfflineNoteAction = call nanoflow Synchronization.OfflineNoteAction_Create(NativeNote = $NativeNote, ENUM_NoteAction = $ENUM_NoteAction);
+  @position(105, 200)
+  @curve(to: (-30, 0))
+  call nanoflow Synchronization.OfflineNoteAction_SetWorkOrderSystemID(NativeNote = $NativeNote, OfflineNoteAction = $OfflineNoteAction);
+  @position(310, 200)
+  @curve(from: (30, 0), to: (-30, 0))
+  call nanoflow Synchronization.OfflineNoteAction_SetTechnicianSystemID(NativeNote = $NativeNote, OfflineNoteAction = $OfflineNoteAction);
+  @position(515, 200)
+  @curve(from: (30, 0), to: (-15, 0))
+  call nanoflow Synchronization.OfflineAction_Save(OfflineAction = $OfflineNoteAction);
+  @position(665, 200)
+  return;
+end;
+create or modify microflow Synchronization.ACO_NoteImage_SetHasBeenUploadedTrue (
+  @position(60, 110)
+  $NoteImage: Synchronization.NoteImage
+)
+folder 'Objects/NoteImage'
+begin
+  @start(60, 200)
+  @position(210, 200)
+  @curve(from: (15, 0), to: (-30, 0))
+  @caption 'is false'
+  if $NoteImage/HasBeenUploaded = false then
+    @position(385, 200)
+    @curve(from: (30, 0), to: (-15, 0))
+    change $NoteImage (HasBeenUploaded = true) commit without events;
+    @position(490, 200)
+    return;
+  else
+    @position(210, 295)
+    @anchor(to: top)
+    return;
+  end if;
+end;
+create or modify nanoflow Synchronization.OfflineImageAction_Create (
+  @position(-255, -30)
+  $NativeImage: NativeNote.NativeImage,
+  @position(-255, 80)
+  $ENUM_ImageAction: enum NativeNote.ENUM_ImageAction,
+  @position(-255, -140)
+  $NativeNote: NativeNote.NativeNote
+)
+returns Synchronization.OfflineImageAction
+folder 'Objects/OfflineImageAction/Private'
+begin
+  @position(-95, 200)
+  @curve(from: (30, 0), to: (-30, 0))
+  $NewNoteImage = create Synchronization.NoteImage refresh;
+  @position(95, 200)
+  @curve(from: (30, 0), to: (-30, 0))
+  $ReturnValueName = call javascript action Synchronization.JS_CloneFileDocument(SourceFileDocument = $NativeImage, TargetFileDocument = $NewNoteImage);
+  @position(270, 200)
+  @curve(from: (30, 0), to: (-30, 0))
+  change $NewNoteImage (Name = $NativeImage/Name) refresh;
+  @position(475, 200)
+  @curve(from: (30, 0), to: (-15, 0))
+  $NewOfflineImageAction = create Synchronization.OfflineImageAction (ObjectID = $NativeImage/SystemID, ImageAction = $ENUM_ImageAction, NoteID = $NativeNote/SystemID, CreatedDateTime = [%CurrentDateTime%], OfflineImageAction_NoteImage = $NewNoteImage) refresh;
+  @position(805, 200)
+  return $NewOfflineImageAction;
+end;
+create or modify nanoflow Synchronization.NoteImage_Commit (
+  @position(-30, 85)
+  $OfflineImageAction: Synchronization.OfflineImageAction
+)
+folder 'Objects/NoteImage'
+begin
+  @start(-30, 200)
+  @position(110, 200)
+  @curve(from: (30, 0), to: (-30, 0))
+  retrieve $NoteImage from $OfflineImageAction/Synchronization.OfflineImageAction_NoteImage;
+  @position(300, 200)
+  commit $NoteImage refresh;
+  @position(490, 200)
+  return;
+end;
+create or modify nanoflow Synchronization.NativeImage_SetupOfflineImageAction (
+  @position(-210, -65)
+  $NativeImage: NativeNote.NativeImage,
+  @position(-210, 30)
+  $ENUM_ImageAction: enum NativeNote.ENUM_ImageAction
+)
+folder 'Objects/OfflineImageAction'
+begin
+  @start(-210, 200)
+  @position(-70, 200)
+  @curve(from: (30, 0), to: (-30, 0))
+  retrieve $NativeNote from $NativeImage/NativeNote.NativeImage_NativeNote;
+  @position(155, 200)
+  @curve(from: (30, 0), to: (-30, 0))
+  $OfflineImageAction = call nanoflow Synchronization.OfflineImageAction_Create(NativeImage = $NativeImage, ENUM_ImageAction = $ENUM_ImageAction, NativeNote = $NativeNote);
+  @position(390, 200)
+  @curve(from: (30, 0), to: (-30, 0))
+  call nanoflow Synchronization.NoteImage_Commit(OfflineImageAction = $OfflineImageAction);
+  @position(580, 200)
+  @curve(from: (30, 0), to: (-15, 0))
+  call nanoflow Synchronization.OfflineAction_Save(OfflineAction = $OfflineImageAction);
+  @position(720, 200)
+  return;
+end;
+
+create or modify nanoflow Synchronization.NativeNote_SetupOfflineImageActions (
+  @position(60, 55)
+  $NativeNote: NativeNote.NativeNote
+)
+folder 'Objects/OfflineImageAction'
+begin
+  @start(60, 200)
+  @position(185, 200)
+  @curve(to: (-15, 0))
+  retrieve $NativeImageList from $NativeNote/NativeNote.NativeImage_NativeNote;
+  @position(360, 200)
+  @curve(from: (15, 0), to: (-30, 0))
+  @caption 'ImageList?'
+  if $NativeImageList != empty then
+    @position(850, 200)
+    @curve(from: (30, 0), to: (-15, 0))
+    loop $IteratorNativeImage in $NativeImageList
+    begin
+      @position(255, 100)
+      @curve(from: (30, 0), to: (-30, 0))
+      call nanoflow Synchronization.NativeImage_SetupOfflineImageAction(NativeImage = $IteratorNativeImage, ENUM_ImageAction = NativeNote.ENUM_ImageAction.Add_Image);
+      @position(530, 100)
+      change $IteratorNativeImage (IsSaved = true) refresh;
+    end loop;
+    @position(1285, 200)
+    return;
+  else
+    @position(360, 340)
+    @anchor(to: top)
+    return;
+  end if;
+end;
+
+-- cycle break: entity <-> its after-commit microflow. Created without the handler above, re-applied with it here.
+@Position(250, 10)
+create or modify persistent entity Synchronization.OfflineAction (
+  ObjectID: String(200),
+  CreatedDateTime: DateTime,
+  ProcessedDate: DateTime,
+  NeedsReview: Boolean default false,
+  ReviewMessage: String(unlimited),
+  HasBeenUploaded: Boolean default false,
+  Owner: AutoOwner,
+  ChangedDate: AutoChangedDate
+)
+on after commit call Synchronization.ACO_OfflineAction_SetHasBeenUploadedTrue($currentObject);
+@Position(490, 1690)
+create or modify persistent entity Synchronization.NoteImage extends System.Image (
+  HasBeenUploaded: Boolean default false
+)
+on after commit call Synchronization.ACO_NoteImage_SetHasBeenUploadedTrue($currentObject);
+

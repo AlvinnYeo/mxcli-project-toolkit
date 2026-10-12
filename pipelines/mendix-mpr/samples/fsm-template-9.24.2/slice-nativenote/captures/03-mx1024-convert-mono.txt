@@ -1,0 +1,18 @@
+$ mx(10.24) convert -p mono
+This is mx convert, version 10.24.0.73019.
+
+Found the input mpr file 'mono/fsm.mpr'.
+Getting the metadata of the mpr file.
+Checking the version of the mpr file.
+The mpr file version is '9.24.2.6130'.
+Converting the mpr file.
+Checking project for errors.
+The project contains 6 errors, 241 warnings and 9 deprecations.
+Saving the converted mpr file.
+
+mx convert finished.
+
+real	0m35.383s
+user	0m40.021s
+sys	0m1.508s
+exit=0

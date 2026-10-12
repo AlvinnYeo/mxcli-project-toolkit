@@ -1,0 +1,2 @@
+wrote out1024/Utils.mpk: module Utils (10.24.0.73019), 32 units + 6 shell, 18 files (4 .java, 5 js), widgets shipped 0/0 referenced
+  units naming other modules (crossing edges the target must satisfy): Administration×3, AppSettings×1, CommunityCommons×3, NanoflowCommons×1, NativeMobileResources×2, ValidationFeedback×4

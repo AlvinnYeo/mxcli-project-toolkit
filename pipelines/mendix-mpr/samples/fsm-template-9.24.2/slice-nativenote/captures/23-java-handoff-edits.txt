@@ -1,0 +1,17 @@
+# Java hand-off edits (same three as the MPK probe, R17->R19); diff of each edit:
+rm NoteSlice/javasource/utils/actions/JA_RoundMinutes.java   # orphan: no Java action unit in Utils (list java actions in Utils = 1: GetFileType)
+4:// - the import list
+12:import com.mendix.systemwideinterfaces.core.IContext;
+13:import com.mendix.webui.CustomJavaAction;
+15:public class JA_RoundMinutes extends CustomJavaAction<java.util.Date>
+rm NoteSlice/javasource/utils/actions/executeInBackgroundImmediately.java   # orphan: no Java action unit in Utils (list java actions in Utils = 1: GetFileType)
+4:// - the import list
+12:import com.mendix.systemwideinterfaces.core.IContext;
+13:import com.mendix.webui.CustomJavaAction;
+14:import com.mendix.systemwideinterfaces.core.IMendixObject;
+16:public class executeInBackgroundImmediately extends CustomJavaAction<java.lang.Boolean>
+38c38
+< 		IContext context = this.context();
+---
+> 		IContext context = getContext();
+cp userlib/tika-core-1.28.4.jar (+ marker .Utils.RequiredLib; source marker names .FileTypeChecker.RequiredLib, a module that no longer exists, so the exporter did not ship the jar)

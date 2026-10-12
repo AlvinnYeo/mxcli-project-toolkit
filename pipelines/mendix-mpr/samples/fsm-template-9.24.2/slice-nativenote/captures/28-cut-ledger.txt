@@ -1,0 +1,11 @@
+$ bin/cut-ledger.sh --catalog <lab>/slice-nativenote/mono/.mxcli/catalog.db --slice slice.txt --rules cut-rules.tsv --check-log captures/05-mx924-check-package-NativeNote.txt --exporter-json captures/27a-export-NativeNote-9.24-fixed.json --extra cut-extra.tsv --dump-refs crossing-refs.tsv -o cut-ledger.tsv
+cut-ledger: 346 crossing refs -> 308 ledger rows (55 out, 238 in from the catalog; 2 check-only; 13 extra) -> cut-ledger.tsv
+  by resolution: handoff 98, platform 3, resolved 166, retire 15, stub 26
+
+real	0m0.150s
+user	0m0.127s
+sys	0m0.007s
+exit=0
+
+# same run with the old exporter json (before the name-boundary fix): the reconciliation flags the false positive
+  exporter-only: Technician: exporter counts 2 unit(s) naming it, ledger has 0 out-edges to it

@@ -1,0 +1,27 @@
+$ mxcli marketplace install --file out1024/Utils.mpk -p NoteSlice.mpr
+WARNING: This is a vibe-coded PoC, alpha quality, use with caution.
+Installed module "Utils" from Utils.mpk into NoteSlice.mpr
+  32 units copied, 18 bundled file(s) installed.
+  Next, repair what a headless install leaves for Studio Pro to finish:
+      mxcli fix widgets -p <project.mpr>             # CE0463
+      mxcli fix design-properties -p <project.mpr>   # CE6087
+      mxcli docker check -p <project.mpr>
+real	0m7.159s
+user	0m6.740s
+sys	0m0.791s
+exit=0
+$ mxcli marketplace install --file out1024/NativeNote.mpk -p NoteSlice.mpr
+WARNING: This is a vibe-coded PoC, alpha quality, use with caution.
+Installed module "NativeNote" from NativeNote.mpk into NoteSlice.mpr
+  73 units copied, 5 bundled file(s) installed.
+  Kept 2 newer widget(s) the package would have rolled back:
+    widgets/com.mendix.widget.native.AppEvents.mpk — kept 5.1.0, package ships 4.0.0
+    widgets/com.mendix.widget.native.Repeater.mpk — kept 2.4.0, package ships 2.2.1
+  Next, repair what a headless install leaves for Studio Pro to finish:
+      mxcli fix widgets -p <project.mpr>             # CE0463
+      mxcli fix design-properties -p <project.mpr>   # CE6087
+      mxcli docker check -p <project.mpr>
+real	0m8.700s
+user	0m8.026s
+sys	0m0.931s
+exit=0

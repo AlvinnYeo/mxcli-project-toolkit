@@ -1,0 +1,28 @@
+mdl 1;
+-- part C: app-level edges the module package does not carry (the exporter scrubs navigation and constants)
+
+-- CUT STUB: Utils.IsProduction-style decision reads AppSettings.Environment; AppSettings stays in the monolith.
+/** CUT STUB: constant of the monolith module AppSettings, default value as in the source */
+create or modify constant AppSettings.Environment folder 'Resources/Environment' (
+  Type: String,
+  DefaultValue: 'Local',
+  ExposedToClient: true
+);
+
+-- App setting the package scrubs: the native profile's sync configuration. The target is the Blank Native Mobile
+-- App starter (its NativePhone profile exists; mxcli cannot create a native profile, and without one every nanoflow
+-- `show page` of a NativeNote page fails CE6081). Sync lines: the source profile's lines for the entities present
+-- in the slice. Home page: the starter's own NativeMobile.Home_Native (the FSM home stays in the monolith).
+create or modify navigation NativePhone
+  home page NativeMobile.Home_Native
+  sync (
+    sync Administration.Account where [id = '[%CurrentUser%]'];
+    sync NativeMobile.NativeTicket none preserve data;
+    sync NativeMobile.NativeWorkOrder none preserve data;
+    sync NativeNote.NativeImage none preserve data;
+    sync NativeNote.NativeNote none preserve data;
+    sync NativeTechnician.NativeTechnician none preserve data;
+    sync Synchronization.NoteImage none preserve data;
+    sync Synchronization.OfflineImageAction none preserve data;
+    sync Synchronization.OfflineNoteAction none preserve data;
+  );

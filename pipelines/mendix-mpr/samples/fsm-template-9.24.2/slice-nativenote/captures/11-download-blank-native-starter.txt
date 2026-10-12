@@ -1,0 +1,8 @@
+$ mxcli marketplace download 109511 --version 11.13.0 --output starter/blank-native-11.13.0.mpk
+Using project: fsm-9.24-ref.mpr
+Downloaded starter/blank-native-11.13.0.mpk (11.13.0, 45.4 MB)
+
+real	0m19.738s
+user	0m0.157s
+sys	0m0.102s
+exit=0

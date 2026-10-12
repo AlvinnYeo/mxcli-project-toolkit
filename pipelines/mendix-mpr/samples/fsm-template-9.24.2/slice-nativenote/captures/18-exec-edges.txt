@@ -1,0 +1,109 @@
+$ mxcli exec mdl/edges-A-icons.mdl -p NoteSlice.mpr
+WARNING: This is a vibe-coded PoC, alpha quality, use with caution.
+Connected to: NoteSlice/NoteSlice.mpr (Mendix 11.13.0)
+Created module: FSM_Specific
+Created image collection: FSM_Specific.Material_Design_Icons
+
+real	0m2.151s
+user	0m2.039s
+sys	0m0.217s
+exit=0
+$ mxcli exec mdl/edges-B.mdl -p NoteSlice.mpr
+WARNING: This is a vibe-coded PoC, alpha quality, use with caution.
+Connected to: NoteSlice/NoteSlice.mpr (Mendix 11.13.0)
+Module 'NativeMobile' already exists
+Created module role: NativeMobile.EditMy
+Created module: NativeTechnician
+Created module role: NativeTechnician.ViewAll
+Created module: General
+Created module role: General._AddOn_AccessDoNothing
+Module 'FSM_Specific' already exists
+Created module: Synchronization
+Created module role: Synchronization.CreateMy
+Created module role: Synchronization.ViewAll
+Created entity: NativeMobile.NativeWorkOrder
+Created entity: NativeMobile.NativeTicket
+Created enumeration: NativeMobile.ENUM_LoadingType
+Created entity: NativeMobile.AppointmentDetailsHelper
+Created entity: NativeTechnician.NativeTechnician
+Created nanoflow: Synchronization.Synchronize
+Created nanoflow: NativeMobile.StorageItem_CreateKey
+Created javascript action: Synchronization.JS_CloneFileDocument
+Created layout FSM_Specific.NativePhone_FullPage_NoScroll_Custom
+Created entity: NativeMobile.LoadHelper
+Created association: NativeMobile.NativeWorkOrder_NativeTicket
+Created association: NativeMobile.AppointmentDetailsHelper_NativeWorkOrder
+Created association: NativeMobile._NativeWorkOrder_NativeTechnician_EditMy
+Reconciled 7 access rule(s) for new association
+Created association: Administration.Account_NativeTechnician
+Created nanoflow: NativeMobile.StorageItem_Check
+Granted execute access on NativeMobile.StorageItem_Check to NativeMobile.EditMy
+Created nanoflow: General.ACT_DoNothing_NF
+Granted execute access on General.ACT_DoNothing_NF to General._AddOn_AccessDoNothing
+Created layout FSM_Specific.NativePhone_FullPage_Back
+Created entity: Synchronization.UploadHelper
+Granted access on Synchronization.UploadHelper to Synchronization.CreateMy
+  Result: read (LastOfflineActionCreated, LastUploadStarted), write (LastOfflineActionCreated, LastUploadStarted)
+Created nanoflow: Synchronization.UploadHelper_Create_StorageItemKey
+Created nanoflow: NativeMobile.LoadHelper_StartLoading
+Created nanoflow: NativeMobile.LoadHelper_StopLoading
+Created javascript action: NativeMobile.JS_GetOriginalValue
+Created nanoflow: NativeMobile.NativeWorkorder_AppointmentDetailsHelper_AddNoteCount
+Created nanoflow: Synchronization.UploadHelper_Get
+Created nanoflow: Synchronization.UploadHelper_Set_LastOfflineCreatedDate
+Created nanoflow: Synchronization.UploadHelper_Store
+Created nanoflow: Synchronization.UploadHelper_CheckAndGet
+Created nanoflow: Synchronization.UploadHelper_GetOrCreate
+Created nanoflow: Synchronization.UploadHelper_Update_LastOfflineCreatedDate
+Created entity: Synchronization.OfflineAction
+Granted access on Synchronization.OfflineAction to Synchronization.ViewAll
+  Result: read (ObjectID, CreatedDateTime, ProcessedDate, NeedsReview, ReviewMessage)
+Granted access on Synchronization.OfflineAction to Synchronization.CreateMy
+  Result: read (ObjectID, CreatedDateTime, HasBeenUploaded)
+Created entity: Synchronization.OfflineNoteAction
+Granted access on Synchronization.OfflineNoteAction to Synchronization.CreateMy
+  Result: create, read (ProcessedDate, NeedsReview, ReviewMessage, "Title", "Description", CreatedOn, WorkOrderSystemID, TechnicianSystemID, NrOfPictures, NoteAction, ObjectID, CreatedDateTime, HasBeenUploaded), write ("Title", "Description", CreatedOn, WorkOrderSystemID, TechnicianSystemID, NrOfPictures, NoteAction, ObjectID, CreatedDateTime, HasBeenUploaded)
+Granted access on Synchronization.OfflineNoteAction to Synchronization.ViewAll
+  Result: read ("Title", "Description", CreatedOn, WorkOrderSystemID, TechnicianSystemID, NrOfPictures, NoteAction, ObjectID, CreatedDateTime, ProcessedDate, NeedsReview, ReviewMessage)
+Created entity: Synchronization.OfflineImageAction
+Created entity: Synchronization.NoteImage
+Granted access on Synchronization.NoteImage to Synchronization.ViewAll
+  Result: read (PublicThumbnailPath, FileID, Name, DeleteAfterDownload, Contents, HasContents, Size)
+Granted access on Synchronization.NoteImage to Synchronization.CreateMy
+  Result: create, read (PublicThumbnailPath, FileID, HasContents, Size, HasBeenUploaded, Name, DeleteAfterDownload, Contents), write (HasBeenUploaded, Name, DeleteAfterDownload, Contents)
+Created association: Synchronization.OfflineImageAction_NoteImage
+Granted access on Synchronization.OfflineImageAction to Synchronization.CreateMy
+  Result: create, read (ProcessedDate, NeedsReview, ReviewMessage, ImageAction, NoteID, ObjectID, CreatedDateTime, HasBeenUploaded, OfflineImageAction_NoteImage), write (ImageAction, NoteID, ObjectID, CreatedDateTime, HasBeenUploaded, OfflineImageAction_NoteImage)
+Granted access on Synchronization.OfflineImageAction to Synchronization.ViewAll
+  Result: read (ImageAction, NoteID, ObjectID, CreatedDateTime, ProcessedDate, NeedsReview, ReviewMessage, OfflineImageAction_NoteImage)
+Created microflow: Synchronization.ACO_OfflineAction_SetHasBeenUploadedTrue
+Created nanoflow: Synchronization.OfflineActionList_Commit
+Created nanoflow: Synchronization.OfflineActionList_Save_NF
+Created nanoflow: Synchronization.OfflineNoteAction_Create
+Created nanoflow: Synchronization.OfflineNoteAction_SetTechnicianSystemID
+Created nanoflow: Synchronization.OfflineNoteAction_SetWorkOrderSystemID
+Created nanoflow: Synchronization.OfflineAction_Save
+Created nanoflow: Synchronization.NativeNote_SetupOfflineNoteAction
+Created microflow: Synchronization.ACO_NoteImage_SetHasBeenUploadedTrue
+Created nanoflow: Synchronization.OfflineImageAction_Create
+Created nanoflow: Synchronization.NoteImage_Commit
+Created nanoflow: Synchronization.NativeImage_SetupOfflineImageAction
+Created nanoflow: Synchronization.NativeNote_SetupOfflineImageActions
+Modified entity: Synchronization.OfflineAction
+Modified entity: Synchronization.NoteImage
+
+real	0m6.718s
+user	0m7.685s
+sys	0m1.387s
+exit=0
+$ mxcli exec mdl/edges-C-app.mdl -p NoteSlice.mpr
+WARNING: This is a vibe-coded PoC, alpha quality, use with caution.
+Connected to: NoteSlice/NoteSlice.mpr (Mendix 11.13.0)
+Created module: AppSettings
+Created constant: AppSettings.Environment
+Navigation profile 'NativePhone' updated.
+
+real	0m0.530s
+user	0m0.412s
+sys	0m0.195s
+exit=0

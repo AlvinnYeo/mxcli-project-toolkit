@@ -57,6 +57,7 @@ import base64
 import hashlib
 import json
 import os
+import re
 import sqlite3
 import struct
 import sys
@@ -303,14 +304,18 @@ def collect(db, module):
 
 
 def crossing_refs(by_id, subtree, module, all_modules):
-    """Qualified names Module.X in the subtree's string fields pointing at another module."""
+    """Qualified names Module.X in the subtree's string fields pointing at another module.
+
+    The match must start at a name boundary: a plain substring test counted `NativeNote.X` as a
+    reference to module `Note` (FSM field run 2026-10-12, increment 3: "Note x54", 0 real). In BSON
+    the byte before a string's first character is the high byte of its int32 length (0x00), and
+    inside an XPath or expression it is `[`, `/`, `(`, a space or a quote — never [A-Za-z0-9_]."""
     refs = {}
     others = sorted((m for m in all_modules if m and m != module), key=len, reverse=True)
     for u in subtree:
         c = by_id[u][2]
         for m in others:
-            needle = (m + ".").encode()
-            if needle in c:
+            if re.search(rb"(?<![A-Za-z0-9_])" + re.escape(m.encode()) + rb"\.", c):
                 refs[m] = refs.get(m, 0) + 1
     return refs
 

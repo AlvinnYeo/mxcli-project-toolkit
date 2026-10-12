@@ -1,0 +1,17 @@
+$ mx(11.13) create-project --app-name NoteSlice --output-dir NoteSlice <abs>/starter/blank-native-11.13.0.mpk   # a relative template path fails: System.UriFormatException (capture 12)
+ERROR: System.UriFormatException: Invalid URI: The format of the URI could not be determined.
+   at System.Uri.CreateThis(String uri, Boolean dontEscape, UriKind uriKind, UriCreationOptions& creationOptions)
+   at System.Uri..ctor(String uriString)
+   at Mendix.Modeler.ProjectHandling.Creators.CreateProjectConfig..ctor(String projectName, String projectDirectory, String templateId, UploadProjectInfo uploadProjectInfo, Boolean isSolution, Boolean keepProjectId) in Mendix.Modeler.ProjectHandling\Creators\CreateProjectConfig.cs:line 39
+   at Mendix.MxToolset.Create.CreateProjectRunner.Create(String projectName, String outputFolder, Option`1 templateMpkFile, Option`1 languageCode, Option`1 sprintrProjectID, DatabaseFormat format) in Mendix.MxToolset\Create\CreateProjectRunner.cs:line 55
+   at Mendix.MxToolset.Create.ProjectCreator.Create(CreateProjectOptions createProjectOptions) in Mendix.MxToolset\Create\ProjectCreator.cs:line 28
+   at Mendix.MxToolset.MxToolset.<>c__DisplayClass32_0.<ProcessArguments>b__3(CreateProjectOptions buildOpts) in Mendix.MxToolset\MxToolset.cs:line 116
+   at CommandLine.ParserResultExtensions.WithParsed[T](ParserResult`1 result, Action`1 action)
+   at Mendix.MxToolset.MxToolset.ProcessArguments(String[] commandLineArgs) in Mendix.MxToolset\MxToolset.cs:line 113
+   at Mendix.MxToolset.Program.<>c__DisplayClass0_0.<Main>b__0(IMxToolset mxToolset) in Mendix.MxToolset\Program.cs:line 11
+   at Mendix.CommandLine.Shared.ProgramHelper.InitializeAndRun[T](Func`2 program, Assembly[] extraAssemblies) in Mendix.CommandLine.Shared\ProgramHelper.cs:line 24
+
+real	0m4.904s
+user	0m4.605s
+sys	0m0.277s
+exit=1

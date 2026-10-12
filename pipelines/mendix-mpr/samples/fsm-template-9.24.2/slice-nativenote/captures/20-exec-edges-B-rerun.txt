@@ -1,0 +1,22 @@
+$ mxcli exec mdl/edges-B.mdl -p NoteSlice.mpr   # re-run after narrowing JS_GetOriginalValue (idempotent)
+WARNING: This is a vibe-coded PoC, alpha quality, use with caution.
+Connected to: NoteSlice/NoteSlice.mpr (Mendix 11.13.0)
+Module 'NativeMobile' already exists
+Module 'NativeTechnician' already exists
+Module 'General' already exists
+Module 'FSM_Specific' already exists
+Module 'Synchronization' already exists
+Modified javascript action: Synchronization.JS_CloneFileDocument
+All specified roles already have execute access on NativeMobile.StorageItem_Check
+All specified roles already have execute access on General.ACT_DoNothing_NF
+Modified javascript action: NativeMobile.JS_GetOriginalValue
+Modified entity: Synchronization.OfflineAction
+Modified entity: Synchronization.NoteImage
+Modified entity: Synchronization.OfflineAction
+Modified entity: Synchronization.NoteImage
+57 documents already in sync (unchanged, not listed)
+
+real	0m4.869s
+user	0m6.531s
+sys	0m0.564s
+exit=0
