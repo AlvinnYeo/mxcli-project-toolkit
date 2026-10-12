@@ -10,15 +10,53 @@
 #   1. NEVER touches Studio Pro. No force-quit, no kill. It detects SP and reports; that is all.
 #      restart-sp.sh owns crash recovery and warns that unsaved work is lost. This must be safe to
 #      run while someone else is working in SP.
-#   2. NEVER writes to the .mpr. `mxcli docker build` reads the model and writes only build output.
+#   2. Never writes model CONTENT. Measured (field run 2026-10-07, existing app): a `mxcli docker
+#      run` / `docker build` runs `mx update-widgets` first, which rewrites widget definitions in the
+#      .mpr — git showed it modified after a build that failed. That is a widget-definition refresh,
+#      not a change anyone authored, but it IS a write: commit or snapshot before a build, and never
+#      run one while Studio Pro has the model open.
 #   3. Proves liveness with an actual HTTP response. "No error" is not "up".
-#   4. Idempotent. If the app already answers, it does nothing and exits 0.
+#   4. Idempotent, but never STALE. If the app already answers and was built from the current model,
+#      it does nothing and exits 0. If the model changed since this script last built it, an app
+#      that answers is serving the OLD model — every test then measures yesterday's build and a
+#      fixed bug "still fails". So it hot-reloads (`mxcli docker reload`: build + reload_model,
+#      no container restart) and falls back to a restart only if the reload fails. See WARM LOOP.
 #   5. Starts an auxiliary service if it is down; NEVER stops one (another session may be using it).
 #
 # Usage:
 #   bin/test-stack-up.sh --check     # report only, change nothing. Exit 0 iff required deps are up.
 #   bin/test-stack-up.sh             # report, then bring up what is missing (may run a Docker build)
 #   bin/test-stack-up.sh --no-docker # bring up auxiliaries only; never build. "SP is already running it".
+#   bin/test-stack-up.sh --restart   # skip the hot reload; rebuild and restart the container (old path)
+#
+# WARM LOOP. After a model change the old loop was: exec.sh gate (mxbuild) -> `docker run` (mx check +
+# mxbuild again) -> container restart -> boot wait. Now: the app's model is recorded in
+# .claude/loop/served-model (the model-stamp fingerprint at the moment this script built it); when
+# the current fingerprint differs, `mxcli docker reload` rebuilds and swaps the model into the
+# running runtime instead of restarting it, and passes --skip-check when model-stamp says the
+# current model already passed an mxbuild (the exec.sh gate) — that check was the duplicate.
+# Entity/association changes need a DB sync that reload_model may not do; if the reload fails or the
+# app stops answering, it falls back to the restart. MXTK_WARM_RELOAD=off keeps the old idempotent
+# no-op. Measured (field run 2026-10-07, existing app, cloud container, one page change):
+#   docker run --wait, cold                         190 s
+#   restart (docker run --wait over a running app)  179 s
+#   docker reload, with the duplicate check         140 s
+#   docker reload --skip-check                       93 s  (reload_model itself 0.6 s; the build is the rest)
+#   mxcli run --local --watch, page change           ~18 s from exec to applied (security/nav change: ~60 s restart)
+# So the fastest loop is not this script: keep `mxcli run --local --watch` running beside the
+# session and let it apply each exec (skills/ui-loop.md). This script is the Docker path and the
+# proof-of-ownership step. `docker reload --css` is NOT a theme loop: it copies the theme without
+# compiling SCSS, so a main.scss edit does not show.
+#
+# RUN --LOCAL IS RECOGNISED, NOT REPLACED. `mxcli run --local` (v0.24+) publishes
+# <mpr dir>/.mxcli/run-local.json while it serves — pid and app port, written when the app is ready,
+# removed on exit. A live pid in OUR project's directory plus a Mendix answer on its port is the same
+# kind of claim as the compose label: it cannot be true of two projects at once. So that app is
+# ownership `verified` (APP_SOURCE=run-local), where it used to scan as `unverified` and the e2e
+# config refused it — the recommended fast loop was the one the harness would not test. This script
+# never restarts or reloads it (it did not start it): `--watch` applies each change itself, and
+# without --watch a model newer than the handshake is reported stale with the restart to run. Only
+# pid and appPort are read; the file also holds the admin password and boot config, never copied.
 #
 # Exit codes: 0 = required stack is up · 1 = not up and could not fix · 2 = usage/env error
 #
@@ -70,8 +108,9 @@ MODE="up"
 case "${1:-}" in
   --check)     MODE="check" ;;
   --no-docker) MODE="nodocker" ;;
+  --restart)   MODE="restart" ;;
   "")          ;;
-  *) echo "usage: $0 [--check|--no-docker]" >&2; exit 2 ;;
+  *) echo "usage: $0 [--check|--no-docker|--restart]" >&2; exit 2 ;;
 esac
 
 ok()   { printf '  \033[32m✓\033[0m %s\n' "$1"; }
@@ -147,7 +186,7 @@ EOF
   return 1
 }
 
-# find_app_port emits "<port>|<ownership>" on stdout, NOT a bare port.
+# find_app_port emits "<port>|<ownership>|<source>" on stdout, NOT a bare port.
 #
 # It is called in a command substitution, so it runs in a subshell and cannot set a variable in the
 # parent — the ownership verdict has to travel on stdout with the port or it is lost.
@@ -160,11 +199,13 @@ EOF
 # someone else's software.
 find_app_port() {
   local p owned
+  # 0. A live `mxcli run --local` of this project (its handshake names the port).
+  if owned="$(local_loop_port)" && mendix_at "$owned"; then echo "$owned|verified|run-local"; return 0; fi
   # 1. Ownership: which port does THIS project's container publish?
   if owned="$(owned_app_port)" && [ -n "$owned" ]; then
-    if mendix_at "$owned"; then echo "$owned|verified"; return 0; fi
+    if mendix_at "$owned"; then echo "$owned|verified|docker"; return 0; fi
     warn "our container publishes :$owned but it is not serving Mendix yet" >&2
-    echo "$owned|verified"; return 1
+    echo "$owned|verified|docker"; return 1
   fi
   # 2. No container of ours is running (SP-hosted run, or docker unavailable). Fall back to the
   #    scan — but say so, because a hit here is UNVERIFIED ownership: it proves a Mendix answered,
@@ -174,10 +215,62 @@ find_app_port() {
       warn "no container owned by $ROOT/.docker is running; :$p matched by scan — ownership UNVERIFIED" >&2
       warn "  → recorded as APP_OWNERSHIP=unverified in stack.env. A test harness should REFUSE an" >&2
       warn "    unverified port unless ALLOW_UNVERIFIED_APP=1, because :$p may be another project." >&2
-      echo "$p|unverified"; return 0
+      echo "$p|unverified|scan"; return 0
     fi
   done
-  echo "|none"; return 1
+  echo "|none|none"; return 1
+}
+
+# A live `mxcli run --local` serving THIS project: echoes its app port. See RUN --LOCAL above.
+# Fields are read at MarshalIndent's two-space top level, so a key inside bootConfig cannot match.
+MPR_DIR="$(cd "$(dirname "$MPR")" && pwd)"
+# A two-tree checkout may carry a root symlink to app/X.mpr. mprcontents/ sits beside the real
+# file, and mxcli writes the handshake beside whichever path -p was given — so look in both.
+MODEL_DIR="$MPR_DIR"
+if [ -L "$MPR" ]; then
+  _t="$(readlink "$MPR")"
+  case "$_t" in /*) ;; *) _t="$MPR_DIR/$_t" ;; esac
+  MODEL_DIR="$(cd "$(dirname "$_t")" 2>/dev/null && pwd -P)" || MODEL_DIR="$MPR_DIR"
+fi
+LOCAL_HS="$MPR_DIR/.mxcli/run-local.json"
+pick_local_hs() {
+  local d
+  for d in "$MPR_DIR" "$MODEL_DIR"; do
+    [ -f "$d/.mxcli/run-local.json" ] && { LOCAL_HS="$d/.mxcli/run-local.json"; return 0; }
+  done
+  return 1
+}
+pick_local_hs || true
+hs_field() { sed -n "s/^  \"$1\": *\([0-9][0-9]*\).*/\1/p" "$LOCAL_HS" 2>/dev/null | head -1; }
+pid_alive() {
+  [ -n "$1" ] || return 1
+  case "$(mxtk_platform)" in
+    # mxcli.exe records a Windows pid; Git Bash's kill only knows MSYS pids.
+    windows) tasklist //FI "PID eq $1" //NH 2>/dev/null | grep -q " $1 " ;;
+    *)       kill -0 "$1" 2>/dev/null ;;
+  esac
+}
+local_loop_port() {
+  local pid port
+  pick_local_hs || return 1
+  pid="$(hs_field pid)"; port="$(hs_field appPort)"
+  [ -n "$port" ] && pid_alive "$pid" || return 1
+  echo "$port"
+}
+# yes | no | unknown — was the loop started with --watch? Read from its command line where ps can
+# show one; Windows processes do not expose it to Git Bash.
+local_loop_watch() {
+  local pid args
+  pid="$(hs_field pid)"
+  args="$(ps -o args= -p "$pid" 2>/dev/null)" || { echo unknown; return; }
+  [ -n "$args" ] || { echo unknown; return; }
+  case "$args" in *--watch*) echo yes ;; *) echo no ;; esac
+}
+# Did the model change since the loop booted? The handshake is written when the app is ready, so
+# its mtime is the boot's model; any .mpr or mprcontents file newer than it is a later edit.
+local_model_changed() {
+  [ -n "$(find "$MODEL_DIR" -maxdepth 1 -name '*.mpr' -newer "$LOCAL_HS" 2>/dev/null | head -1)" ] && return 0
+  [ -d "$MODEL_DIR/mprcontents" ] && [ -n "$(find "$MODEL_DIR/mprcontents" -type f -newer "$LOCAL_HS" 2>/dev/null | head -1)" ]
 }
 
 # Single source of truth for the discovered ports. This script is the only thing that PROVES which
@@ -186,7 +279,7 @@ find_app_port() {
 # 8081 and a skill said 8080 — three "truths", and a spec pointed at a dead port reports the app as
 # broken rather than as unreachable.
 STACK_ENV="${STACK_ENV:-$ROOT/.claude/loop/stack.env}"
-# publish_stack_env <port> <jaeger_ok> <ownership>
+# publish_stack_env <port> <jaeger_ok> <ownership> <source>
 # APP_OWNERSHIP is not decoration: it is the difference between "this port is ours" and "a Mendix
 # answered here". Consumers must be able to tell those apart from the file alone, because the stderr
 # warning that distinguishes them is gone by the time anyone reads it.
@@ -196,9 +289,53 @@ publish_stack_env() {
     echo "# written by bin/test-stack-up.sh — $(date -u +%Y-%m-%dT%H:%M:%SZ). Do not edit."
     echo "APP_PORT=$1"
     echo "APP_OWNERSHIP=${3:-unknown}"
+    echo "APP_SOURCE=${4:-unknown}"
     [ -n "$MOCK_PORT" ] && echo "MOCK_PORT=$MOCK_PORT"
     [ "$2" -eq 0 ] && echo "JAEGER_PORT=$JAEGER_PORT" || echo "JAEGER_PORT="
   } > "$STACK_ENV"
+}
+
+# --- Served model: which model state is the running app built from? ----------
+# Written ONLY by this script, right after it built the app, so it names the model the build read
+# (after mx update-widgets, which can rewrite the .mpr — fingerprint before the build would be
+# stale the moment the build finished). An app started any other way (Studio Pro, a manual
+# `docker run`) has no record: freshness UNKNOWN, reported, never guessed.
+SERVED_FILE="${SERVED_FILE:-$ROOT/.claude/loop/served-model}"
+STAMP_SH="$(dirname "${BASH_SOURCE[0]}")/model-stamp.sh"
+model_fp() { [ -f "$STAMP_SH" ] && bash "$STAMP_SH" fingerprint 2>/dev/null; }
+record_served() {
+  local fp; fp="$(model_fp)" || fp=""
+  [ -n "$fp" ] || return 0
+  mkdir -p "$(dirname "$SERVED_FILE")" 2>/dev/null && printf '%s\n' "$fp" > "$SERVED_FILE"
+}
+# Echoes fresh | stale | unknown.
+served_state() {
+  local want have
+  # run --local: mxcli rebuilt nothing for us to record; the handshake's mtime is the boot.
+  if [ "${APP_SOURCE:-}" = "run-local" ]; then
+    pick_local_hs || true
+    if ! local_model_changed; then echo fresh
+    else case "$(local_loop_watch)" in yes) echo watch ;; no) echo stale ;; *) echo changed ;; esac; fi
+    return
+  fi
+  have="$(head -1 "$SERVED_FILE" 2>/dev/null)"
+  want="$(model_fp)" || want=""
+  if [ -z "$have" ] || [ -z "$want" ]; then echo unknown
+  elif [ "$have" = "$want" ]; then echo fresh
+  else echo stale; fi
+}
+
+# After `docker run --wait` returned: prove over HTTP that OUR app answers (design rule 3). mxcli's
+# wait reads the runtime log, so this normally passes on the first probe. Sets APP_* in this shell.
+prove_app() {
+  local waited=0
+  while :; do
+    APP_FIND="$(find_app_port)" && break
+    [ $waited -ge 30 ] && break
+    sleep 3; waited=$((waited + 3))
+  done
+  IFS='|' read -r APP_PORT APP_OWNERSHIP APP_SOURCE <<<"$APP_FIND"
+  mendix_at "$APP_PORT"
 }
 
 echo "── Test stack: $PROJ ──────────────────────────────────"
@@ -225,16 +362,29 @@ fi
 # --- App --------------------------------------------------------------------
 APP_FIND="$(find_app_port)"
 APP_FOUND=$?
-APP_PORT="${APP_FIND%%|*}"
-APP_OWNERSHIP="${APP_FIND##*|}"
+IFS='|' read -r APP_PORT APP_OWNERSHIP APP_SOURCE <<<"$APP_FIND"
 if [ $APP_FOUND -eq 0 ]; then
-  if [ "$APP_OWNERSHIP" = "verified" ]; then
+  if [ "$APP_SOURCE" = "run-local" ]; then
+    ok "App serving on :$APP_PORT (ownership verified — this project's mxcli run --local)"
+  elif [ "$APP_OWNERSHIP" = "verified" ]; then
     ok "App serving on :$APP_PORT (ownership verified — our container)"
   else
     warn "App serving on :$APP_PORT — ownership $APP_OWNERSHIP, this may be another project"
   fi
 else
   bad "App not serving on any of: $APP_PORTS"
+fi
+SERVED="none"
+if [ $APP_FOUND -eq 0 ]; then
+  SERVED="$(served_state)"
+  case "$SERVED" in
+    fresh)   ok "App serves the current model" ;;
+    stale)   warn "App serves an OLDER model — the model changed since it was built; tests would measure the old build"
+             [ "$APP_SOURCE" = "run-local" ] && warn "  → run --local was started without --watch: stop it and start ./mxcli run --local --watch -p $(basename "$MPR")" ;;
+    watch)   ok "Model changed since boot — run --local --watch applies it (~20s a page change, ~60s security/navigation)" ;;
+    changed) warn "Model changed since run --local booted; cannot see whether it runs with --watch. Without --watch it serves the old model" ;;
+    unknown) warn "App freshness unknown — not built by this script (Studio Pro / manual run); it may serve an old model" ;;
+  esac
 fi
 
 # --- Jaeger (needed only for Trace assertions) ------------------------------
@@ -285,12 +435,20 @@ fi
 # Publish as soon as the port is MEASURED, not only when the whole stack is READY. A down mock makes
 # REST-fed specs invalid; it does not change which port the app answers on, and the non-REST specs
 # still need to know it.
-[ $APP_FOUND -eq 0 ] && publish_stack_env "$APP_PORT" "$JAEGER_OK" "$APP_OWNERSHIP"
+[ $APP_FOUND -eq 0 ] && publish_stack_env "$APP_PORT" "$JAEGER_OK" "$APP_OWNERSHIP" "$APP_SOURCE"
 
 if [ "$MODE" = "check" ]; then
   echo "────────────────────────────────────────────────────────"
   if [ $CTR_WARNED -eq 1 ]; then
     echo "APP UP, BUT REST-FED SPECS WILL BE INVALID — see the container warning above"
+    exit 1
+  fi
+  if [ "$SERVED" = "stale" ] && [ "$APP_SOURCE" = "run-local" ]; then
+    echo "APP UP BUT STALE — restart mxcli run --local with --watch (this script does not restart a loop it did not start)"
+    exit 1
+  fi
+  if [ "$SERVED" = "stale" ] && [ "$APP_OWNERSHIP" = "verified" ]; then
+    echo "APP UP BUT STALE — re-run without --check to hot-reload the current model"
     exit 1
   fi
   if [ $APP_FOUND -eq 0 ] && [ $MOCK_OK -eq 0 ]; then
@@ -317,10 +475,63 @@ if [ $MOCK_REQUIRED -eq 1 ] && [ $MOCK_OK -ne 0 ]; then
   fi
 fi
 
+# --- Warm loop: refresh a running app instead of restarting it --------------
+# Only for OUR container (ownership verified, source docker): a reload swaps the model in a runtime,
+# and doing that to an unverified port could be another project's app or a Studio Pro run. A
+# run --local loop is never reloaded from here — --watch does that, inside the process that owns it.
+if [ $APP_FOUND -eq 0 ] && [ "$APP_SOURCE" = "docker" ] && [ -n "$MXCLI" ] \
+   && [ "${MXTK_WARM_RELOAD:-on}" != "off" ] && [ "$MODE" != "nodocker" ] \
+   && { [ "$SERVED" != "fresh" ] || [ "$MODE" = "restart" ]; }; then
+  T0=$(date +%s)
+  RELOADED=1
+  if [ "$MODE" != "restart" ]; then
+    # --skip-check only when this exact model already passed an mxbuild (exec.sh's gate or
+    # verify-model.sh). Otherwise the check is the only build-error report before the build.
+    SKIP=""
+    if [ -f "$STAMP_SH" ] && bash "$STAMP_SH" check -q >/dev/null 2>&1; then SKIP="--skip-check"; fi
+    echo "→ Model changed since the app was built — hot-reloading (build + reload_model${SKIP:+, check skipped: model already gate-verified})..."
+    "$MXCLI" docker reload -p "$MPR" $SKIP >"$DOCKER_LOG" 2>&1
+    RELOADED=$?
+    if [ $RELOADED -eq 0 ]; then
+      # reload_model returned; prove the app still answers before trusting it.
+      for _ in $(seq 1 20); do
+        APP_FIND="$(find_app_port)" && break
+        sleep 1
+      done
+      if mendix_at "${APP_FIND%%|*}"; then
+        record_served
+        ok "Hot reload done in $(( $(date +%s) - T0 ))s — app serves the current model"
+        SERVED=fresh
+      else
+        warn "reload_model returned but the app stopped answering — falling back to a restart"
+        RELOADED=1
+      fi
+    else
+      warn "docker reload failed (rc=$RELOADED) — falling back to a restart. Log: $DOCKER_LOG"
+      tail -5 "$DOCKER_LOG" | sed 's/^/    /'
+    fi
+  fi
+  if [ $RELOADED -ne 0 ]; then
+    echo "→ Rebuilding and restarting the container..."
+    "$MXCLI" docker run -p "$MPR" --wait --wait-timeout "$BOOT_TIMEOUT" >"$DOCKER_LOG" 2>&1
+    if [ $? -ne 0 ]; then
+      bad "mxcli docker run failed — see $DOCKER_LOG"; tail -20 "$DOCKER_LOG"; exit 1
+    fi
+    # Proved here, not by falling into "Bring up the app" below: that block runs `docker run`
+    # again, and did — every restart built and booted the app twice.
+    if prove_app; then
+      record_served; SERVED=fresh
+      ok "Restarted in $(( $(date +%s) - T0 ))s — app serves the current model"
+    else
+      bad "mxcli reported the runtime started, but no Mendix answers over HTTP — see $DOCKER_LOG"; exit 1
+    fi
+  fi
+fi
+
 # --- Bring up the app -------------------------------------------------------
 if [ $APP_FOUND -ne 0 ]; then
   if [ "$MODE" = "nodocker" ]; then
-    bad "App down and --no-docker given. Click Run Locally in Studio Pro (or, with no Studio Pro, ./mxcli run --local), then re-run --check."
+    bad "App down and --no-docker given. Click Run Locally in Studio Pro (or, with no Studio Pro, ./mxcli run --local --watch), then re-run --check."
     exit 1
   fi
   # No reachable Docker (or Podman) daemon: say so and name the Docker-free route, instead of letting
@@ -340,7 +551,8 @@ if [ $APP_FOUND -ne 0 ]; then
     bad "App down and no Docker/Podman reachable, so this script cannot build the app container."
     echo "  Normal in a cloud container, and fine on a desktop without one. Run the app without it:"
     echo "    Studio Pro: Run Locally.  No Studio Pro:"
-    echo "    ./mxcli run --local -p $(basename "$MPR")   # flags: skills/cloud-dev-environment.md"
+    echo "    ./mxcli run --local --watch -p $(basename "$MPR")   # flags: skills/cloud-dev-environment.md"
+    echo "  This script then sees it as yours (verified) and --watch keeps it current."
     echo "  Snapshot first — mxcli run --local consolidates a split-model .mpr. Then re-run with --check."
     exit 1
   fi
@@ -353,9 +565,9 @@ if [ $APP_FOUND -ne 0 ]; then
   echo "  This can take several minutes on a cold build."
 
   # Do NOT pipe mxcli: reading $? through a pipe measures the pipe, not the command.
-  # (this script runs without `set -e` on purpose — the boot-wait loop below relies on
-  #  find_app_port returning non-zero repeatedly without killing the script)
-  "$MXCLI" docker run -p "$MPR" >"$DOCKER_LOG" 2>&1
+  # --wait: mxcli follows the runtime log until it reports started, so the boot wait is mxcli's.
+  # The loop below is the HTTP proof (design rule 3) and normally passes on its first probe.
+  "$MXCLI" docker run -p "$MPR" --wait --wait-timeout "$BOOT_TIMEOUT" >"$DOCKER_LOG" 2>&1
   DOCKER_RC=$?
   if [ $DOCKER_RC -ne 0 ]; then
     bad "mxcli docker run failed (rc=$DOCKER_RC) — see $DOCKER_LOG"
@@ -363,32 +575,28 @@ if [ $APP_FOUND -ne 0 ]; then
     exit 1
   fi
 
-  echo "→ Waiting for the app to answer (timeout ${BOOT_TIMEOUT}s)..."
-  WAITED=0
-  while [ $WAITED -lt "$BOOT_TIMEOUT" ]; do
-    APP_FIND="$(find_app_port)" && { APP_FOUND=0; break; }
-    sleep 3; WAITED=$((WAITED + 3))
-    [ $((WAITED % 30)) -eq 0 ] && echo "  ...${WAITED}s"
-  done
-  APP_PORT="${APP_FIND%%|*}"
-  APP_OWNERSHIP="${APP_FIND##*|}"
-
-  if [ $APP_FOUND -eq 0 ]; then
-    ok "App serving on :$APP_PORT after ${WAITED}s (ownership $APP_OWNERSHIP)"
+  if prove_app; then
+    APP_FOUND=0
+    record_served
+    ok "App serving on :$APP_PORT (ownership $APP_OWNERSHIP)"
   else
-    bad "App still not answering after ${BOOT_TIMEOUT}s — see $DOCKER_LOG"
+    bad "mxcli reported the runtime started, but no Mendix answers over HTTP — see $DOCKER_LOG"
     "$MXCLI" docker status -p "$MPR" 2>&1 | tail -5
     exit 1
   fi
 fi
 
 echo "────────────────────────────────────────────────────────"
+if [ "$APP_SOURCE" = "run-local" ] && [ "$SERVED" = "stale" ]; then
+  echo "NOT READY — the run --local app serves an older model; restart it with --watch"
+  exit 1
+fi
 if [ $APP_FOUND -eq 0 ] && [ $MOCK_OK -eq 0 ]; then
   # re-publish: both the port AND the ownership can change across a Docker boot — before the boot no
   # container of ours was running (so any hit was an unverified scan); after it, one is.
-  publish_stack_env "$APP_PORT" "$JAEGER_OK" "$APP_OWNERSHIP"
+  publish_stack_env "$APP_PORT" "$JAEGER_OK" "$APP_OWNERSHIP" "$APP_SOURCE"
   echo "READY — ports published to ${STACK_ENV#$ROOT/}; the e2e config reads them automatically"
-  echo "  app    :$APP_PORT  (ownership $APP_OWNERSHIP)"
+  echo "  app    :$APP_PORT  (ownership $APP_OWNERSHIP, $APP_SOURCE)"
   [ -n "$MOCK_PORT" ] && echo "  mock   :$MOCK_PORT"
   echo "  jaeger $([ $JAEGER_OK -eq 0 ] && echo ":$JAEGER_PORT" || echo 'DOWN — Trace assertions will not run')"
   exit 0

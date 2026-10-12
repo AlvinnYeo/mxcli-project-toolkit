@@ -186,6 +186,7 @@ Every gate decision lands here as \`CONFIRMED\` or \`ASSUMED\`, never silently d
 
 ${TOOLKIT_COMMIT_LINE}
 Exec approval: auto
+Permission profile: project
 
 <!-- The bold line above is a READOUT: bin/gate-check.sh rewrites it on every full run from the
      verdicts it just produced (first stage neither PASS nor WAIVED). Do not edit it by hand.
@@ -432,6 +433,11 @@ fi
   echo "Agent wiring did not complete. The scaffold is otherwise fine; re-run:"
   echo "  $SCRIPT_DIR/wire-agents.sh $PROJECT_DIR"
 }
+
+# A CLAUDE.md that wire-agents.sh preserved from an mxcli init older than v0.22 carries ~30k
+# characters of command tables into every call; move them out (bin/lib/slim-claude-md.sh).
+. "$SCRIPT_DIR/lib/slim-claude-md.sh"
+slim_claude_md "$PROJECT_DIR" || true
 
 # ── Per-harness auto-run allow-list ──────────────────────────────────────────────────────
 # `mxcli init` (just run above, inside wire-agents.sh) writes .claude/settings.json allowing
@@ -681,6 +687,21 @@ else
   echo "NOTE: could not register \"$PROJECT_NAME\" with the toolkit leak guard"
   echo "  ($TOOLKIT_ROOT is not writable). Add \\b$PROJECT_NAME\\b to"
   echo "  $DENYFILE by hand, or this project's name is invisible to the guard."
+fi
+
+# --- no Dev Container ----------------------------------------------------------------
+# `mxcli new` / `mxcli init` always writes `.devcontainer/`, and VS Code then offers (and later
+# remembers) "Reopen in Container". That container is a second machine: no `claude` login, no
+# dotfiles, and its install step is fragile. The toolkit's path is plain local use, so the
+# folder is moved aside here. Real incident, 2026-10-08: a first-time user landed in the
+# container with "claude: command not found" and a fresh login prompt, and asked how to get
+# rid of it. Keep it with MXTK_KEEP_DEVCONTAINER=1. Nothing is deleted: the folder is parked
+# under .mxtk-backup/ so it can be restored by hand.
+if [ -d "$PROJECT_DIR/.devcontainer" ] && [ -z "${MXTK_KEEP_DEVCONTAINER:-}" ]; then
+  mkdir -p "$PROJECT_DIR/.mxtk-backup"
+  mv "$PROJECT_DIR/.devcontainer" "$PROJECT_DIR/.mxtk-backup/devcontainer-$(date +%Y%m%d-%H%M%S)"
+  echo "Moved .devcontainer/ to .mxtk-backup/ — work locally; VS Code will not ask to reopen in a container."
+  echo "  (MXTK_KEEP_DEVCONTAINER=1 keeps it.)"
 fi
 
 GUIDE="$SCRIPT_DIR/../toolkit-guide.html"
