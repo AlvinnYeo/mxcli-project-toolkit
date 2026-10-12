@@ -10,6 +10,8 @@ and configure the marked constants — **after** running `mxcli init`, never bef
 | `conv020_action_user_feedback.star` | Page-triggered microflows that commit / import / delete but tell the user nothing | no — `PROJECT_MODULES` defaults to `"*"` (all modules the lint run includes, minus `.claude/lint-vendor-modules.txt`); `ACTION_PREFIX` if your prefixes differ |
 | `data_change_microflows.star` | ARCH002 — persistent entities written from pages instead of microflows | no |
 | `entity_business_key.star` | ARCH003 — persistent entities with no UNIQUE NOT NULL business key | no |
+| `ux001_confirm_before_destructive.star` | UX001 — a button that deletes, approves, rejects, submits or archives (direct delete action, or a flow that deletes / is named so) without "Ask confirmation" | `DESTRUCTIVE_NAME_PATTERN` if your verbs differ |
+| `ux002_decisions_captioned.star` | UX002 — decisions (`ExclusiveSplit`) with an auto-generated caption instead of the question they answer; flows of 8+ activities with neither an annotation nor a documentation text | `ANNOTATE_FROM` |
 
 `data_change_microflows` and `entity_business_key` are **repaired copies of rules `mxcli init`
 already seeds**, not new ones. Both shipped comparing `entity.entity_type` to `"PERSISTENT"`
@@ -23,6 +25,26 @@ while it was dead. It now carries the same `SKIP_MODULES` list, and the same pro
 **0** — the 38 were entirely platform noise. Marketplace modules are a separate concern and
 are excluded at the gate (`bin/lint-gate.sh -e`, from a per-project
 `.claude/lint-vendor-modules.txt`), not hardcoded in a shared rule.
+
+`ux001` and `ux002` read widget `action_type` / `has_confirmation` and activity
+`caption` / `auto_generate_caption`, which exist from **mxcli 0.25.0** (catalog schema with
+widget actions and activity captions). On an older binary both rules emit a single `_rule`
+finding ("needs mxcli >= 0.25.0") and nothing else — `bin/lint-gate.sh` reads that as blindness,
+never as a clean pass. Their vocabulary (`Forms$DeleteClientAction`, `Forms$MicroflowAction`,
+`ExclusiveSplit`, `DeleteObjectAction`) was read from the mxcli source at 0.25.0, then field-probed
+on 2026-10-12 with mxcli 0.26.0 against a scratch copy of a 21-module Mendix 11.12 model (876
+microflows, 124 pages). That probe found two defects the unit suite could not see: the stored
+microflow-button action type is `Forms$MicroflowAction`, not the `…ClientAction` the source read
+suggested, and `auto_generate_caption` is never set on a decision — a bare decision carries its
+condition expression as its caption. Both fixed; after the fix UX002 reports every one of the
+model's 39 top-level custom decisions as bare (all were), UX001 stays at 0 there (its 4 microflow
+buttons reach no delete and match no verb). Re-probe on your own model before trusting the counts. Their *logic* is proven: `tests/lint-rules/`
+runs both under the real Starlark interpreter (`go.starlark.net` at mxcli's pinned version) over
+33 hand-written fixtures — self-checks, call depth both sides of the bound, cycles, the name
+pattern, module skips, snippet locations, start/end events not counted — plus a synthetic
+3000-flow / 20000-widget model each rule finishes in under a second. Fixtures encode the
+projection as read from the mxcli source; they are not captured output, so they prove the
+rule, not the vocabulary.
 
 `conv010` here is likewise the repaired form of the rule mxcli seeds, and supersedes the
 version this directory shipped on 11 Aug: one violation per microflow instead of one per
