@@ -1,0 +1,52 @@
+# mxbuild 11.12.0 --java-home=/usr/lib/jvm/java-21-openjdk-amd64 --java-exe-path=.../bin/java --target=deploy --write-errors=... <lab>/target/GenAITarget.mpr  (after the repair in mx-check-target.txt §2) — verbatim, exit code 3
+
+   __  __      ____        _ _     _
+  |  \/  |    |  _ \      (_) |   | |
+  | \  / |_  _| |_) |_   _ _| | __| |
+  | |\/| \ \/ /  _ <| | | | | |/ _` |
+  | |  | |>  <| |_) | |_| | | | (_| |
+  |_|  |_/_/\_\____/ \__,_|_|_|\__,_|
+
+   v11.12.0
+
+Preparing the web extensibility environment...
+[WebExtensionsRunner] > [Web Socket] Connection established in 0ms!
+[WebExtensionsRunner] > [Component Host] Initializing component host
+[WebExtensionsRunner] > Download http://localhost:45357/component/ui-dependencies/worker-loader.js?worker=%2Fcomponent%2Fcomponent-host%2Fcomponents.worker.js
+[WebExtensionsRunner] > [Component Worker] Web Worker started! Running in mode: internal
+[WebExtensionsRunner] > [Component Worker] Found built-in components: ["mapping-editor","ide-foundation","workflow-editor","domain-model-editor","page-editor","custom-blob-documents","model-foundation","microflow-editor"]
+Starting build for Mendix Project file: <lab>/target/GenAITarget.mpr
+Using the following options:
+ * Build target: Deploy
+Reading project file...
+Building project...
+Executing step 'Synchronize with file system'
+Synchronizing with file system...
+Executing step 'Initialize'
+Preparing deployment...
+Executing step 'Check prerequisites'
+Checking for errors...
+Executing step 'Clean up'
+Cleaning up...
+ERROR: The project cannot be deployed, because it contains errors.
+ERROR at AgentEditorCommons, Java action 'Agent_CallDocument_WithoutHistory', Property 'Entity' of Java action parameter 'OptionalContextObject': The selected entity '.ContextObject' no longer exists.
+ERROR at AgentEditorCommons, Java action 'ChatContext_Create_ForAgentDocument', Property 'Entity': The selected entity 'ConversationalUI.ChatContext' no longer exists.
+ERROR at AgentEditorCommons, Java action 'ChatContext_Create_ForAgentDocument', Property 'Entity' of Java action parameter 'ContextObject': The selected entity '.ContextObject' no longer exists.
+ERROR at Embeddings_SemanticSearch, Microflow 'DS_Query_GetBookChunks', Property 'Attribute' of list operation activity 'Sort': The selected attribute 'Embeddings_SemanticSearch.BookChunk.Similarity' no longer exists.
+ERROR at PgVectorKnowledgeBase, Java action 'KnowledgeBaseChunkList_Retrieve', Property 'Entity' of Java action parameter 'MxObject': The selected entity '.Entity' no longer exists.
+ERROR at MCPServer_ExposeToolsPrompts, Microflow 'Ticket_GetNewestTicket', Export with mapping activity 'Export': The selected export mapping 'MCPServer_ExposeToolsPrompts.EM_MCPServer_Ticket' no longer exists.
+ERROR at PgVectorKnowledgeBase, Java action 'KnowledgeBaseChunkList_Delete_ByMxObjectList', Property 'Entity' of Java action parameter 'MxObjectList': The selected entity '.Entity' no longer exists.
+ERROR at AgentEditorCommons, Java action 'Agent_CallDocument_WithHistory', Property 'Entity' of Java action parameter 'OptionalContextObject': The selected entity '.ContextObject' no longer exists.
+ERROR at GenAICommons, Java action 'ChunkCollection_AddKnowledgeBaseChunk', Property 'Entity' of Java action parameter 'MxObject': The selected entity '.Entity' no longer exists.
+ERROR at MCPServer_ExposeToolsPrompts, Microflow 'Ticket_GetTicketByID', Export with mapping activity 'Export': The selected export mapping 'MCPServer_ExposeToolsPrompts.EM_MCPServer_Ticket' no longer exists.
+ERROR at ChatCompletions_FunctionCalling, Microflow 'Ticket_GetTicketByID_FunctionMicroflow', Export with mapping activity 'Export': The selected export mapping 'ChatCompletions_FunctionCalling.EM_FunctionCalling_Ticket' no longer exists.
+ERROR at PgVectorKnowledgeBase, Java action 'KnowledgeBaseChunkList_Delete_ByMxObject', Property 'Entity' of Java action parameter 'MxObject': The selected entity '.Entity' no longer exists.
+ERROR at ChatCompletions_FunctionCalling, Microflow 'Ticket_GetNewestTicket_FunctionMicroflow', Export with mapping activity 'Export': The selected export mapping 'ChatCompletions_FunctionCalling.EM_FunctionCalling_Ticket' no longer exists.
+ERROR at Embeddings_SemanticSearchMultiColumn, Microflow 'DS_Query_GetTicketChunks', Property 'Attribute' of list operation activity 'Sort': The selected attribute 'Embeddings_SemanticSearchMultiColumn.TicketChunk.Similarity' no longer exists.
+Writing list of app errors...
+ * App errors written to file 'out/captures/mxbuild-errors.json'
+BUILD FAILED
+
+real	0m13.018s
+user	0m12.798s
+sys	0m0.894s
