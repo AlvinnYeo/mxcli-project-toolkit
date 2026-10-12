@@ -122,8 +122,8 @@
 <div class="tablewrap"><table>
 <thead><tr><th>#</th><th>Target</th><th>Result</th></tr></thead>
 <tbody>
-<tr><td class="num">1</td><td>Small synthetic app, 4 modules</td><td><span class="pill done">done</span> cut-scoring script and 56 checks</td></tr>
-<tr><td class="num">2</td><td>Siemens FSM template (Mendix 9.24.2)</td><td><span class="pill done">done</span> read probe passed; 45 own modules; cut scored</td></tr>
+<tr><td class="num">1</td><td>Rehost extractor on a small public app, plus the cut-scoring script on a Mendix 10.24 fixture</td><td><span class="pill done">done</span> 155 of 155 documents emitted; cut scorer with 56 checks</td></tr>
+<tr><td class="num">2</td><td>Siemens FSM template (Mendix 9.24.2)</td><td><span class="pill done">done</span> read probe passed; 42 own modules; cut scored</td></tr>
 <tr><td class="num">3</td><td>NativeNote slice to Mendix 11</td><td><span class="pill done">build-green</span> 308-row ledger, 0 unresolved</td></tr>
 <tr><td class="num">4</td><td>Seam probe</td><td><span class="pill done">one record crossed</span> monolith to slice over REST</td></tr>
 <tr><td class="num">5</td><td>Assets &amp; Parts web slice (4 modules)</td><td><span class="pill done">build-green</span> seam-live not reached; 1 journey passes</td></tr>
@@ -135,7 +135,7 @@
 <li>Workers drop findings into an inbox. Triage promotes them into the bug ledger or into skills.</li>
 <li>Every user-visible change adds a <code>CHANGELOG.md</code> line in the same commit, crediting the source project.</li>
 <li>Skills were written from the field runs, then corrected by their first real use. Example: the decompose skill was checked against Mendix's own documentation after it was drafted.</li>
-<li>mxcli defects found along the way were drafted as an upstream report: 53 drafted, 3 later withdrawn, 47 ready to file. The staged files live in the separate personal-toolkit repo. Nothing has been filed yet.</li>
+<li>mxcli defects found along the way were drafted as an upstream report: 53 drafted: 47 ready to file, 3 need a check on a local machine, 3 withdrawn as not real defects. The staged files live in the separate personal-toolkit repo. Nothing has been filed yet.</li>
 </ul>
 <h3>Which model did what</h3>
 <p>Opus took the hard work: probes, slice builds, gate analysis, and writing the skills. Sonnet took recipe work: candidate tables, bug hunts, report drafting, shrinking bug repros. Fable ran one early extraction. The orchestrator coordinated the workers and merged their output.</p>
@@ -234,7 +234,7 @@
 <div class="tablewrap"><table>
 <thead><tr><th>Proven</th><th>Not proven</th></tr></thead>
 <tbody>
-<tr><td>Same-version single-module rehost is essentially lossless (154 of 155).</td><td>A large rehost reaching build-green. GenAI stopped at 14 errors and a failed build.</td></tr>
+<tr><td>A small same-version app rehosts essentially losslessly (154 of 155 documents identical).</td><td>A large rehost reaching build-green. GenAI stopped at 14 errors and a failed build.</td></tr>
 <tr><td>A Mendix 9 app can be read, upgraded on a copy and its modules moved to Mendix 11 by package.</td><td>Regression parity of a rehosted app. It is not reachable headlessly and needs a human-run level.</td></tr>
 <tr><td>Two slices reach build-green (<code>mx check</code> 0, build succeeded, 0 unresolved ledger rows).</td><td>Strangling: rewiring the monolith's calls (only 1 of 536 in-edges rewired in increment 5) and deleting the module.</td></tr>
 <tr><td>A live seam: one record crossed in increment 4; a journey slice to monolith to slice passed 9/9 in increment 6.</td><td>Mobile: 31 stub rows remain, and offline sync needs REST-fed copies.</td></tr>
