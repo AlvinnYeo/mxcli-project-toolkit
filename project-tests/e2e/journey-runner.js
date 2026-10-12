@@ -33,6 +33,7 @@
 const fs = require('fs');
 const path = require('path');
 const H = require(__dirname + '/helpers.js');
+const { settle } = require(__dirname + '/settle.js');
 const O = require(__dirname + '/otel.js');
 const { cfg } = require(__dirname + '/config.js');
 
@@ -114,6 +115,11 @@ const subst = (v, vars) =>
 // meant to stay declarative enough to generate from a module brief's golden-path
 // table.
 const PAUSE = ms => new Promise(r => setTimeout(r, ms));
+// The combobox waits below used to be fixed sleeps (400/1200/120/500 ms per field). Each now
+// waits for the thing it was sleeping for; SETTLE_MODE=fixed keeps the old sleeps for an A/B run.
+const FIXED = process.env.SETTLE_MODE === 'fixed';
+const frames = page => page.evaluate(() => new Promise(r =>
+  requestAnimationFrame(() => requestAnimationFrame(r)))).catch(() => {});
 
 // A human-readable account of what the action WILL do, in the vocabulary a reviewer
 // uses ("click Receive"), not the harness's (".mx-name-bReceive"). Both are kept: the
@@ -199,12 +205,18 @@ async function act(page, a, vars, note) {
       if (!(await box.isVisible({ timeout: 6000 }).catch(() => false)))
         throw new Error(`.mx-name-${a.widget} not visible`);
       await box.scrollIntoViewIfNeeded().catch(() => {});
-      await PAUSE(400);
-      await page.locator('[id^="downshift-"][id$="-toggle-button"]').first()
+      if (FIXED) await PAUSE(400); else await frames(page);
+      // The toggle is INSIDE the widget (only the menu renders outside it). It used to be
+      // looked up page-wide with .first(), which opened the page's FIRST combobox whatever
+      // `widget` said: on a form with three comboboxes every step read the first one's menu
+      // and failed "no option matches" (field run 2026-10-07, existing app).
+      await box.locator('[id^="downshift-"][id$="-toggle-button"]').first()
                 .click({ force: true }).catch(() => {});
-      await PAUSE(1200);
+      if (FIXED) await PAUSE(1200);
       const opts = page.locator('[role="option"]');
       await opts.first().waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+      // options can arrive in batches (async datasource): wait until the list stops growing
+      if (!FIXED) await settle(page, { timeout: 3000, stableMs: 200, minMs: 0, networkIdleMs: 0 });
       const texts = await opts.evaluateAll(e => e.map(x => x.textContent.trim())).catch(() => []);
       const want = String(subst(a.match, vars));
       const idx = texts.findIndex(t => t.includes(want));
@@ -260,7 +272,7 @@ async function act(page, a, vars, note) {
         const cur = (await activeText() || '').trim();
         if (cur && cur.includes(want)) { landed = true; break; }
         await page.keyboard.press('ArrowDown');
-        await PAUSE(120);
+        if (FIXED) await PAUSE(120); else await frames(page);
       }
       if (!landed) {
         throw new Error(
@@ -268,7 +280,8 @@ async function act(page, a, vars, note) {
           `"${want}". The option is listed but not reachable by keyboard.`);
       }
       await page.keyboard.press('Enter');
-      await PAUSE(500);
+      if (FIXED) await PAUSE(500);
+      else await settle(page, { timeout: 3000, stableMs: 150, minMs: 0, networkIdleMs: 0 });
 
       // Selecting is not committing. Downshift can close the menu without writing the
       // value back, so the committed input is read and compared to the seed — not
@@ -288,7 +301,11 @@ async function act(page, a, vars, note) {
     case 'wait':         await page.waitForTimeout(a.ms || 1000); break;
     default: throw new Error(`unknown action "${a.do}"`);
   }
-  await page.waitForTimeout(a.settleMs ?? 1200);
+  // An explicit settleMs is a fixed wait, as before. Otherwise wait for the page to
+  // finish (settle.js) rather than 1200 ms after every action; SETTLE_MODE=fixed
+  // restores the old 1200 ms for an A/B run.
+  if (a.settleMs != null) await page.waitForTimeout(a.settleMs);
+  else await settle(page, { timeout: 10000, stableMs: 300, networkIdleMs: 0, fallbackMs: 1200 });
 }
 
 // ── Rung 3 helpers ──────────────────────────────────────────────────────────
@@ -575,7 +592,7 @@ function controlMutants(j) {
 // carry-over inside a walk. Here, carry-over between walks is precisely the bug.
 async function resetToStart(page) {
   await page.goto(cfg.baseUrl, { waitUntil: 'domcontentloaded' });
-  await page.waitForTimeout(2500);
+  await settle(page, { fallbackMs: 2500 });
 }
 
 async function runJourney(page, j) {
@@ -723,9 +740,12 @@ async function runJourney(page, j) {
     }
 
     // ── RUNG 2: ordered spans ────────────────────────────────────────────────
-    if (step.spans && step.spans.ordered && step.spans.ordered.length) {
+    // Runs for a positive claim (ordered) OR a negative-only claim (mustNotFire with
+    // ordered empty/absent) — a step whose whole proof is "this did NOT run" (#150).
+    const claimed = (step.spans && step.spans.ordered) || [];
+    const mustNot = (step.spans && step.spans.mustNotFire) || [];
+    if (claimed.length || mustNot.length) {
       // Wait for the claimed microflows, not just any span — see otel.js capture() `until`.
-      const claimed = step.spans.ordered;
       const spans = await O.capture(t0, { min: 1,
         until: sp => { const got = O.microflowNames(sp); return claimed.every(n => got.includes(n)); } });
       if (!spans.length) {
@@ -733,9 +753,10 @@ async function runJourney(page, j) {
                'zero spans captured — Jaeger down or OTel off. Trace rung did NOT run.', req);
       } else {
         O.guard(spans, otelReporter(req), `${step.name}: capture non-empty`);
-        O.assertSequence(spans, step.spans.ordered, otelReporter(req), `${step.name}: ordered`);
+        if (claimed.length)
+          O.assertSequence(spans, claimed, otelReporter(req), `${step.name}: ordered`);
         O.assertNoErrors(spans, otelReporter(req), `${step.name}: no ERROR at any level`);
-        for (const n of step.spans.mustNotFire || []) {
+        for (const n of mustNot) {
           O.assertNotFired(spans, new RegExp(n), otelReporter(req), `${step.name}: ${n} did not run`);
         }
       }

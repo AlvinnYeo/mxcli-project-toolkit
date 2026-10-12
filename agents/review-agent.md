@@ -69,7 +69,9 @@ This table is your whole list. The baseline table in the project's CLAUDE.local.
 | `project-bin/graph-sweep.sh` | Running the wiring rung alone |
 | `skills/fixture-seeding.md` | Establishing the data and identities a journey run needs |
 | `skills/journey-proof.md` | Proving a module's user journey end-to-end |
+| `skills/unhappy-path-testing.md` | Writing or running e2e cases beyond the happy journeys (blank/whitespace required fields, over-length, duplicates, cancel, double submit, wrong state, wrong role, backend down, stale write, empty search) |
 | `skills/monkey-test.md` | Running the fuzz/crash net on a module whose journeys are already green |
+| `skills/e2e-locators-that-lie.md` | An e2e rung reports a UI defect (widget never appeared, click did nothing, screen contradicts the data, fixture count wrong) |
 | `skills/learned-skill-ux-audit.md` | UX audit and screenshot-loop discipline |
 | `skills/learned-skill-scope-delta.md` | Tracking scope delta between the BRD and the built state |
 | `skills/company-brain.md` | Setting up or wiring a COMPANY BRAIN |

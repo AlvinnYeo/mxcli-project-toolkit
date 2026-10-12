@@ -91,6 +91,7 @@ BUILD_LOG="$PROJECT_ROOT/docs/BUILD-LOG.md"
 # Declared HERE, above log_build, not next to the gate: a row must be able to
 # carry a gate verdict even when the gate block below is never reached.
 GATE_STATE="not-run"   # not-run | skipped | unverified | pass | fail
+GATE_ERRORS="?"        # mxbuild error count behind a pass (0 = clean); recorded in the stamp
 MXB_WHY=""             # mxbuild's errors[] reason when it exited without checking the model
 
 # ── Exec approval (auto records itself) ──────────────────────────────────────
@@ -149,6 +150,38 @@ HDR2
   printf '| %s | `%s` | %s | %s | %s |\n' \
     "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$LOG_NAME" \
     "${GATE_STATE:-not-run}" "$1" "$_detail" >> "$BUILD_LOG"
+  record_metrics "$1"
+}
+
+# ── Metrics ledger (added 2026-10-12) ────────────────────────────────────────
+# Every BUILD-LOG row also lands as one TSV row in .claude/loop/metrics-ledger.tsv — outcome
+# class, elapsed seconds, mxbuild error count, lint verdict and total, whether a snapshot was
+# restored, and the `mxcli report` score when one was taken this run. The BUILD-LOG is for a
+# human reading one project; the ledger is for project-bin/metrics-trend.sh ("is the score
+# moving, are gate failures falling, are execs getting faster") and for bin/harvest-learnings.sh,
+# which carries the numbers into the toolkit so the question can be asked across projects.
+# Hooked HERE so no outcome can skip it: a ledger with only the good runs would show a rising
+# score and hide the restores it cost. Failure to append never fails the exec.
+SCORED=0
+record_metrics() {  # $1=status text (as given to log_build)
+  [ -x "$PROJECT_ROOT/bin/metrics-ledger.sh" ] || return 0
+  bash "$PROJECT_ROOT/bin/metrics-ledger.sh" exec \
+    --script "$LOG_NAME" --gate "${GATE_STATE:-not-run}" --result "$1" \
+    --elapsed "$(( $(date +%s) - _T0 ))" --mxbuild-errors "${GATE_ERRORS:-}" \
+    --lint-rc "${LINT_RC_FOR_LEDGER:-}" --restored "${RESTORED:-0}" --scored "$SCORED" 2>/dev/null || true
+}
+# `mxcli report` scores the model (0-100, ≈7 s on an 876-flow model, 2026-10-12). Taken only
+# after a clean mxbuild — a failed write is restored or never happened, so there is nothing
+# new to score. MXTK_NO_SCORE=1 skips it (slow machine, CI); the row still lands, scores empty.
+take_score() {
+  [ -z "${MXTK_NO_SCORE:-}" ] || { echo "  · score skipped (MXTK_NO_SCORE)"; return 0; }
+  [ -x "$PROJECT_ROOT/bin/metrics-ledger.sh" ] || return 0
+  echo "→ Scoring the model (bin/metrics-ledger.sh score → mxcli report)..."
+  if _sc=$(bash "$PROJECT_ROOT/bin/metrics-ledger.sh" score 2>&1); then
+    SCORED=1; echo "  ✓ $_sc"
+  else
+    echo "  ⚠ ${_sc:-score not taken}"
+  fi
 }
 
 # ── Concurrent-writer guard ──────────────────────────────────────────────────
@@ -380,6 +413,8 @@ run_lint_gate() {
 # One place decides the applied-row wording, so both mxbuild-clean branches agree.
 log_applied() {  # $1 = mxbuild detail
   run_lint_gate
+  LINT_RC_FOR_LEDGER="$LINT_RC"
+  take_score
   if [ "$LINT_RC" -eq 1 ]; then
     log_build "⚠️ applied, LINT ROSE" "$1; $LINT_DETAIL"
   else
@@ -682,8 +717,22 @@ fi
 # Capture the CURRENT error set before touching anything, so the gate can tell
 # "this script broke it" from "it was already broken". Costs one extra mxbuild;
 # skip with SKIP_BASELINE=1 when you know the tree is clean.
+#
+# The extra mxbuild is also skipped when the verification stamp (bin/model-stamp.sh)
+# says THIS exact model state already passed mxbuild with 0 errors: the baseline is
+# then known to be empty without measuring it. Any change since (Studio Pro, a test
+# run, a bare exec) changes the fingerprint and the baseline runs as before.
+# WHY (field run 2026-10-07, requirements-driven build): exec.sh was 22% of all tool
+# time, with two mxbuilds per exec; the baseline one re-measured a model the previous
+# exec had just verified, in most of 100 execs.
 BASELINE_SET=""
 BASE_KNOWN=0
+if [ "${SKIP_BASELINE:-0}" != "1" ] && [ -x ./bin/model-stamp.sh ] \
+   && ./bin/model-stamp.sh check -q --clean >/dev/null 2>&1; then
+  echo "→ Pre-flight: model unchanged since its last clean mxbuild (verification stamp) — baseline 0, not re-measured"
+  _BC=0; _BCODES=""; BASE_KNOWN=1
+  SKIP_BASELINE=1
+fi
 if [ "${SKIP_BASELINE:-0}" != "1" ] && [ -x "$MXBUILD" ] && [ -x "$JAVA_EXE" ]; then
   echo "→ Pre-flight: checking whether the model already has errors..."
   _BF=$(mktemp /tmp/mxbuild-baseline.XXXXXX)
@@ -823,7 +872,7 @@ if [ -x "$MXBUILD" ] && [ -x "$JAVA_EXE" ]; then
       # A guard that tested only "file is non-empty" therefore took the restore
       # branch on a clean build and rolled back good work, while printing
       # "0 error(s) found". Test the parsed count, never the file's existence.
-      GATE_STATE="pass"
+      GATE_STATE="pass"; GATE_ERRORS=0
       echo "  ✓ mxbuild: 0 errors — model is clean."
       [ "$EXEC_STATUS" -eq 0 ] && log_applied "mxbuild clean"
     else
@@ -848,7 +897,7 @@ if [ -x "$MXBUILD" ] && [ -x "$JAVA_EXE" ]; then
         DELTA_KIND="subset"
       fi
       if [ -n "$DELTA_KIND" ]; then
-        GATE_STATE="pass"
+        GATE_STATE="pass"; GATE_ERRORS="$CE_COUNT"
         KEEP_CODES=$(err_codes "$ERRORS_FILE")
         if [ "$DELTA_KIND" = "subset" ]; then
           echo "  ⚠  mxbuild: $CE_COUNT error(s) — a STRICT SUBSET of the $_BC pre-flight baseline error(s), no new ones."
@@ -959,7 +1008,7 @@ EOF
     # --patch logs its own row below, after rolling back; one row per run.
     [ "$PATCH_MODE" = "1" ] || log_build "❌ gate could not run" "mxbuild exit $MXBUILD_EXIT"
   else
-    GATE_STATE="pass"
+    GATE_STATE="pass"; GATE_ERRORS=0
     echo "  ✓ mxbuild: 0 errors — model is clean."
     # No errors file, or an empty one. The comment at the CE_COUNT=0 branch says
     # mxbuild ALWAYS writes one; on Mendix 11.13 it does not, so THIS is where
@@ -1071,7 +1120,7 @@ fi
 # is no longer the one anything verified.
 if [ -x ./bin/model-stamp.sh ]; then
   if [ "$GATE_STATE" = "pass" ] && [ "$EXEC_STATUS" -eq 0 ]; then
-    ./bin/model-stamp.sh write pass "exec.sh $([ "$PATCH_MODE" = 1 ] && echo '--patch ')$(basename "$SCRIPT")" || true
+    MXTK_STAMP_ERRORS="$GATE_ERRORS" ./bin/model-stamp.sh write pass "exec.sh $([ "$PATCH_MODE" = 1 ] && echo '--patch ')$(basename "$SCRIPT")" || true
   else
     ./bin/model-stamp.sh clear >/dev/null 2>&1 || true
   fi
