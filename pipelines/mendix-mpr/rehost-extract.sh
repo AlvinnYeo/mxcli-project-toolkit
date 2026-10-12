@@ -55,31 +55,80 @@ else
 fi
 log "own modules: ${MODULES[*]}"
 for M in "${MODULES[@]}"; do
-  for t in entities associations enumerations microflows nanoflows pages snippets; do
+  for t in entities associations enumerations microflows nanoflows pages snippets javaactions; do
     mx -p "$SRC" show "$t" "$M" | grep -v '^Connected to' > "$OUT/captures/show-$t-$M.txt"
   done
 done
 
 # ---- 2. extract -------------------------------------------------------------------------------
-# describe_module <mpr> <Module> <out.mdl>: `describe module … with all` plus the image collections
-# it omits (0.26.0), from the project tree. Used for the source and, in step 4, for the target.
+# describe_module <mpr> <Module> <out.mdl>: `describe module … with all` plus every describable
+# document of the module that the whole-module emitter omits, described one by one from the
+# project tree. On 0.26.0 `with all` omits image collections (increment 1) and, on the GenAI
+# Showcase (increment 2), nanoflows, snippets, JavaScript actions, JSON structures, import/export
+# mappings, task queues, scheduled events and some pages. Used for the source and, in step 4, for
+# the target, so both sides carry the same document set.
 describe_module() {
   local mpr="$1" M="$2" out="$3"
   "$MXCLI" -p "$mpr" -c "describe module $M with all" 2>/dev/null | grep -v 'vibe-coded PoC' > "$out"
-  "$MXCLI" -p "$mpr" project-tree --json 2>/dev/null | "$PY" -I -c '
-import json,sys
+  # 0.26.0 cuts `-c` output at 10 000 lines without saying so (AgentCommons and ConversationalUI on the
+  # GenAI Showcase both ended mid-page at line 10 001). Keep only complete statements; the tree fill-in
+  # below then describes every document the cut swallowed, one by one.
+  "$PY" -I - "$out" "$HERE/lib" <<'PYEOF' >&2
+import sys; sys.path.insert(0, sys.argv[2])
+from mdlsplit import split_statements
+text = open(sys.argv[1], encoding='utf-8', newline='').read()
+stmts, tail = split_statements(text)
+if tail.strip():
+    open(sys.argv[1], 'w', encoding='utf-8', newline='').write('\n'.join(stmts) + '\n')
+    print('describe module truncated at %d lines (incomplete last statement dropped: %s)' % (text.count('\n'), tail.strip().split('\n')[0][:80]))
+PYEOF
+  "$MXCLI" -p "$mpr" project-tree --json 2>/dev/null > "$out.tree.json"
+  "$PY" -I - "$M" "$out" "$out.tree.json" <<'PYEOF' | while read -r t q; do
+import json,re,sys
+M, out, tree = sys.argv[1], sys.argv[2], sys.argv[3]
+have = set(re.findall(r'^create or modify [a-z -]+? (' + re.escape(M) + r'\.[A-Za-z0-9_]+)', open(out, encoding='utf-8', newline='').read(), re.M))
 def walk(n):
     for x in n:
-        if x.get("type")=="imagecollection" and x.get("qualifiedName","").startswith(sys.argv[1]+"."): print(x["qualifiedName"])
-        walk(x.get("children",[]))
-walk(json.load(sys.stdin))' "$M" | while read -r ic; do
-    "$MXCLI" -p "$mpr" describe imagecollection "$ic" 2>/dev/null | grep -v 'vibe-coded PoC' | sed '1{/^mdl 1;$/d}' >> "$out"
+        q = x.get('qualifiedName', '')
+        if x.get('describable') and q.startswith(M + '.') and q not in have and x.get('type') not in ('modulerole',):
+            print(x['type'], q)
+        walk(x.get('children', []))
+walk(json.load(open(tree)))
+PYEOF
+    "$MXCLI" -p "$mpr" describe "$t" "$q" 2>/dev/null | grep -v 'vibe-coded PoC' | sed '1{/^mdl 1;$/d}' >> "$out"
   done
+  rm -f "$out.tree.json"
 }
+now() { date +%s.%N; }
+TIMES="$OUT/captures/timings.tsv"
+printf 'module\tdescribe_s\ttopo_s\tcheck_s\texec_s\tdescribe_target_s\n' > "$TIMES"
+declare -A T_DESC T_TOPO T_CHECK T_EXEC T_TDESC
 for M in "${MODULES[@]}"; do
-  describe_module "$SRC" "$M" "$OUT/mdl/$M.mdl"
+  t0=$(now); describe_module "$SRC" "$M" "$OUT/mdl/$M.mdl"; t1=$(now)
   "$PY" -I "$HERE/lib/topo-order-mdl.py" "$OUT/mdl/$M.mdl" "$OUT/mdl/$M.ordered.mdl" 2>>"$OUT/captures/describe-$M.stderr"
+  T_DESC[$M]=$(echo "$t1-$t0" | bc); T_TOPO[$M]=$(echo "$(now)-$t1" | bc)
 done
+# module order: replay the modules so that each is created after every listed module it references
+# (qualified-name mention in its describe output); REHOST_KEEP_ORDER=1 keeps the order given. A cycle
+# between modules is reported and left in the given order — exec then fails on the forward reference
+# and the ledger says so.
+if [ "${REHOST_KEEP_ORDER:-0}" = 0 ]; then
+  mapfile -t MODULES < <("$PY" -I - "$OUT/mdl" "${MODULES[@]}" <<'PYEOF'
+import re,sys
+d, mods = sys.argv[1], sys.argv[2:]
+body = {m: open('%s/%s.mdl' % (d, m), encoding='utf-8', newline='').read() for m in mods}
+deps = {m: {o for o in mods if o != m and re.search(r'\b' + re.escape(o) + r'\.[A-Za-z0-9_]', body[m])} for m in mods}
+order, placed, rest = [], set(), list(mods)
+while rest:
+    ready = [m for m in rest if deps[m] <= placed]
+    if not ready:
+        sys.stderr.write('module cycle among: %s (left in catalog order)\n' % ', '.join(rest)); order += rest; break
+    for m in ready: order.append(m); placed.add(m); rest.remove(m)
+print('\n'.join(order))
+PYEOF
+  )
+  log "replay order: ${MODULES[*]}"
+fi
 "$MXCLI" -p "$SRC" describe settings Settings 2>/dev/null | grep -v 'vibe-coded PoC' > "$OUT/mdl/_settings.mdl"
 mx -p "$SRC" -c "show user roles" > "$OUT/captures/show-userroles.txt"
 : > "$OUT/mdl/_userroles.mdl"
@@ -87,12 +136,16 @@ awk -F'|' 'NR>3 && NF>3 { gsub(/ /,"",$2); if ($2!="") print $2 }' "$OUT/capture
   "$MXCLI" -p "$SRC" describe userrole "$r" 2>/dev/null | grep -v 'vibe-coded PoC' >> "$OUT/mdl/_userroles.mdl"
 done
 
-# ---- 3. check, then exec into the target (modules in the order given) ---------------------------
+# ---- 3. check, then exec into the target (modules in replay order) ---------------------------
 status=0
 for M in "${MODULES[@]}"; do
+  t0=$(now)
   if mx check -p "$TGT" "$OUT/mdl/$M.ordered.mdl" > "$OUT/captures/check-$M.txt"; then
+    T_CHECK[$M]=$(echo "$(now)-$t0" | bc); t0=$(now)
     mx exec -p "$TGT" "$OUT/mdl/$M.ordered.mdl" > "$OUT/captures/exec-$M.txt" || { log "exec $M FAILED — see captures/exec-$M.txt"; status=1; }
+    T_EXEC[$M]=$(echo "$(now)-$t0" | bc)
   else
+    T_CHECK[$M]=$(echo "$(now)-$t0" | bc); T_EXEC[$M]=skipped
     log "check $M FAILED — see captures/check-$M.txt (nothing executed for $M)"; status=1
   fi
 done
@@ -106,8 +159,9 @@ mx exec -p "$TGT" "$OUT/mdl/_userroles.mdl" > "$OUT/captures/exec-_userroles.txt
   echo "module	document	type	verdict	evidence"
 } > "$OUT/fidelity-ledger.tsv"
 for M in "${MODULES[@]}"; do
-  describe_module "$TGT" "$M" "$OUT/mdl/target-$M.mdl"
+  t0=$(now); describe_module "$TGT" "$M" "$OUT/mdl/target-$M.mdl"; T_TDESC[$M]=$(echo "$(now)-$t0" | bc)
   "$PY" -I "$HERE/lib/compare-mdl.py" "$OUT/mdl/$M.mdl" "$OUT/mdl/target-$M.mdl" "$M" 2>/dev/null >> "$OUT/fidelity-ledger.tsv"
+  printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$M" "${T_DESC[$M]:-}" "${T_TOPO[$M]:-}" "${T_CHECK[$M]:-}" "${T_EXEC[$M]:-}" "${T_TDESC[$M]:-}" >> "$TIMES"
 done
 # app-level rows the model export cannot carry — always hand-off, never silent
 printf '(app)\tDemoUsers\tdemouser\tnot-expressible\tdescribe prints Password: '"'"'***'"'"' and exec refuses it — recreate by hand with real passwords (describe demouser <name> for the role/entity)\n' >> "$OUT/fidelity-ledger.tsv"

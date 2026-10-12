@@ -3,23 +3,23 @@
 Statements are grouped per document (a create plus the grant/index statements that
 name the same document), keyed by (type, qualified name); order is ignored.
 Prints TSV rows: module, document, type, verdict, evidence."""
-import re, sys
+import os, re, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from mdlsplit import split_statements
 def units(path):
-    stmts, cur = [], []
-    for ln in open(path, encoding='utf-8', newline='').read().split('\n'):
-        cur.append(ln)
-        if ln and not ln[0].isspace() and ln.rstrip().endswith(';'):
-            stmts.append('\n'.join(cur)); cur = []
-    head = re.compile(r'^(?:@[^\n]*\n)*create or modify (module role|non-persistent entity|persistent entity|view entity|entity|association|enumeration|microflow|nanoflow|page|snippet|layout|image collection|module) ([A-Za-z_]+(?:\.[A-Za-z_]+)?)', re.M)
-    grant = re.compile(r'^grant .*? on (?:entity|page|microflow|nanoflow) ([A-Za-z_]+\.[A-Za-z_]+)', re.M)
+    stmts, _ = split_statements(open(path, encoding='utf-8', newline='').read())
+    # any document type (`java action`, `json structure`, `task queue`, …); names may carry digits (AmazonS3Connector.Step2)
+    head = re.compile(r'^(?:@[^\n]*\n)*create or modify (?:([a-z][a-z -]*?) ([A-Za-z0-9_]+\.[A-Za-z0-9_]+)|(module) ([A-Za-z0-9_]+));?', re.M)
+    grant = re.compile(r'^grant .*? on (?:[a-z ]+?) ([A-Za-z0-9_]+\.[A-Za-z0-9_]+)\b', re.M)
     docs, last = {}, None
     for s in stmts:
         body = re.sub(r'/\*\*.*?\*/\s*', '', s, flags=re.S)   # doc comment compared separately
         doc = re.search(r'/\*\*(.*?)\*/', s, re.S)
         m = head.search(body)
         if m:
-            t = m.group(1).replace('non-persistent entity','entity').replace('persistent entity','entity').replace('view entity','entity')
-            last = (t, m.group(2)); docs[last] = {'body': body.strip(), 'doc': (doc.group(1).strip() if doc else ''), 'grants': []}
+            t, name = (m.group(1), m.group(2)) if m.group(1) else (m.group(3), m.group(4))
+            t = t.replace('non-persistent entity','entity').replace('persistent entity','entity').replace('view entity','entity')
+            last = (t, name); docs[last] = {'body': body.strip(), 'doc': (doc.group(1).strip() if doc else ''), 'grants': []}
             continue
         g = grant.search(body)
         if g and last and g.group(1) == last[1]: docs[last]['grants'].append(body.strip()); continue
@@ -44,6 +44,12 @@ for k in sorted(src, key=lambda k: (k[0], k[1])):
     if s['body'] != g['body']: ev.append('body: ' + firstdiff(s['body'], g['body']))
     if sorted(s['grants']) != sorted(g['grants']): ev.append('grants: %d -> %d' % (len(s['grants']), len(g['grants'])))
     if s['doc'] != g['doc']: ev.append('documentation: ' + firstdiff(s['doc'], g['doc']))
+    # describe marks a widget it cannot author with `-- … NOT re-executable`; the document lands without it
+    nre = re.findall(r'-- (\S+ \(\S+\))  -- NOT re-executable', s['body'])
+    if nre: print('\t'.join([module, name, t, 'not-expressible', 'describe marks %d widget(s) NOT re-executable: %s%s' % (len(nre), ', '.join(nre[:3]), '; ' + '; '.join(ev) if ev else '')])); continue
+    # a flow whose branches cross: describe says the text is NOT equivalent and must not be re-executed (mxcli #923)
+    neq = re.search(r'-- WARNING: (the decision at \([^)]*\)[^\n]*?)\. This description is NOT equivalent', s['body'])
+    if neq: print('\t'.join([module, name, t, 'not-expressible', 'describe: %s — NOT equivalent, must not be re-executed (mxcli #923)%s' % (neq.group(1), '; ' + '; '.join(ev) if ev else '')])); continue
     print('\t'.join([module, name, t, 'emitted-drift' if ev else 'emitted-identical', '; '.join(ev) if ev else 'describe on target identical (body, grants, documentation)']))
 for k in sorted(set(tgt) - set(src)):
     print('\t'.join([module, k[1], k[0], 'target-extra', 'present in target only (not in source describe)']))

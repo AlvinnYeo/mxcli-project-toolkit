@@ -36,10 +36,10 @@ literals, and a tool that normalises it changes the flow and `exec` refuses the 
 |---|---|---|
 | 2026-10-12 | ako/mxcli-banking `RRNetBanking.mpr` (Mendix 11.13.0, Banking 151 docs + MyFirstModule 4) → `mxcli new --version 11.13.0` | 155/155 documents emitted, 154 identical on target describe, 1 doc-comment drift; `mx check` 0 errors, mxbuild BUILD SUCCEEDED, `diff --format struct` empty. 35 s end to end |
 | 2026-10-12 | FSM template v1.1.1 (Mendix 9.24.2, MPR v1, 64 MB) — **read probe only** | `list modules` 1.6 s, `graph-report` 18 s. Captures in `samples/fsm-template-9.24.2/` |
+| 2026-10-12 | mendix/genai-showcase-app `GenAI Showcase App.mpr` (Mendix 11.12.0, 48 modules: 32 own + 15 marketplace; 456 entities, 1622 microflows, 180 pages, 204 Java actions) → `mxcli new --version 11.12.0` | **In progress** — 36 modules fed to the extractor (full run ~1 h; ledger totals pending). Found and fixed on the way: `-c describe module … with all` silently truncates at 10 000 lines (AgentCommons, ConversationalUI); `with all` omits nanoflows, snippets, JS actions, JSON structures, mappings, task queues and some pages — the extractor now fills them in from `project-tree --json`; multi-line JSON string literals broke the statement splitter (`lib/mdlsplit.py`); modules are replayed in reference order. Marketplace: 5 of 9 source modules install headlessly, 3 Mendix-9-built MPKs refuse into 11 (`mx module-import` exit 117), 1 version absent from the marketplace; 8 widget MPKs install from disk, then `fix widgets`. Describe alone: 865 s / 36 modules |
 
-Not yet exercised: nanoflows, Java/JavaScript actions, snippets, workflows, REST/OData services,
-`marketplace install` on a target that lacks the source's modules, and the regenerate step on a
-Mendix 9/10 source (the read works; the write into Mendix 11 is increment 2).
+Not yet exercised: workflows, REST/OData services, and the regenerate step on a Mendix 9/10 source
+(the read works; the write into Mendix 11 is increment 3, NativeNote out of FSM).
 
 ## mxcli findings from the first run (filed in `contrib/inbox/2026-10-12-decompose-rehost-increment-1-mxcli-findings.md`)
 
