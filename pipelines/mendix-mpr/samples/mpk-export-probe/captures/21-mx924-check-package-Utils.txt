@@ -1,0 +1,27 @@
+$ mx(9.24) check <unzipped out/Utils.mpk>/project.mpr
+Checking your app for issues...
+Checking the version of the mpr file.
+The mpr file version is '9.24.2.6130'.
+Loading the mpr file.
+The mpr file version is '9.24.2.6130'.
+Checking app for errors...
+[error] [CE1613] "The selected entity 'Administration.Account' no longer exists." at Microflow 'Utils.Account_GetCurrent'
+[error] [CE1613] "The selected entity 'Administration.Account' no longer exists." at Sequence flow
+[error] [CE1613] "The selected entity 'Administration.Account' no longer exists." at Nanoflow 'Utils.Account_GetCurrent_NF'
+[error] [CE1613] "The selected entity 'Administration.Account' no longer exists." at Retrieve objects activity 'Retrieve'
+[error] [CE1613] "The selected entity 'Administration.Account' no longer exists." at Retrieve objects activity 'Retrieve'
+[error] [CE1613] "The selected Java action parameter 'ValidationFeedback.JA_RetrieveErrors.RemoveFeedback' no longer exists." at Call Java action activity 'JA_RetrieveErrors'
+[error] [CE1613] "The selected Java action 'ValidationFeedback.JA_RetrieveErrors' no longer exists." at Call Java action activity 'JA_RetrieveErrors'
+[error] [CE1613] "The selected JavaScript action parameter 'NanoflowCommons.ShowConfirmation.ProceedButtonCaption' no longer exists." at Call JavaScript action activity 'ShowConfirmation'
+[error] [CE1613] "The selected JavaScript action parameter 'NanoflowCommons.ShowConfirmation.CancelButtonCaption' no longer exists." at Call JavaScript action activity 'ShowConfirmation'
+[error] [CE1613] "The selected JavaScript action parameter 'NanoflowCommons.ShowConfirmation.Question' no longer exists." at Call JavaScript action activity 'ShowConfirmation'
+[error] [CE1613] "The selected JavaScript action parameter 'NanoflowCommons.ShowConfirmation.titleCaption' no longer exists." at Call JavaScript action activity 'ShowConfirmation'
+[error] [CE1613] "The selected JavaScript action 'NanoflowCommons.ShowConfirmation' no longer exists." at Call JavaScript action activity 'ShowConfirmation'
+[error] [CE1613] "The selected enumeration value 'CommunityCommons.LogLevel.Error' no longer exists." at Microflow call action activity 'LogToServer'
+[error] [CE1613] "The selected JavaScript action 'NativeMobileResources.IsConnected' no longer exists." at Call JavaScript action activity 'IsConnected'
+[error] [CE1613] "The selected enumeration value 'CommunityCommons.LogLevel.Trace' no longer exists." at Microflow call action activity 'LogToServer'
+[error] [CE1613] "The selected JavaScript action 'NativeMobileResources.IsConnected' no longer exists." at Call JavaScript action activity 'IsConnected'
+[error] [CE1613] "The selected constant 'AppSettings.Environment' no longer exists." at Decision 'Production?'
+[error] [CE1613] "The selected enumeration 'CommunityCommons.LogLevel' no longer exists." at Parameter 'LogLevel'
+The project contains: 18 errors.
+exit=1

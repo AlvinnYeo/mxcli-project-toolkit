@@ -1,0 +1,8 @@
+$ mxcli marketplace install --file out/FeatureToggle.mpk -p i-FeatureToggle-T924/T924.mpr
+WARNING: This is a vibe-coded PoC, alpha quality, use with caution.
+build a reference project from the package: mx module-import failed: exit status 1
+ERROR(S):
+  Verb 'module-import' is not recognized.
+
+Try '--help' for more information.
+exit=1

@@ -1,0 +1,38 @@
+Resolved Mendix 10.24.0 to 10.24.0.73019
+Step 1/6: Resolving MxBuild 10.24.0.73019...
+
+Step 2/6: Creating Mendix project 'T1024'...
+Creating project from the 'Blank' template...
+Executing step 'Extract package'
+Extracting package...
+Executing step 'Convert project'
+Checking project version...
+Loading project...
+Saving project...
+Done.
+  Created <lab>/targets/T1024-base/T1024.mpr
+  Mendix version: 10.24.0.73019
+
+Step 3/7: Skipped styling (--theme none)
+
+Step 4/7: Skipped the project layout (--layout none)
+
+Step 5/7: Skipped (--skip-init)
+
+Step 6/7: Running the first build (settles generated sources)...
+  Generated sources are in their post-build form.
+
+Step 7/7: Setting up mxcli binary...
+  Linked mxcli to <lab>/targets/T1024-base/mxcli (shared inode, no copy)
+
+✓ Project 'T1024' created at <lab>/targets/T1024-base
+
+Next steps:
+  1. Open the project folder in VS Code
+  2. Reopen in Dev Container when prompted
+  3. Run './mxcli -p T1024.mpr' to start working
+
+real	0m40.608s
+user	0m29.501s
+sys	0m3.530s
+exit=0

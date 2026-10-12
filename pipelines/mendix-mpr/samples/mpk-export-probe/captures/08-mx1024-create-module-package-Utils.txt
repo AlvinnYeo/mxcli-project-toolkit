@@ -1,0 +1,16 @@
+$ mx(10.24) create-module-package -d out1024 targets/i-Utils-T1024/T1024.mpr Utils
+Exporting module package to '<lab>/out1024/Utils.mpk'...
+ERROR: The module contains errors. You must solve these errors before exporting. The following errors are found:
+ - In Nanoflow 'Native_LogError' (element: Property 'Argument' of microflow call activity 'LogToServer'): The selected enumeration value 'CommunityCommons.LogLevel.Error' no longer exists.
+ - In Nanoflow 'Native_LogError' (element: Property 'Java script action' of call JavaScript action activity 'IsConnected'): The selected JavaScript action 'NativeMobileResources.IsConnected' no longer exists.
+ - In Microflow 'LogToServer' (element: Property 'Enumeration' of parameter 'LogLevel'): The selected enumeration 'CommunityCommons.LogLevel' no longer exists.
+ - In Nanoflow 'Native_Log_Trace' (element: Property 'Argument' of microflow call activity 'LogToServer'): The selected enumeration value 'CommunityCommons.LogLevel.Trace' no longer exists.
+ - In Nanoflow 'Native_Log_Trace' (element: Property 'Java script action' of call JavaScript action activity 'IsConnected'): The selected JavaScript action 'NativeMobileResources.IsConnected' no longer exists.
+ - In Microflow 'ValidationFeedback_GetAllAndLog' (element: Property 'Parameter' of call Java action activity 'JA_RetrieveErrors'): The selected Java action parameter 'ValidationFeedback.JA_RetrieveErrors.RemoveFeedback' no longer exists.
+ - In Microflow 'ValidationFeedback_GetAllAndLog' (element: Property 'Java action' of call Java action activity 'JA_RetrieveErrors'): The selected Java action 'ValidationFeedback.JA_RetrieveErrors' no longer exists.
+ - In Nanoflow 'IsProduction' (element: Property 'Expression' of decision 'Production?'): The selected constant 'AppSettings.Environment' no longer exists.
+
+real	0m7.452s
+user	0m6.958s
+sys	0m0.543s
+exit=1

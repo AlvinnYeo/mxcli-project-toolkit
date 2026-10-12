@@ -1,0 +1,13 @@
+$ ~/.mxcli/mxbuild/9.24.2.6130/modeler/mx check targets/T924/T924.mpr
+Checking your app for issues...
+Checking the version of the mpr file.
+The mpr file version is '9.24.2.6130'.
+Loading the mpr file.
+The mpr file version is '9.24.2.6130'.
+Checking app for errors...
+The project contains: 0 errors.
+
+real	0m5.867s
+user	0m4.879s
+sys	0m0.933s
+exit=0

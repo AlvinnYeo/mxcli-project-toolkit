@@ -1,0 +1,68 @@
+$ mxcli -p work/fsm.mpr -c 'describe java action Utils.GetFileType'  (+ create module Utils;) > ja.mdl ; mxcli exec ja.mdl -p T1113.mpr
+create module Utils;
+create or modify java action Utils.GetFileType folder 'Resources'(inputFile: System.FileDocument not null) returns String
+-- return NAME: 'ReturnValueName'
+as $$
+IContext context = this.context();
+
+if (inputFile != null && inputFile.getHasContents(context)) {
+	FileTypeChecker fileTypeChecker = new FileTypeChecker();
+	return fileTypeChecker.getFileType(__inputFile, context);
+}
+
+else {
+	throw new NullPointerException("Empty input file in FileIdentifier.");
+}
+$$;
+WARNING: This is a vibe-coded PoC, alpha quality, use with caution.
+Connected to: targets/mdl-ja-T1113/T1113.mpr (Mendix 11.13.0)
+Created module: Utils
+Created java action: Utils.GetFileType
+exit=0
+--- javasource/utils/actions after exec:
+GetFileType.java
+// - the code between BEGIN USER CODE and END USER CODE
+// - the code between BEGIN EXTRA CODE and END EXTRA CODE
+// Other code you write will be lost the next time you deploy the project.
+// Special characters, e.g., é, ö, à, etc. are supported in comments.
+
+package utils.actions;
+
+import com.mendix.systemwideinterfaces.core.IContext;
+import com.mendix.systemwideinterfaces.core.IMendixObject;
+import com.mendix.systemwideinterfaces.core.UserAction;
+
+public class GetFileType extends UserAction<java.lang.String>
+{
+	/** @deprecated use inputFile.getMendixObject() instead. */
+	@java.lang.Deprecated(forRemoval = true)
+	private final IMendixObject __inputFile;
+	private final system.proxies.FileDocument inputFile;
+
+	public GetFileType(
+		IContext context,
+		IMendixObject _inputFile
+	)
+	{
+		super(context);
+		this.__inputFile = _inputFile;
+		this.inputFile = _inputFile == null ? null : system.proxies.FileDocument.initialize(getContext(), _inputFile);
+	}
+
+	@java.lang.Override
+	public java.lang.String executeAction() throws Exception
+	{
+		// BEGIN USER CODE
+
+		IContext context = this.context();
+		
+		if (inputFile != null && inputFile.getHasContents(context)) {
+			FileTypeChecker fileTypeChecker = new FileTypeChecker();
+			return fileTypeChecker.getFileType(__inputFile, context);
+		}
+		
+		else {
+			throw new NullPointerException("Empty input file in FileIdentifier.");
+		}
+
+		// END USER CODE

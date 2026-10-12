@@ -1,0 +1,66 @@
+Resolved Mendix 9.24.2 to 9.24.2.6130
+Step 1/6: Resolving MxBuild 9.24.2.6130...
+  Downloading MxBuild 9.24.2.6130 for amd64...
+  URL: https://cdn.mendix.com/runtime/mxbuild-9.24.2.6130.tar.gz
+  Size: 558.3 MB
+  Extracting to ~/.mxcli/mxbuild/9.24.2.6130...
+  MxBuild cached at ~/.mxcli/mxbuild/9.24.2.6130/modeler/mxbuild
+
+Step 2/6: Creating Mendix project 'T924'...
+Creating project from the 'Blank' template...
+Executing step 'Extract package'
+ * Extracting package...
+Executing step 'Convert project'
+ * Checking project version...
+ * Loading project...
+ * Saving project...
+Done.
+  Created <lab>/targets/T924/T924.mpr
+  Mendix version: 9.24.2.6130
+
+Step 3/7: Skipped styling (--theme none)
+
+Step 4/7: Skipped the project layout (--layout none)
+
+Step 5/7: Skipped (--skip-init)
+
+Step 6/7: Running the first build (settles generated sources)...
+  Warning: could not run the first build: mxbuild failed: exit status 1
+   at Mendix.Modeler.Projects.Checks.ProjectChecker.<>c__DisplayClass5_0.<Check>b__0() in Mendix.Modeler.Core\Projects\Checks\ProjectChecker.cs:line 38
+   at Mendix.Modeler.ProtectedModules.ProtectedModulesUnlocker.ExecuteInContext[T](Boolean unlockImplementation, Func`1 code) in Mendix.Modeler.Core\ProtectedModules\ProtectedModulesUnlocker.cs:line 42
+   at Mendix.Modeler.ProtectedModules.ProtectedModulesUnlocker.Do[T](Boolean unlockImplementation, Func`1 action) in Mendix.Modeler.Core\ProtectedModules\ProtectedModulesUnlocker.cs:line 29
+   at Mendix.Modeler.Projects.Checks.ProjectChecker.Check(IProject project, CancellationToken cancellationToken) in Mendix.Modeler.Core\Projects\Checks\ProjectChecker.cs:line 38
+   at Mendix.Modeler.Deployment.CoreDeploymentWork.CheckForErrors(IProject project, DeploymentSettings settings, IProgressInfo info) in Mendix.Modeler.Deployment\CoreDeploymentWork.cs:line 75
+   at Mendix.Modeler.Deployment.Build.CoreDeploymentWorker.DoWork(DeploymentPhase phase, IProject project, DeploymentSettings settings, IProgressInfo info) in Mendix.Modeler.Deployment\Build\CoreDeploymentWorker.cs:line 39
+   at Mendix.Modeler.Deployment.DeploymentProcessBuilder.ExecuteDeploymentWorkForPhase(DeploymentPhase phase, IProject project, DeploymentSettings settings, IProgressInfo info) in Mendix.Modeler.Deployment\DeploymentProcessBuilder.cs:line 187
+   at Mendix.Modeler.Deployment.DeploymentProcessBuilder.<>c__DisplayClass12_1.<AddBuildStep>b__1() in Mendix.Modeler.Deployment\DeploymentProcessBuilder.cs:line 147
+   at Mendix.Modeler.ProtectedModules.ProtectedModulesUnlocker.<>c__DisplayClass3_0.<Do>b__0() in Mendix.Modeler.Core\ProtectedModules\ProtectedModulesUnlocker.cs:line 22
+   at Mendix.Modeler.ProtectedModules.ProtectedModulesUnlocker.ExecuteInContext[T](Boolean unlockImplementation, Func`1 code) in Mendix.Modeler.Core\ProtectedModules\ProtectedModulesUnlocker.cs:line 42
+   at Mendix.Modeler.ProtectedModules.ProtectedModulesUnlocker.Do(Boolean unlockImplementation, Action action) in Mendix.Modeler.Core\ProtectedModules\ProtectedModulesUnlocker.cs:line 20
+   at Mendix.Modeler.Deployment.DeploymentProcessBuilder.<>c__DisplayClass12_0.<AddBuildStep>b__0(IProgressInfo info) in Mendix.Modeler.Deployment\DeploymentProcessBuilder.cs:line 146
+   at Mendix.CommandLine.Shared.Progress.ProcessRunner.Run() in Mendix.CommandLine.Shared\Progress\ProcessRunner.cs:line 40
+   at Mendix.MxBuild.BuildRunner.BuildProject(IProject project, IBuildOptions options, List`1 allowedLocations) in Mendix.MxBuild\Build\BuildRunner.cs:line 159
+   at Mendix.MxBuild.BuildRunner.Execute(IBuildOptions options) in Mendix.MxBuild\Build\BuildRunner.cs:line 88
+   at Mendix.MxBuild.BuildRunnerMode.ExecuteBuild(IBuildOptions buildOptions) in Mendix.MxBuild\Build\BuildRunnerMode.cs:line 50
+   at Mendix.MxBuild.BuildRunnerMode.Run(IList`1 args) in Mendix.MxBuild\Build\BuildRunnerMode.cs:line 39
+   at Mendix.MxBuild.ApplicationRunner.Run(IEnumerable`1 args) in Mendix.MxBuild\ApplicationRunner.cs:line 39
+   at Mendix.MxBuild.Program.<>c__DisplayClass1_0.<Main>b__0(IApplicationRunner a) in Mendix.MxBuild\Program.cs:line 24
+   at Mendix.CommandLine.Shared.ProgramHelper.InitializeAndRun[T](Func`2 program, Assembly[] extraAssemblies) in Mendix.CommandLine.Shared\ProgramHelper.cs:line 24
+  The project is usable. Note that the first build will rewrite the
+  generated action stubs under javascriptsource/ and javasource/ —
+  that diff is build output, so commit it and move on.
+
+Step 7/7: Setting up mxcli binary...
+  Linked mxcli to <lab>/targets/T924/mxcli (shared inode, no copy)
+
+✓ Project 'T924' created at <lab>/targets/T924
+
+Next steps:
+  1. Open the project folder in VS Code
+  2. Reopen in Dev Container when prompted
+  3. Run './mxcli -p T924.mpr' to start working
+
+real	0m38.472s
+user	0m18.271s
+sys	0m10.661s
+exit=0

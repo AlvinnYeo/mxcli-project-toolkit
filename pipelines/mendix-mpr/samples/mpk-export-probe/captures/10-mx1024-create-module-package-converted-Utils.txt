@@ -1,0 +1,38 @@
+$ mx(10.24) create-module-package -d outB conv1024/fsm.mpr Utils
+Exporting module package to '<lab>/outB/Utils.mpk'...
+WARNING: The module uses other modules. It is recommended to remove all usages of other modules before export to prevent errors when the module is imported to a different project. The following usages are found:
+ - Microflow 'Utils.LogToServer' (element Mendix.Modeler.Microflows.SequenceFlow) uses Enumeration value 'CommunityCommons.LogLevel.Trace'
+ - Microflow 'Utils.LogToServer' (element Mendix.Modeler.Microflows.SequenceFlow) uses Enumeration value 'CommunityCommons.LogLevel.Debug'
+ - Microflow 'Utils.LogToServer' (element Mendix.Modeler.Microflows.SequenceFlow) uses Enumeration value 'CommunityCommons.LogLevel.Info'
+ - Microflow 'Utils.LogToServer' (element Mendix.Modeler.Microflows.SequenceFlow) uses Enumeration value 'CommunityCommons.LogLevel.Warning'
+ - Microflow 'Utils.LogToServer' (element Mendix.Modeler.Microflows.SequenceFlow) uses Enumeration value 'CommunityCommons.LogLevel.Critical'
+ - Microflow 'Utils.LogToServer' (element Mendix.Modeler.Microflows.SequenceFlow) uses Enumeration value 'CommunityCommons.LogLevel.Error'
+ - Microflow 'Utils.LogToServer' (element LogLevel (Enumeration CommunityCommons.LogLevel)) uses Enumeration 'CommunityCommons.LogLevel'
+ - Nanoflow 'Utils.IsProduction' (element Mendix.Modeler.Microflows.ExclusiveSplit) uses Constant 'AppSettings.Environment'
+ - Nanoflow 'Utils.Native_Log_Trace' (element Mendix.Modeler.Microflows.ActionActivity) uses Enumeration value 'CommunityCommons.LogLevel.Trace'
+ - Nanoflow 'Utils.Native_Log_Trace' (element Mendix.Modeler.Microflows.ActionActivity) uses JavaScript action 'NativeMobileResources.IsConnected'
+ - Nanoflow 'Utils.Native_LogError' (element Mendix.Modeler.Microflows.ActionActivity) uses Enumeration value 'CommunityCommons.LogLevel.Error'
+ - Nanoflow 'Utils.Native_LogError' (element Mendix.Modeler.Microflows.ActionActivity) uses JavaScript action 'NativeMobileResources.IsConnected'
+ - Nanoflow 'Utils.ShowConfirmation_InUserLanguage' (element Mendix.Modeler.Microflows.ActionActivity) uses Java action parameter 'NanoflowCommons.ShowConfirmation.ProceedButtonCaption'
+ - Nanoflow 'Utils.ShowConfirmation_InUserLanguage' (element Mendix.Modeler.Microflows.ActionActivity) uses Java action parameter 'NanoflowCommons.ShowConfirmation.CancelButtonCaption'
+ - Nanoflow 'Utils.ShowConfirmation_InUserLanguage' (element Mendix.Modeler.Microflows.ActionActivity) uses Java action parameter 'NanoflowCommons.ShowConfirmation.Question'
+ - Nanoflow 'Utils.ShowConfirmation_InUserLanguage' (element Mendix.Modeler.Microflows.ActionActivity) uses Java action parameter 'NanoflowCommons.ShowConfirmation.titleCaption'
+ - Nanoflow 'Utils.ShowConfirmation_InUserLanguage' (element Mendix.Modeler.Microflows.ActionActivity) uses JavaScript action 'NanoflowCommons.ShowConfirmation'
+ - Microflow 'Utils.ValidationFeedback_GetAllAndLog' (element Mendix.Modeler.Microflows.ActionActivity) uses Attribute 'ValidationFeedback.Error.validationFeedback'
+ - Microflow 'Utils.ValidationFeedback_GetAllAndLog' (element Mendix.Modeler.Microflows.ActionActivity) uses Attribute 'ValidationFeedback.Error.property'
+ - Microflow 'Utils.ValidationFeedback_GetAllAndLog' (element Mendix.Modeler.Microflows.ActionActivity) uses Attribute 'ValidationFeedback.Error.objectGuid'
+ - Microflow 'Utils.ValidationFeedback_GetAllAndLog' (element Mendix.Modeler.Microflows.ActionActivity) uses Attribute 'ValidationFeedback.Error.entityName'
+ - Microflow 'Utils.ValidationFeedback_GetAllAndLog' (element Mendix.Modeler.Microflows.ActionActivity) uses Java action parameter 'ValidationFeedback.JA_RetrieveErrors.RemoveFeedback'
+ - Microflow 'Utils.ValidationFeedback_GetAllAndLog' (element Mendix.Modeler.Microflows.ActionActivity) uses Java action 'ValidationFeedback.JA_RetrieveErrors'
+ - Nanoflow 'Utils.Language_GetCurrent_NF' (element Mendix.Modeler.Microflows.ActionActivity) uses Entity 'Administration.Account'
+ - Nanoflow 'Utils.Account_GetCurrent_NF' uses Entity 'Administration.Account'
+ - Nanoflow 'Utils.Account_GetCurrent_NF' (element Mendix.Modeler.Microflows.ActionActivity) uses Entity 'Administration.Account'
+ - Microflow 'Utils.Account_GetCurrent' uses Entity 'Administration.Account'
+ - Microflow 'Utils.Account_GetCurrent' (element Mendix.Modeler.Microflows.SequenceFlow) uses Entity 'Administration.Account'
+Done.
+Export successful.
+
+real	0m27.245s
+user	0m31.058s
+sys	0m1.281s
+exit=0

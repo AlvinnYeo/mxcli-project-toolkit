@@ -1,0 +1,7 @@
+$ mx(10.24) module-import ref/Encryption-9.0.3.mpk T1024.mpr
+The mpr file version is '10.24.0.73019'.
+Importing module Encryption into project T1024
+Extracting module files into <lab>/targets/c1
+Adding module Encryption into  project T1024
+Saving project T1024 as <lab>/targets/c1/T1024.mpr
+exit=0

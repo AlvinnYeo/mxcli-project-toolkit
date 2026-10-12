@@ -1,0 +1,10 @@
+$ mx(10.24) create-module-package -d out1024 targets/i-FeatureToggle-T1024/T1024.mpr FeatureToggle
+Exporting module package to '<lab>/out1024/FeatureToggle.mpk'...
+ERROR: The module contains errors. You must solve these errors before exporting. The following errors are found:
+ - In Page 'FeatureToggle_Overview' (element: Property 'Parameter' of content for placeholder 'Main'): The selected placeholder 'FSM_Specific.LeftMenuLayout.Main' no longer exists.
+ - In Page 'FeatureToggle_Overview' (element: Property 'Layout'): The selected layout 'FSM_Specific.LeftMenuLayout' no longer exists.
+
+real	0m7.937s
+user	0m7.411s
+sys	0m0.545s
+exit=1
