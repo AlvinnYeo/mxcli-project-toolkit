@@ -1,0 +1,152 @@
+$ mxcli exec mdl/slice-core-rewire.mdl -p AssetsApp.mpr   # final run, after the regroup
+Connected to: AssetsApp.mpr (Mendix 11.13.0)
+(no module)
+-----------
+  ⚠ page CoreSeam.RosterDraft_New: DataView `dvDraft` contains input fields but is not inside a layout grid — label and input widths only render correctly inside a layoutgrid [MPR010]
+      at 
+      → Wrap dataview `dvDraft` in `layoutgrid { row { column (desktopwidth: autofill) { … } } }`
+
+  ⚠ page TicketManagement.Ticket_View: DataView `dvTicket` contains input fields but is not inside a layout grid — label and input widths only render correctly inside a layoutgrid [MPR010]
+      at 
+      → Wrap dataview `dvTicket` in `layoutgrid { row { column (desktopwidth: autofill) { … } } }`
+
+  ⚠ page CustomerManagement.ContactPerson_View: DataView `dvContact` contains input fields but is not inside a layout grid — label and input widths only render correctly inside a layoutgrid [MPR010]
+      at 
+      → Wrap dataview `dvContact` in `layoutgrid { row { column (desktopwidth: autofill) { … } } }`
+
+  ⚠ page RosterManagement.Roster_NewEdit: DataView `dvRoster` contains input fields but is not inside a layout grid — label and input widths only render correctly inside a layoutgrid [MPR010]
+      at 
+      → Wrap dataview `dvRoster` in `layoutgrid { row { column (desktopwidth: autofill) { … } } }`
+
+  ⚠ page CoreSeam.TechnicianLink_Edit: DataView `dvLink` contains input fields but is not inside a layout grid — label and input widths only render correctly inside a layoutgrid [MPR010]
+      at 
+      → Wrap dataview `dvLink` in `layoutgrid { row { column (desktopwidth: autofill) { … } } }`
+
+6 issues: 0 errors, 5 warnings, 1 info (not shown)
+1 info note not shown — run `mxcli check <lab>/web-core/mdl/slice-core-rewire.mdl` to see them (or pass --verbose)
+Modified module role: Technician.User
+Created entity: CoreSeam.TechnicianLink
+Created association: CoreSeam.TechnicianLink_Account
+Created association: CoreSeam.TechnicianLink_Warehouse
+Created association: CoreSeam.TechnicianLink_Technician
+Created module role: CoreSeam.Admin
+Granted access on CoreSeam.TechnicianLink to CoreSeam.Admin
+  Result: create, delete, read (TechnicianID, TechnicianName, TelephoneNumber, EmployeeNumber, CompanyName, TechnicianLink_Account, TechnicianLink_Warehouse, TechnicianLink_Technician), write (TechnicianID, TechnicianName, TelephoneNumber, EmployeeNumber, CompanyName, TechnicianLink_Account, TechnicianLink_Warehouse, TechnicianLink_Technician)
+Granted access on CoreSeam.TechnicianLink to CoreSeam.User
+  Result: read (TechnicianID, TechnicianName, TelephoneNumber, EmployeeNumber, CompanyName, TechnicianLink_Account, TechnicianLink_Warehouse, TechnicianLink_Technician)
+Granted access on TicketManagement.MonoAsset to TicketManagement.User
+  Result: read (SystemID, AssetID, "Description")
+Granted access on Technician.Technician to Technician.User
+  Result: read (TechnicianID, TechnicianName, TelephoneNumber, EmailAddress, EmployeeNumber, CompanyName, IsActive, IsExternal)
+Granted access on TicketManagement.Customer to TicketManagement.User
+  Result: read (PublicID, CustomerID, DebtorNumber, CustomerName, "Email", PhoneNumber, ReferenceNumber)
+Granted access on TicketManagement.Contract to TicketManagement.User
+  Result: read (PublicID, Number, "Description", AdministrativeContactPersonName, AdministrativeEmailAddress)
+Granted access on TicketManagement.ContactPerson to TicketManagement.User
+  Result: read (PublicID, Name, PhoneNumber, EmailAddress, "Description", ContactPerson_Asset, ContactPerson_Customer, ContactPerson_Contract)
+Granted access on TicketManagement.SLA to TicketManagement.User
+  Result: read (PublicID, Number, "Description", SLAtype, HighPriorityResponseTime, MediumPriorityResponseTime, LowPriorityResponseTime, SLA_Asset, SLA_Contract, SLA_Customer, SLA_UmbrellaContract)
+Granted access on TicketManagement.Ticket to TicketManagement.User
+  Result: read (PublicID, TicketID, "Status", ShortDescription, "Description", CallerName, CreationTime, DueDate, Ticket_Priority, Ticket_TicketType, Ticket_Asset)
+Granted access on TicketManagement.Priority to TicketManagement.User
+  Result: read (PublicID, Code, "Description", IsActive)
+Granted access on TicketManagement.TicketType to TicketManagement.User
+  Result: read (PublicID, Code, Name, ExpectedDuration)
+Granted access on TicketManagement.WorkOrder to TicketManagement.User
+  Result: read (PublicID, WorkOrderID, "Status", ShortDescription, DueDate, WorkOrder_Ticket)
+Granted access on TicketManagement.Appointment to TicketManagement.User
+  Result: read (PublicID, AppointmentID, "Status", PlannedWorkStart, PlannedWorkEnd, Appointment_WorkOrder)
+Granted access on TicketManagement.Roster to TicketManagement.User
+  Result: read (PublicID, StartDate, EndDate, StartTime, EndTime, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday, Roster_Asset)
+Revoked access on Part.Part from Part.ViewMy
+  Result: (no access)
+Granted access on Part.Part to Part.ViewMy
+  Result: read (PartID, SystemID, Name, "Description", Price, IsActive, Vendor)
+Revoked access on Part.SuggestedPart from Part.ViewMy
+  Result: (no access)
+Granted access on Part.SuggestedPart to Part.ViewMy
+  Result: read (Quantity, SystemID, SuggestedPart_Part, SuggestedPart_WorkOrder)
+Revoked access on Part.UsedPart from Part.ViewMy
+  Result: (no access)
+Granted access on Part.UsedPart to Part.ViewMy
+  Result: read (IsFromWarehouse, Quantity, SystemID, UsedPart_Inventory)
+Revoked access on Tool.SelectedTool from Tool.ViewMy
+  Result: (no access)
+Granted access on Tool.SelectedTool to Tool.ViewMy
+  Result: read (SelectedToolID, Quantity, SelectedTool_Tool, SelectedTool_WorkOrder)
+Revoked access on Tool.Tool from Tool.ViewMy
+  Result: (no access)
+Granted access on Tool.Tool to Tool.ViewMy
+  Result: read (ToolID, Name, "Description", IsActive)
+Revoked access on WarehouseManagement.Inventory from WarehouseManagement.ViewMy
+  Result: (no access)
+Granted access on WarehouseManagement.Inventory to WarehouseManagement.ViewMy
+  Result: read (InventoryID, SystemID, Amount, Inventory_Warehouse, Inventory_Part)
+Revoked access on WarehouseManagement.Warehouse from WarehouseManagement.ViewMy
+  Result: (no access)
+Granted access on WarehouseManagement.Warehouse to WarehouseManagement.ViewMy
+  Result: read (WarehouseID, SystemID, "Description")
+Created entity: CoreSeam.RosterDraft
+Created association: CoreSeam.RosterDraft_Asset
+Granted access on CoreSeam.RosterDraft to CoreSeam.User
+  Result: create, delete, read (StartDate, EndDate, RosterDraft_Asset), write (StartDate, EndDate, RosterDraft_Asset)
+Created microflow: CoreSeam.Roster_CreateRemote
+Created microflow: CoreSeam.Rosters_DeleteRemoteForAsset
+Created microflow: CoreSeam.ACT_RosterDraft_Save
+Granted execute access on CoreSeam.ACT_RosterDraft_Save to CoreSeam.User
+Created page CoreSeam.RosterDraft_New
+Granted view access on CoreSeam.RosterDraft_New to CoreSeam.User
+Dropped microflow: AssetManagement.ACT_Asset_CreateRoster
+  Removed its execute grants to AssetManagement._AddOn_CreateAssetRosters. A create of AssetManagement.ACT_Asset_CreateRoster later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow AssetManagement.ACT_Asset_CreateRoster to AssetManagement._AddOn_CreateAssetRosters;
+Created microflow: AssetManagement.ACT_Asset_CreateRoster
+All specified roles already have execute access on AssetManagement.ACT_Asset_CreateRoster
+Dropped microflow: AssetManagement.Asset_CreateRoster
+Dropped microflow: AssetManagement.Asset_DeleteRosters
+Created microflow: AssetManagement.Asset_DeleteRosters
+Dropped microflow: RosterManagement.ACT_Roster_Delete
+  Removed its execute grants to RosterManagement.User. A create of RosterManagement.ACT_Roster_Delete later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow RosterManagement.ACT_Roster_Delete to RosterManagement.User;
+Created microflow: RosterManagement.ACT_Roster_Delete
+All specified roles already have execute access on RosterManagement.ACT_Roster_Delete
+Dropped microflow: AssetManagement.AssetList_Delete
+Created microflow: AssetManagement.AssetList_Delete
+Dropped microflow: RosterManagement.RosterList_Delete
+  Removed its execute grants to RosterManagement.User. A create of RosterManagement.RosterList_Delete later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow RosterManagement.RosterList_Delete to RosterManagement.User;
+Dropped microflow: AssetManagement.ACT_Asset_Delete
+  Removed its execute grants to AssetManagement.EditAsset. A create of AssetManagement.ACT_Asset_Delete later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow AssetManagement.ACT_Asset_Delete to AssetManagement.EditAsset;
+Created microflow: AssetManagement.ACT_Asset_Delete
+All specified roles already have execute access on AssetManagement.ACT_Asset_Delete
+Modified microflow: AssetManagement.Asset_GetPreferredTechnician (spliced: 1 replaced)
+Dropped microflow: AssetManagement.Asset_GetRelevantSLA
+Created microflow: AssetManagement.Asset_GetRelevantSLA
+Dropped microflow: Part.SuggestedPart_GetRefreshWorkOrder
+Created microflow: Part.SuggestedPart_GetRefreshWorkOrder
+Dropped microflow: Tool.SelectedTool_RefreshWorkOrder
+Created microflow: Tool.SelectedTool_RefreshWorkOrder
+Replaced page TicketManagement.Ticket_View
+All specified roles already have view access on TicketManagement.Ticket_View
+Replaced page CustomerManagement.ContactPerson_View
+All specified roles already have view access on CustomerManagement.ContactPerson_View
+Replaced page RosterManagement.Roster_NewEdit
+All specified roles already have view access on RosterManagement.Roster_NewEdit
+Altered snippet AssetManagement.Snippet_Asset_DataTabs
+Created microflow: CoreSeam.ACT_Warehouse_LinkTechnician
+Granted execute access on CoreSeam.ACT_Warehouse_LinkTechnician to CoreSeam.Admin
+Created page CoreSeam.Technician_Select
+Granted view access on CoreSeam.Technician_Select to CoreSeam.Admin
+Created microflow: CoreSeam.ACT_Warehouse_AddTechnician
+Granted execute access on CoreSeam.ACT_Warehouse_AddTechnician to CoreSeam.Admin
+Created microflow: CoreSeam.ACT_TechnicianLink_Delete
+Granted execute access on CoreSeam.ACT_TechnicianLink_Delete to CoreSeam.Admin
+Created page CoreSeam.TechnicianLink_Edit
+Granted view access on CoreSeam.TechnicianLink_Edit to CoreSeam.Admin
+Altered snippet WarehouseManagement.Snippet_Warehouse_DataTabs
+Dropped microflow: Tool.SelectedTool_GetSelectableToolList
+Created microflow: Tool.SelectedTool_GetSelectableToolList
+Added module roles CoreSeam.User, Technician.User to user role CallCenterEmployee
+Added module roles CoreSeam.User, CoreSeam.Admin, Technician.User to user role FunctionalAdministrator
+Added module roles CoreSeam.User, Technician.User to user role Mechanic
+Added module roles CoreSeam.User, Technician.User to user role ServiceDeskEmployee
+Added module roles CoreSeam.User, Technician.User to user role ServiceRegionManager
+Added module roles CoreSeam.User, CoreSeam.Admin, Technician.User to user role TechnicalAdministrator
+Added module roles CoreSeam.User, CoreSeam.Admin, Technician.User to user role Administrator
+exit=0 real 10 s

@@ -1,0 +1,13 @@
+$ mx(11.13) check AssetsApp.mpr   # after regroup + final rewire
+      6 [CE1613] "The selected association 'CustomerManagement.SLA_Asset' no longer exists." at Access rule of entity 'AssetManagement.Asset'
+      2 [CE1613] "The selected entity 'CustomerManagement.Customer' no longer exists." at Combo box 'referenceSelector8'
+      2 [CE1613] "The selected entity 'CustomerManagement.Contract' no longer exists." at Combo box 'referenceSelector9'
+      2 [CE1613] "The selected entity 'CustomerManagement.Contract' no longer exists." at Combo box 'referenceSelector11'
+      1 [CE1613] "The selected entity 'CustomerManagement.Customer' no longer exists." at Columns (3/9) of data grid 2 'grid1'
+      1 [CE1613] "The selected entity 'CustomerManagement.Customer' no longer exists." at Columns (3/8) of data grid 2 'grid1'
+      1 [CE1613] "The selected attribute 'CustomerManagement.Customer.CustomerName' no longer exists." at Combo box 'referenceSelector8'
+      1 [CE1613] "The selected attribute 'CustomerManagement.Customer.CustomerName' no longer exists." at Columns (3/9) of data grid 2 'grid1'
+      1 [CE1613] "The selected attribute 'CustomerManagement.Customer.CustomerName' no longer exists." at Columns (3/8) of data grid 2 'grid1'
+      1 [CE1613] "The selected attribute 'CustomerManagement.Contract.Description' no longer exists." at Combo box 'referenceSelector9'
+      1 [CE1613] "The selected attribute 'CustomerManagement.Contract.Description' no longer exists." at Combo box 'referenceSelector11'
+The app contains: 19 errors.

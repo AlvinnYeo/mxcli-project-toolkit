@@ -1,0 +1,17 @@
+mdl 1;
+-- CE6808 on 11.13: `ConfigurationMicroflow:` stores a headers microflow (List of System.HttpHeader) in the
+-- configuration slot (increment 5 did the same on 10.24 and passed). mxcli cannot clear that slot afterwards:
+-- `alter ... set (HeadersMicroflow: ...)` adds the headers slot and keeps the configuration slot, `create or modify`
+-- reports "Unchanged OData client", `set (ConfigurationMicroflow: none)` stores a microflow NAMED none (mx check
+-- then crashes), and a real configuration microflow is CE1135 because ServiceUrl must then come from the microflow,
+-- which mxcli refuses (CE6825 guard). Drop and re-create the service document with the headers microflow only;
+-- the external entities reference it by name and survive (checked: `show entities` after the drop).
+drop consumed odata service CoreSeam.CoreAPI;
+create consumed odata service CoreSeam.CoreAPI (
+  Version: '1.0.0',
+  ODataVersion: OData4,
+  MetadataUrl: 'core-metadata.xml',
+  Timeout: 60,
+  ServiceUrl: CoreSeam.CoreODataUrl,
+  HeadersMicroflow: microflow CoreSeam.GetAuthHeaders
+);

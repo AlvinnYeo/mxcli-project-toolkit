@@ -1,0 +1,26 @@
+mdl 1;
+-- Increment 6 journey data on the monolith: one active technician the slice can pick over OData. Created at
+-- startup only when the journey password is set on this machine, like increment 5's journey accounts.
+-- Remove before any real use (same hand-off row as AssetsSeam.ASU_EnsureJourneyAccounts).
+create or modify microflow CoreSeam.ASU_EnsureJourneyTechnician ()
+begin
+  if @AssetsSeam.JourneyUserPassword = empty or @AssetsSeam.JourneyUserPassword = '' then
+    return;
+  end if;
+  retrieve $Existing from Technician.Technician where [EmployeeNumber = 'JOURNEY-T1'] first;
+  if $Existing = empty then
+    $Tech = create Technician.Technician (TechnicianName = 'Journey Technician', EmployeeNumber = 'JOURNEY-T1', CompanyName = 'FSM monolith', TelephoneNumber = '+31 000 0001', IsActive = true, SystemID = 'JOURNEY-T1');
+    commit $Tech without events;
+  end if;
+end;
+create or modify microflow AssetsSeam.ASU_EnsureJourneyAccounts ()
+begin
+  call microflow AssetsSeam.EnsureJourneyAccount(Name = @AssetsSeam.JourneyUserName, Password = @AssetsSeam.JourneyUserPassword, RoleName = 'FunctionalAdministrator');
+  call microflow AssetsSeam.EnsureJourneyAccount(Name = 'journey_techadm', Password = @AssetsSeam.JourneyUserPassword, RoleName = 'TechnicalAdministrator');
+  if @CoreSeam.SliceAPIUserPassword = '__SET_ME__' then
+    log warning node 'CoreSeam' 'CoreSeam.SliceAPIUserPassword is not set on this machine: slice API account not created';
+  else
+    call microflow AssetsSeam.EnsureJourneyAccount(Name = @CoreSeam.SliceAPIUserName, Password = @CoreSeam.SliceAPIUserPassword, RoleName = 'CoreAPIClient');
+  end if;
+  call microflow CoreSeam.ASU_EnsureJourneyTechnician();
+end;

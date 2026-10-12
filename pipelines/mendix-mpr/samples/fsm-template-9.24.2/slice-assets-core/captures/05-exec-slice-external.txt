@@ -1,0 +1,40 @@
+$ mxcli exec mdl/slice-core-external.mdl -p AssetsApp.mpr
+Connected to: AssetsApp.mpr (Mendix 11.13.0)
+Dropped entity: Technician.Technician
+Dropped entity: CustomerManagement.ContactPerson
+Dropped entity: CustomerManagement.SLA
+Dropped entity: CustomerManagement.Contract
+Dropped entity: CustomerManagement.Customer
+Dropped entity: TicketManagement.WorkOrderAssignment
+Dropped entity: TicketManagement.Appointment
+Dropped entity: TicketManagement.WorkOrder
+Dropped entity: TicketManagement.Ticket
+Dropped entity: TicketManagement.Priority
+Dropped entity: TicketManagement.TicketType
+Dropped entity: RosterManagement.Roster
+
+From CoreSeam.CoreAPI into CoreSeam: 1 created, 0 updated, 0 skipped, 0 failed
+
+From CoreSeam.CoreAPI into Technician: 1 created, 0 updated, 0 skipped, 0 failed
+Created 5 navigation associations
+
+From CoreSeam.CoreAPI into CustomerManagement: 4 created, 0 updated, 0 skipped, 0 failed
+Created 4 navigation associations
+
+From CoreSeam.CoreAPI into TicketManagement: 5 created, 0 updated, 0 skipped, 0 failed
+
+From CoreSeam.CoreAPI into RosterManagement: 1 created, 0 updated, 0 skipped, 0 failed
+Reconciled 6 access rule(s) for new association
+Created association: AssetManagement.Asset_Technician_Preferred
+Reconciled 6 access rule(s) for new association
+Created association: AssetManagement.Asset_Customer
+Reconciled 6 access rule(s) for new association
+Created association: AssetManagement.Asset_Contract
+Reconciled 6 access rule(s) for new association
+Created association: AssetManagement.Asset_UmbrellaContract
+Reconciled 4 access rule(s) for new association
+Created association: Part.SuggestedPart_WorkOrder
+Created association: Tool.SelectedTool_WorkOrder
+Reconciled 4 access rule(s) for new association
+Created association: Part.UsedPart_Appointment
+exit=0

@@ -1,0 +1,29 @@
+$ SLICE_URL=http://127.0.0.1:8480 MONO_URL=http://127.0.0.1:8580 SLICE_MPR=<lab>/web-assets/AssetsApp/AssetsApp.mpr MXCLI=<lab>/mxcli JOURNEY_PW=*** node assets-seam.journey.js   # increment 5 journey, re-run on the final increment 6 model
+  PASS  [slice login] logged in to the slice as journey_fnadm; home page is Parts — ledger: in Navigation.Responsive -> slice menu (handoff)
+  PASS  [slice: new unit of measure] unit Box-261012115942 committed in the slice database — [{"SystemID":"68be7a5a-d98f-4626-a763-cedf81292b74","UnitName":"Box-261012115942"}]
+INSTRUMENT FAULT: locator.click: Timeout 30000ms exceeded.
+
+assets-seam journey: 2/2 assertions passed in 31.8 s — INVALID RUN (instrument fault)
+  ids: unit=Box-261012115942 part=PW-261012115942
+  trace rung: NOT RUN (no OTel exporter on either app)
+exit=2 wall 32 s
+$ (same command, second run)
+  PASS  [slice login] logged in to the slice as journey_fnadm; home page is Parts — ledger: in Navigation.Responsive -> slice menu (handoff)
+  PASS  [slice: new unit of measure] unit Box-261012120025 committed in the slice database — [{"SystemID":"181e9510-6a16-4180-b4a2-32615c779cfc","UnitName":"Box-261012120025"}]
+INSTRUMENT FAULT: locator.click: Timeout 30000ms exceeded.
+
+assets-seam journey: 2/2 assertions passed in 31.6 s — INVALID RUN (instrument fault)
+  ids: unit=Box-261012120025 part=PW-261012120025
+  trace rung: NOT RUN (no OTel exporter on either app)
+exit=2 wall 32 s
+$ (journey-created parts deleted through the slice UI first: with 4+ rows the Parts grid header covers the New Part button, see FINDINGS)
+$ SLICE_URL=http://127.0.0.1:8480 MONO_URL=http://127.0.0.1:8580 SLICE_MPR=<lab>/web-assets/AssetsApp/AssetsApp.mpr MXCLI=<lab>/mxcli JOURNEY_PW=*** node assets-seam.journey.js   # third run
+  PASS  [slice login] logged in to the slice as journey_fnadm; home page is Parts — ledger: in Navigation.Responsive -> slice menu (handoff)
+  PASS  [slice: new unit of measure] unit Box-261012120159 committed in the slice database — [{"SystemID":"6c9f65c0-0412-471b-804a-96508816ed5e","UnitName":"Box-261012120159"}]
+  PASS  [slice: new part] part PW-261012120159 committed in the slice with Part_UnitOfMeasure = Box-261012120159 — [{"Name":"Journey part 261012120159","PartID":"PW-261012120159","UnitName":"Box-261012120159"}]
+  PASS  [monolith: part visible over OData] monolith page lists PW-261012120159 from external entity AssetsSeam.Parts — row: "PW-261012120159 Journey part 261012120159 12.5 ACME" — ledger: in-edge read of Part.Part rewired to OData (seam-mono-rewire.mdl)
+
+assets-seam journey: 4/4 assertions passed in 5.3 s — PASS
+  ids: unit=Box-261012120159 part=PW-261012120159
+  trace rung: NOT RUN (no OTel exporter on either app)
+exit=0 wall 6 s

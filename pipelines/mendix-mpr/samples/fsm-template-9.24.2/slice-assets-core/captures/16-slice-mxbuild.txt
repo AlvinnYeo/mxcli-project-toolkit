@@ -1,0 +1,5 @@
+$ mxbuild(11.13.0) --java-home=<jdk21> --java-exe-path=<jdk21>/bin/java --target=deploy AssetsApp.mpr   # final model
+Executing step 'Clean up'
+Cleaning up...
+BUILD SUCCEEDED
+exit=0 real 20 s

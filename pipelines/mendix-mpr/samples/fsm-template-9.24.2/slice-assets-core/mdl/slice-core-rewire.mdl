@@ -1,0 +1,565 @@
+mdl 1;
+-- Increment 6, slice: re-point every consumer of the former stubs at the monolith's core.
+--  * reads    -> external entities (OData), XPath only over attributes or over associations BETWEEN external
+--                entities of the same service (Ticket_Asset -> MonoAsset/SystemID), never local <-> external.
+--  * writes   -> the monolith's published REST actions (rosters), on error without rollback + log + message.
+--  * Account_Technician (a stub association added to the Marketplace Administration module) -> local owner
+--    entity CoreSeam.TechnicianLink: Account, Warehouse and the external Technician hang off it, all owned locally.
+
+create or modify module role Technician.User description 'reads monolith technicians (external entity)';
+-- ---------------------------------------------------------------- technician link (local owner entity)
+create or modify persistent entity CoreSeam.TechnicianLink (
+  TechnicianID: Long,
+  TechnicianName: String(200),
+  TelephoneNumber: String(200),
+  EmployeeNumber: String(200),
+  CompanyName: String(200)
+);
+create or modify association CoreSeam.TechnicianLink_Account from CoreSeam.TechnicianLink to Administration.Account storage table;
+create or modify association CoreSeam.TechnicianLink_Warehouse from CoreSeam.TechnicianLink to WarehouseManagement.Warehouse storage table on delete cascade;
+create or modify association CoreSeam.TechnicianLink_Technician from CoreSeam.TechnicianLink to Technician.Technician storage table;
+create or modify module role CoreSeam.Admin description 'links monolith technicians to slice warehouses and accounts';
+grant create, delete, read (TechnicianID, TechnicianName, TelephoneNumber, EmployeeNumber, CompanyName, TechnicianLink_Account, TechnicianLink_Warehouse, TechnicianLink_Technician), write (TechnicianID, TechnicianName, TelephoneNumber, EmployeeNumber, CompanyName, TechnicianLink_Account, TechnicianLink_Warehouse, TechnicianLink_Technician) on entity CoreSeam.TechnicianLink to CoreSeam.Admin;
+grant read (TechnicianID, TechnicianName, TelephoneNumber, EmployeeNumber, CompanyName, TechnicianLink_Account, TechnicianLink_Warehouse, TechnicianLink_Technician) on entity CoreSeam.TechnicianLink to CoreSeam.User;
+
+grant read (SystemID, AssetID, "Description") on entity TicketManagement.MonoAsset to TicketManagement.User;
+-- read access on the external entities (replaces the stub-module read grants of increment 5)
+grant read (TechnicianID, TechnicianName, TelephoneNumber, EmailAddress, EmployeeNumber, CompanyName, IsActive, IsExternal) on entity Technician.Technician to Technician.User;
+grant read (PublicID, CustomerID, DebtorNumber, CustomerName, Email, PhoneNumber, ReferenceNumber) on entity TicketManagement.Customer to TicketManagement.User;
+grant read (PublicID, Number, "Description", AdministrativeContactPersonName, AdministrativeEmailAddress) on entity TicketManagement.Contract to TicketManagement.User;
+grant read (PublicID, Name, PhoneNumber, EmailAddress, "Description", ContactPerson_Asset, ContactPerson_Customer, ContactPerson_Contract) on entity TicketManagement.ContactPerson to TicketManagement.User;
+grant read (PublicID, Number, "Description", SLAtype, HighPriorityResponseTime, MediumPriorityResponseTime, LowPriorityResponseTime, SLA_Asset, SLA_Contract, SLA_Customer, SLA_UmbrellaContract) on entity TicketManagement.SLA to TicketManagement.User;
+grant read (PublicID, TicketID, "Status", ShortDescription, "Description", CallerName, CreationTime, DueDate, Ticket_Asset, Ticket_Priority, Ticket_TicketType) on entity TicketManagement.Ticket to TicketManagement.User;
+grant read (PublicID, Code, "Description", IsActive) on entity TicketManagement.Priority to TicketManagement.User;
+grant read (PublicID, Code, Name, ExpectedDuration) on entity TicketManagement.TicketType to TicketManagement.User;
+grant read (PublicID, WorkOrderID, "Status", ShortDescription, DueDate, WorkOrder_Ticket) on entity TicketManagement.WorkOrder to TicketManagement.User;
+grant read (PublicID, AppointmentID, "Status", PlannedWorkStart, PlannedWorkEnd, Appointment_WorkOrder) on entity TicketManagement.Appointment to TicketManagement.User;
+grant read (PublicID, StartDate, EndDate, StartTime, EndTime, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday, Roster_Asset) on entity TicketManagement.Roster to TicketManagement.User;
+
+-- "My" access rules: the warehouse disjunct now runs over the local TechnicianLink. The work-order disjuncts
+-- (WorkOrderAssignment_Technician / _WorkOrder, Appointment_WorkOrder) would have to traverse local -> external
+-- associations in XPath, which external entities do not support; they are replaced by false() and stay hand-off
+-- rows: a mechanic's work-order parts and tools are the Mobile partition's / monolith's concern.
+revoke all on entity Part.Part from Part.ViewMy;
+grant read (PartID, SystemID, Name, "Description", Price, IsAdditionalPart, IsActive, Vendor, Part_UnitOfMeasure) on entity Part.Part to Part.ViewMy where [WarehouseManagement.Inventory_Part/WarehouseManagement.Inventory/WarehouseManagement.Inventory_Warehouse/WarehouseManagement.Warehouse/CoreSeam.TechnicianLink_Warehouse/CoreSeam.TechnicianLink/CoreSeam.TechnicianLink_Account = '[%CurrentUser%]'];
+revoke all on entity Part.SuggestedPart from Part.ViewMy;
+grant read (Quantity, SystemID, SuggestedPart_Part, SuggestedPart_WorkOrder) on entity Part.SuggestedPart to Part.ViewMy where [false()];
+revoke all on entity Part.UsedPart from Part.ViewMy;
+grant read (IsFromWarehouse, Quantity, SystemID, UsedPart_Inventory) on entity Part.UsedPart to Part.ViewMy where [false()];
+revoke all on entity Tool.SelectedTool from Tool.ViewMy;
+grant read (SelectedToolID, Quantity, SelectedTool_Tool, SelectedTool_WorkOrder) on entity Tool.SelectedTool to Tool.ViewMy where [false()];
+revoke all on entity Tool.Tool from Tool.ViewMy;
+grant read (ToolID, Name, "Description", IsActive) on entity Tool.Tool to Tool.ViewMy where [false()];
+revoke all on entity WarehouseManagement.Inventory from WarehouseManagement.ViewMy;
+grant read (InventoryID, SystemID, Amount, Inventory_Warehouse, Inventory_Part) on entity WarehouseManagement.Inventory to WarehouseManagement.ViewMy where [WarehouseManagement.Inventory_Warehouse/WarehouseManagement.Warehouse/CoreSeam.TechnicianLink_Warehouse/CoreSeam.TechnicianLink/CoreSeam.TechnicianLink_Account = '[%CurrentUser%]'];
+revoke all on entity WarehouseManagement.Warehouse from WarehouseManagement.ViewMy;
+grant read (WarehouseID, SystemID, "Description") on entity WarehouseManagement.Warehouse to WarehouseManagement.ViewMy where [CoreSeam.TechnicianLink_Warehouse/CoreSeam.TechnicianLink/CoreSeam.TechnicianLink_Account = '[%CurrentUser%]'];
+
+-- ---------------------------------------------------------------- roster writes over REST
+create or modify non-persistent entity CoreSeam.RosterDraft (
+  StartDate: DateTime,
+  EndDate: DateTime
+);
+create or modify association CoreSeam.RosterDraft_Asset from CoreSeam.RosterDraft to AssetManagement.Asset;
+grant create, delete, read (StartDate, EndDate, RosterDraft_Asset), write (StartDate, EndDate, RosterDraft_Asset) on entity CoreSeam.RosterDraft to CoreSeam.User;
+
+create or modify microflow CoreSeam.Roster_CreateRemote (
+  $Asset: AssetManagement.Asset,
+  $StartDate: DateTime,
+  $EndDate: DateTime
+) returns Boolean
+begin
+  $Response = call rest service post '{1}/rest/core/v1/rosters?AssetSystemID={2}&AssetID={3}&AssetDescription={4}&StartDate={5}&EndDate={6}' with (
+    {1} = @CoreSeam.CoreBaseUrl,
+    {2} = urlEncode($Asset/SystemID),
+    {3} = urlEncode(if $Asset/AssetID = empty then '' else $Asset/AssetID),
+    {4} = urlEncode(if $Asset/Description = empty then '' else $Asset/Description),
+    {5} = formatDateTime($StartDate, 'yyyy-MM-dd'),
+    {6} = formatDateTime($EndDate, 'yyyy-MM-dd')
+  ) (
+    Authentication: basic (Username: @CoreSeam.CoreAPIUserName, Password: @CoreSeam.CoreAPIPassword),
+    Timeout: 30,
+  ) returns String on error without rollback begin
+    log error node 'CoreSeam' 'monolith roster create for asset {1} failed: {2}' with ({1} = $Asset/SystemID, {2} = $latestError/Message);
+    return false;
+  end error;
+  log info node 'CoreSeam' 'monolith roster create for asset {1}: {2}' with ({1} = $Asset/SystemID, {2} = $Response);
+  return true;
+end;
+
+create or modify microflow CoreSeam.Rosters_DeleteRemoteForAsset (
+  $Asset: AssetManagement.Asset
+) returns Boolean
+begin
+  $Response = call rest service post '{1}/rest/core/v1/rosters/delete-for-asset?AssetSystemID={2}' with (
+    {1} = @CoreSeam.CoreBaseUrl,
+    {2} = urlEncode($Asset/SystemID)
+  ) (
+    Authentication: basic (Username: @CoreSeam.CoreAPIUserName, Password: @CoreSeam.CoreAPIPassword),
+    Timeout: 30,
+  ) returns String on error without rollback begin
+    log error node 'CoreSeam' 'monolith roster delete for asset {1} failed: {2}' with ({1} = $Asset/SystemID, {2} = $latestError/Message);
+    return false;
+  end error;
+  log info node 'CoreSeam' 'monolith roster delete for asset {1}: {2}' with ({1} = $Asset/SystemID, {2} = $Response);
+  return true;
+end;
+
+create or modify microflow CoreSeam.ACT_RosterDraft_Save (
+  $RosterDraft: CoreSeam.RosterDraft
+)
+begin
+  retrieve $Asset from $RosterDraft/CoreSeam.RosterDraft_Asset;
+  if $RosterDraft/StartDate = empty or $RosterDraft/EndDate = empty then
+    validation feedback $RosterDraft/StartDate message 'Start and end date are required';
+    return;
+  end if;
+  $Ok = call microflow CoreSeam.Roster_CreateRemote(Asset = $Asset, StartDate = $RosterDraft/StartDate, EndDate = $RosterDraft/EndDate);
+  if $Ok then
+    close page;
+    return;
+  else
+    show message 'The planner (FSM) could not be reached; the opening times were not saved. Try again later.' type Error blocking;
+    return;
+  end if;
+end;
+grant execute on microflow CoreSeam.ACT_RosterDraft_Save to CoreSeam.User;
+
+create or modify page CoreSeam.RosterDraft_New (
+  Title: 'New opening times',
+  Layout: Atlas_Core.PopupLayout,
+  Params: ( $RosterDraft: CoreSeam.RosterDraft )
+) {
+  dataview dvDraft (DataSource: $RosterDraft) {
+    datepicker dpStart (Label: 'Start date', Attribute: StartDate)
+    datepicker dpEnd (Label: 'End date', Attribute: EndDate)
+    footer {
+      actionbutton btnSaveDraft (Caption: 'Save', Action: call microflow CoreSeam.ACT_RosterDraft_Save(RosterDraft = $RosterDraft), ButtonStyle: Primary)
+      actionbutton btnCancelDraft (Caption: 'Cancel', Action: cancel changes)
+    }
+  }
+};
+grant view on page CoreSeam.RosterDraft_New to CoreSeam.User;
+
+-- FSM's Asset_CreateRoster returned a new Roster for Roster_NewEdit; the slice cannot create an external object,
+-- so it returns a draft and the monolith creates the roster when the draft is saved.
+drop microflow AssetManagement.ACT_Asset_CreateRoster;
+create or modify microflow AssetManagement.ACT_Asset_CreateRoster (
+  $Asset: AssetManagement.Asset
+)
+folder 'Pages/Asset'
+begin
+  $Draft = create CoreSeam.RosterDraft (RosterDraft_Asset = $Asset, StartDate = beginOfDay([%CurrentDateTime%]), EndDate = addDays(beginOfDay([%CurrentDateTime%]), 30));
+  show page CoreSeam.RosterDraft_New(RosterDraft = $Draft) with title = 'New opening times';
+  return;
+end;
+grant execute on microflow AssetManagement.ACT_Asset_CreateRoster to AssetManagement._AddOn_CreateAssetRosters;
+
+drop microflow AssetManagement.Asset_CreateRoster;
+
+drop microflow AssetManagement.Asset_DeleteRosters;
+create or modify microflow AssetManagement.Asset_DeleteRosters (
+  $Asset: AssetManagement.Asset
+)
+folder 'Objects/Asset'
+export level api
+begin
+  $Ok = call microflow CoreSeam.Rosters_DeleteRemoteForAsset(Asset = $Asset);
+  call microflow Synchronization.Asset_UpdateNativeAsset(Asset = $Asset);
+  return;
+end;
+
+drop microflow RosterManagement.ACT_Roster_Delete;
+create or modify microflow RosterManagement.ACT_Roster_Delete (
+  $Roster: TicketManagement.Roster
+)
+begin
+  $Response = call rest service post '{1}/rest/core/v1/rosters/delete?PublicID={2}' with (
+    {1} = @CoreSeam.CoreBaseUrl,
+    {2} = toString($Roster/PublicID)
+  ) (
+    Authentication: basic (Username: @CoreSeam.CoreAPIUserName, Password: @CoreSeam.CoreAPIPassword),
+    Timeout: 30,
+  ) returns String on error without rollback begin
+    log error node 'CoreSeam' 'monolith roster delete {1} failed: {2}' with ({1} = toString($Roster/PublicID), {2} = $latestError/Message);
+    show message 'The planner (FSM) could not be reached; the opening time was not deleted.' type Error blocking;
+    return;
+  end error;
+  log info node 'CoreSeam' 'monolith roster delete: {1}' with ({1} = $Response);
+  return;
+end;
+grant execute on microflow RosterManagement.ACT_Roster_Delete to RosterManagement.User;
+
+drop microflow AssetManagement.AssetList_Delete;
+create or modify microflow AssetManagement.AssetList_Delete (
+  $AssetList: List of AssetManagement.Asset
+)
+folder 'Objects/Asset'
+export level api
+begin
+  $NativeAssetList_ToDelete = create list of NativeMobileAsset.NativeAsset;
+  $AssetPartList_ToDelete = create list of Part.AssetPart;
+  loop $IteratorAsset in $AssetList
+  begin
+    $NativeAsset = call microflow NativeMobileAsset.NativeAsset_Get_BySystemID(SystemID = $IteratorAsset/SystemID, NativeAssetList_optional = empty);
+    add $NativeAsset to $NativeAssetList_ToDelete;
+    $RostersGone = call microflow CoreSeam.Rosters_DeleteRemoteForAsset(Asset = $IteratorAsset);
+    retrieve $AssetPartList from $IteratorAsset/Part.AssetPart_Asset;
+    add $AssetPartList to $AssetPartList_ToDelete;
+  end loop;
+  call microflow Part.AssetPartList_Delete(AssetPartList_ToDelete = $AssetPartList_ToDelete);
+  call microflow NativeMobileAsset.NativeAssetList_Delete(NativeAssetList = $NativeAssetList_ToDelete);
+  delete $AssetList refresh;
+  return;
+end;
+drop microflow RosterManagement.RosterList_Delete;
+
+-- ---------------------------------------------------------------- reads re-pointed
+drop microflow AssetManagement.ACT_Asset_Delete;
+create or modify microflow AssetManagement.ACT_Asset_Delete (
+  $Asset: AssetManagement.Asset
+)
+folder 'Pages/Asset'
+begin
+  retrieve $TicketList from TicketManagement.Ticket where [TicketManagement.Ticket_Asset/TicketManagement.MonoAsset/SystemID = $Asset/SystemID];
+  if $TicketList = empty then
+    call microflow AssetManagement.Asset_Delete(Asset = $Asset);
+    return;
+  else
+    show message 'This asset cannot de deleted, because it is associated to one or more tickets.' type Warning blocking;
+    return;
+  end if;
+end;
+grant execute on microflow AssetManagement.ACT_Asset_Delete to AssetManagement.EditAsset;
+
+create or modify microflow AssetManagement.Asset_GetPreferredTechnician (
+  $Asset: AssetManagement.Asset
+)
+returns Technician.Technician
+folder 'Objects/Asset'
+export level api
+begin
+  retrieve $Technician_Preferred from $Asset/AssetManagement.Asset_Technician_Preferred;
+  return $Technician_Preferred;
+end;
+
+drop microflow AssetManagement.Asset_GetRelevantSLA;
+create or modify microflow AssetManagement.Asset_GetRelevantSLA (
+  $Asset: AssetManagement.Asset
+)
+returns TicketManagement.SLA
+folder 'Objects/Asset'
+export level api
+begin
+  retrieve $SLA_Asset from TicketManagement.SLA where [TicketManagement.SLA_Asset/TicketManagement.MonoAsset/SystemID = $Asset/SystemID] first;
+  if $SLA_Asset != empty then
+    return $SLA_Asset;
+  end if;
+  retrieve $Contract from $Asset/AssetManagement.Asset_Contract;
+  if $Contract != empty then
+    retrieve $SLA_Contract from TicketManagement.SLA where [TicketManagement.SLA_Contract/TicketManagement.Contract/PublicID = $Contract/PublicID] first;
+    if $SLA_Contract != empty then
+      return $SLA_Contract;
+    end if;
+  end if;
+  retrieve $Umbrella from $Asset/AssetManagement.Asset_UmbrellaContract;
+  if $Umbrella != empty then
+    retrieve $SLA_Umbrella from TicketManagement.SLA where [TicketManagement.SLA_UmbrellaContract/TicketManagement.Contract/PublicID = $Umbrella/PublicID] first;
+    if $SLA_Umbrella != empty then
+      return $SLA_Umbrella;
+    end if;
+  end if;
+  retrieve $Customer from $Asset/AssetManagement.Asset_Customer;
+  if $Customer != empty then
+    retrieve $SLA_Customer from TicketManagement.SLA where [TicketManagement.SLA_Customer/TicketManagement.Customer/PublicID = $Customer/PublicID] first;
+    if $SLA_Customer != empty then
+      return $SLA_Customer;
+    end if;
+  end if;
+  -- FSM's last fallback: the Standard SLA. The published enumeration arrives as a String (Edm.String in $metadata).
+  retrieve $SLA_Standard from TicketManagement.SLA where [SLAtype = 'Standard'] first;
+  return $SLA_Standard;
+end;
+
+-- external objects cannot be changed; FSM only refreshed the work order in the client, and an external object is
+-- re-read on every access, so these become no-ops (kept: the monolith's work-order pages still call them)
+drop microflow Part.SuggestedPart_GetRefreshWorkOrder;
+create or modify microflow Part.SuggestedPart_GetRefreshWorkOrder (
+  $SuggestedPart: Part.SuggestedPart
+)
+folder 'Objects/SuggestedPart'
+export level api
+begin
+  return;
+end;
+drop microflow Tool.SelectedTool_RefreshWorkOrder;
+create or modify microflow Tool.SelectedTool_RefreshWorkOrder (
+  $SelectedTool: Tool.SelectedTool
+)
+folder 'Objects/SelectedTool'
+export level api
+begin
+  return;
+end;
+
+-- ---------------------------------------------------------------- stub views -> read-only pages on external data
+create or modify page TicketManagement.Ticket_View (
+  Title: 'Ticket (from FSM)',
+  Layout: FSM_Specific.LeftMenuLayout,
+  Params: ( $Ticket: TicketManagement.Ticket )
+) {
+  dataview dvTicket (DataSource: $Ticket, Editable: false) {
+    textbox tbTicketID (Label: 'Ticket ID', Attribute: TicketID)
+    textbox tbShort (Label: 'Short description', Attribute: ShortDescription)
+    textarea taDescr (Label: 'Description', Attribute: Description)
+    textbox tbStatus (Label: 'Status', Attribute: Status)
+    datepicker dpCreated (Label: 'Created', Attribute: CreationTime)
+    datepicker dpDue (Label: 'Due', Attribute: DueDate)
+    textbox tbCaller (Label: 'Caller', Attribute: CallerName)
+    dynamictext txtTicketNote (Content: 'Read-only: tickets are managed in FSM.')
+  }
+};
+grant view on page TicketManagement.Ticket_View to TicketManagement.User;
+
+create or modify page CustomerManagement.ContactPerson_View (
+  Title: 'Contact person (from FSM)',
+  Layout: FSM_Specific.LeftMenuLayout,
+  Params: ( $ContactPerson: TicketManagement.ContactPerson )
+) {
+  dataview dvContact (DataSource: $ContactPerson, Editable: false) {
+    textbox tbName (Label: 'Name', Attribute: Name)
+    textbox tbPhone (Label: 'Phone number', Attribute: PhoneNumber)
+    textbox tbEmail (Label: 'Email', Attribute: EmailAddress)
+    textarea taJob (Label: 'Job description', Attribute: Description)
+    dynamictext txtContactNote (Content: 'Read-only: contact persons are managed in FSM.')
+  }
+};
+grant view on page CustomerManagement.ContactPerson_View to CustomerManagement.User;
+
+create or modify page RosterManagement.Roster_NewEdit (
+  Title: 'Opening times (from FSM)',
+  Layout: Atlas_Core.PopupLayout,
+  Params: ( $Roster: TicketManagement.Roster )
+) {
+  dataview dvRoster (DataSource: $Roster, Editable: false) {
+    datepicker dpRStart (Label: 'Start date', Attribute: StartDate)
+    datepicker dpREnd (Label: 'End date', Attribute: EndDate)
+    checkbox cbMon (Label: 'Monday', Attribute: Monday)
+    checkbox cbTue (Label: 'Tuesday', Attribute: Tuesday)
+    checkbox cbWed (Label: 'Wednesday', Attribute: Wednesday)
+    checkbox cbThu (Label: 'Thursday', Attribute: Thursday)
+    checkbox cbFri (Label: 'Friday', Attribute: Friday)
+    checkbox cbSat (Label: 'Saturday', Attribute: Saturday)
+    checkbox cbSun (Label: 'Sunday', Attribute: Sunday)
+    dynamictext txtRosterNote (Content: 'Read-only here: change opening times in the FSM planner; delete them from the asset tab.')
+    footer {
+      actionbutton btnCloseR (Caption: 'Close', Action: close page)
+    }
+  }
+};
+grant view on page RosterManagement.Roster_NewEdit to RosterManagement.User;
+
+-- ---------------------------------------------------------------- asset tabs: grids over external data
+alter snippet AssetManagement.Snippet_Asset_DataTabs {
+  replace grid2 with {
+      datagrid grid2 (
+        DataSource: database from TicketManagement.ContactPerson where [TicketManagement.ContactPerson_Asset/TicketManagement.MonoAsset/SystemID = $Asset/SystemID] sort by Name asc,
+        Selection: Single
+      ) {
+        column (Attribute: Name, Caption: 'Name')
+        column (Attribute: PhoneNumber, Caption: 'Phone number')
+        column (Attribute: EmailAddress, Caption: 'Email')
+        column (Attribute: Description, Caption: 'Job description')
+        column (Attribute: ContactPerson_Customer/CustomerName, Caption: 'Customer(s)')
+        column (Attribute: ContactPerson_Contract/Number, Caption: 'Contract(s)')
+        column (Caption: ' ', ShowContentAs: customContent) {
+          actionbutton actionButton2 (
+            Caption: 'Open',
+            Action: show page CustomerManagement.ContactPerson_View(ContactPerson = $currentObject)
+          )
+        }
+      }
+  };
+  replace grid3 with {
+      datagrid grid3 (
+        DataSource: database from TicketManagement.Roster where [TicketManagement.Roster_Asset/TicketManagement.MonoAsset/SystemID = $Asset/SystemID] sort by StartDate asc,
+        Selection: Single
+      ) {
+        controlbar {
+          actionbutton actionButton3 (
+            Caption: 'New',
+            Action: call microflow AssetManagement.ACT_Asset_CreateRoster(Asset = $Asset)
+          )
+          actionbutton deleteButton3 (
+            Caption: 'Delete All',
+            Action: call microflow AssetManagement.ACT_Asset_DeleteRosters(Asset = $Asset)
+          )
+        }
+        column (Attribute: StartDate, Caption: 'Start date')
+        column (Attribute: EndDate, Caption: 'End date')
+        column (Attribute: StartTime, Caption: 'Start time')
+        column (Attribute: EndTime, Caption: 'End time')
+        column (Caption: ' ', ShowContentAs: customContent) {
+          actionbutton editButton2 (
+            Caption: 'View',
+            Action: show page RosterManagement.Roster_NewEdit(Roster = $currentObject)
+          )
+          actionbutton deleteButton2 (
+            Caption: 'Delete',
+            Action: call microflow RosterManagement.ACT_Roster_Delete(Roster = $currentObject)
+          )
+        }
+      }
+  };
+  replace grid1 with {
+      datagrid grid1 (
+        DataSource: database from TicketManagement.Ticket where [TicketManagement.Ticket_Asset/TicketManagement.MonoAsset/SystemID = $Asset/SystemID] sort by CreationTime desc,
+        Selection: Single
+      ) {
+        column (Attribute: TicketID, Caption: 'Ticket ID')
+        column (Attribute: CreationTime, Caption: 'Creation date')
+        column (Attribute: Description, Caption: 'Description')
+        column (Attribute: Ticket_TicketType/Name, Caption: 'Type')
+        column (Attribute: Ticket_Priority/Description, Caption: 'Priority')
+        column (Attribute: Status, Caption: 'Status')
+        column (Caption: ' ', ShowContentAs: customContent) {
+          actionbutton actionButton6 (
+            Caption: 'Open',
+            Action: show page TicketManagement.Ticket_View(Ticket = $currentObject)
+          )
+        }
+      }
+  };
+};
+
+-- ---------------------------------------------------------------- warehouse technicians: pick from the monolith
+create or modify microflow CoreSeam.ACT_Warehouse_LinkTechnician (
+  $Warehouse: WarehouseManagement.Warehouse,
+  $Technician: Technician.Technician
+)
+begin
+  retrieve $Existing from CoreSeam.TechnicianLink where [TechnicianID = $Technician/TechnicianID and CoreSeam.TechnicianLink_Warehouse = $Warehouse] first;
+  if $Existing = empty then
+    $Link = create CoreSeam.TechnicianLink (TechnicianID = $Technician/TechnicianID, TechnicianLink_Warehouse = $Warehouse, TechnicianLink_Technician = $Technician);
+    change $Link (TechnicianName = $Technician/TechnicianName, TelephoneNumber = $Technician/TelephoneNumber, EmployeeNumber = $Technician/EmployeeNumber, CompanyName = $Technician/CompanyName);
+    commit $Link;
+  end if;
+  close page;
+  return;
+end;
+grant execute on microflow CoreSeam.ACT_Warehouse_LinkTechnician to CoreSeam.Admin;
+
+create or modify page CoreSeam.Technician_Select (
+  Title: 'Add technician (from FSM)',
+  Layout: Atlas_Core.PopupLayout,
+  Params: ( $Warehouse: WarehouseManagement.Warehouse )
+) {
+  datagrid gridTechSelect (
+    DataSource: database from Technician.Technician where [IsActive = true()] sort by TechnicianName asc,
+    Selection: Single
+  ) {
+    column (Attribute: TechnicianName, Caption: 'Name')
+    column (Attribute: EmployeeNumber, Caption: 'Employee number')
+    column (Attribute: CompanyName, Caption: 'Company name')
+    column (Caption: ' ', ShowContentAs: customContent) {
+      actionbutton btnLinkTech (
+        Caption: 'Add',
+        Action: call microflow CoreSeam.ACT_Warehouse_LinkTechnician(Warehouse = $Warehouse, Technician = $currentObject)
+      )
+    }
+  }
+};
+grant view on page CoreSeam.Technician_Select to CoreSeam.Admin;
+
+create or modify microflow CoreSeam.ACT_Warehouse_AddTechnician (
+  $Warehouse: WarehouseManagement.Warehouse
+)
+begin
+  show page CoreSeam.Technician_Select(Warehouse = $Warehouse);
+  return;
+end;
+grant execute on microflow CoreSeam.ACT_Warehouse_AddTechnician to CoreSeam.Admin;
+
+create or modify microflow CoreSeam.ACT_TechnicianLink_Delete (
+  $TechnicianLink: CoreSeam.TechnicianLink
+)
+begin
+  delete $TechnicianLink refresh;
+  return;
+end;
+grant execute on microflow CoreSeam.ACT_TechnicianLink_Delete to CoreSeam.Admin;
+
+create or modify page CoreSeam.TechnicianLink_Edit (
+  Title: 'Technician account',
+  Layout: Atlas_Core.PopupLayout,
+  Params: ( $TechnicianLink: CoreSeam.TechnicianLink )
+) {
+  dataview dvLink (DataSource: $TechnicianLink) {
+    textbox tbLinkName (Label: 'Technician', Attribute: TechnicianName, Editable: Never)
+    combobox cbLinkAccount (Label: 'Slice account', Association: CoreSeam.TechnicianLink_Account, DataSource: database Administration.Account, CaptionAttribute: Name)
+    footer {
+      actionbutton btnSaveLink (Caption: 'Save', Action: save changes, ButtonStyle: Primary)
+      actionbutton btnCancelLink (Caption: 'Cancel', Action: cancel changes)
+    }
+  }
+};
+grant view on page CoreSeam.TechnicianLink_Edit to CoreSeam.Admin;
+
+alter snippet WarehouseManagement.Snippet_Warehouse_DataTabs {
+  replace grid2 with {
+      datagrid grid2 (
+        DataSource: database from CoreSeam.TechnicianLink where [CoreSeam.TechnicianLink_Warehouse = $Warehouse] sort by TechnicianName asc,
+        Selection: Single
+      ) {
+        controlbar {
+          actionbutton btnAddTechnician (
+            Caption: 'Add technician',
+            Action: call microflow CoreSeam.ACT_Warehouse_AddTechnician(Warehouse = $Warehouse)
+          )
+        }
+        column (Attribute: TechnicianName, Caption: 'Name')
+        column (Attribute: TelephoneNumber, Caption: 'Telephone number')
+        column (Attribute: EmployeeNumber, Caption: 'Employee number')
+        column (Attribute: CompanyName, Caption: 'Company name')
+        column (Caption: ' ', ShowContentAs: customContent) {
+          actionbutton btnEditLink (Caption: 'Account', Action: show page CoreSeam.TechnicianLink_Edit(TechnicianLink = $currentObject))
+          actionbutton btnDeleteLink (Caption: 'Remove', Action: call microflow CoreSeam.ACT_TechnicianLink_Delete(TechnicianLink = $currentObject))
+        }
+      }
+  };
+};
+
+-- ---------------------------------------------------------------- selectable tools without XPath over local -> external
+-- FSM retrieved Tool where SelectedTool_Tool/SelectedTool/SelectedTool_WorkOrder = $WorkOrder: an XPath from local
+-- entities into an external one (CE0161 on 11.13). Same result in memory: the work order's selected tools by
+-- list filter on the association. Reads every SelectedTool row: fine at template scale, a hand-off at volume.
+drop microflow Tool.SelectedTool_GetSelectableToolList;
+create or modify microflow Tool.SelectedTool_GetSelectableToolList (
+  $SelectedTool: Tool.SelectedTool
+)
+returns List of Tool.Tool
+folder 'Objects/SelectedTool'
+export level api
+begin
+  retrieve $ToolList_Active from Tool.Tool where [IsActive];
+  retrieve $WorkOrder from $SelectedTool/Tool.SelectedTool_WorkOrder;
+  retrieve $AllSelected from Tool.SelectedTool;
+  $SelectedOnWorkOrder = filter $AllSelected by Tool.SelectedTool_WorkOrder = $WorkOrder;
+  $ToolList_AlreadySelected = create list of Tool.Tool;
+  loop $IteratorSelected in $SelectedOnWorkOrder
+  begin
+    retrieve $SelectedToolTool from $IteratorSelected/Tool.SelectedTool_Tool;
+    add $SelectedToolTool to $ToolList_AlreadySelected;
+  end loop;
+  $ToolList_Selectable = subtract $ToolList_AlreadySelected from $ToolList_Active;
+  return $ToolList_Selectable;
+end;
+
+-- ---------------------------------------------------------------- roles: the seam module roles reach real user roles
+alter user role CallCenterEmployee add module roles (CoreSeam.User, Technician.User);
+alter user role FunctionalAdministrator add module roles (CoreSeam.User, CoreSeam.Admin, Technician.User);
+alter user role Mechanic add module roles (CoreSeam.User, Technician.User);
+alter user role ServiceDeskEmployee add module roles (CoreSeam.User, Technician.User);
+alter user role ServiceRegionManager add module roles (CoreSeam.User, Technician.User);
+alter user role TechnicalAdministrator add module roles (CoreSeam.User, CoreSeam.Admin, Technician.User);
+alter user role Administrator add module roles (CoreSeam.User, CoreSeam.Admin, Technician.User);

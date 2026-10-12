@@ -1,0 +1,31 @@
+mdl 1;
+-- Increment 6, slice: stub entities out, external entities (same qualified names) in. DROP ENTITY also removes,
+-- silently, every cross-module association that points at the dropped entity (Asset_Technician_Preferred was gone
+-- after `drop entity Technician.Technician`, no message) -- so the slice-owned ones are re-created at the end,
+-- by name, owned by the local entity (the only legal direction to an external entity).
+drop entity Technician.Technician;
+drop entity CustomerManagement.ContactPerson;
+drop entity CustomerManagement.SLA;
+drop entity CustomerManagement.Contract;
+drop entity CustomerManagement.Customer;
+drop entity TicketManagement.WorkOrderAssignment;
+drop entity TicketManagement.Appointment;
+drop entity TicketManagement.WorkOrder;
+drop entity TicketManagement.Ticket;
+drop entity TicketManagement.Priority;
+drop entity TicketManagement.TicketType;
+drop entity RosterManagement.Roster;
+create external entities from CoreSeam.CoreAPI into CoreSeam entities (MonoAsset);
+create external entities from CoreSeam.CoreAPI into Technician entities (Technician);
+create external entities from CoreSeam.CoreAPI into CustomerManagement entities (Customer, Contract, ContactPerson, SLA);
+create external entities from CoreSeam.CoreAPI into TicketManagement entities (Priority, TicketType, Ticket, WorkOrder, Appointment);
+create external entities from CoreSeam.CoreAPI into RosterManagement entities (Roster);
+-- slice-owned associations to the core, as in FSM, minus delete behaviour toward an external entity (the monolith
+-- never deletes through the slice; orphan cleanup is a hand-off row)
+create or modify association AssetManagement.Asset_Technician_Preferred from AssetManagement.Asset to Technician.Technician storage table;
+create or modify association AssetManagement.Asset_Customer from AssetManagement.Asset to CustomerManagement.Customer storage table;
+create or modify association AssetManagement.Asset_Contract from AssetManagement.Asset to CustomerManagement.Contract storage table;
+create or modify association AssetManagement.Asset_UmbrellaContract from AssetManagement.Asset to CustomerManagement.Contract storage table;
+create or modify association Part.SuggestedPart_WorkOrder from Part.SuggestedPart to TicketManagement.WorkOrder storage table;
+create or modify association Tool.SelectedTool_WorkOrder from Tool.SelectedTool to TicketManagement.WorkOrder storage table;
+create or modify association Part.UsedPart_Appointment from Part.UsedPart to TicketManagement.Appointment storage table;

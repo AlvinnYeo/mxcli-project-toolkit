@@ -1,0 +1,40 @@
+# failure coupling: monolith stopped (mxcli run stop -p fsm.mpr: "stopped: pid 29281 in 500ms"), slice user opens an asset and adds opening times
+$ node outage.js   (Playwright, slice only; second form: logs and dismisses the dialogs the asset page raises first)
+node:internal/process/promises:394
+    triggerUncaughtException(err, true /* fromPromise */);
+    ^
+
+page.waitForSelector: Timeout 30000ms exceeded.
+Call log:
+  - waiting for locator('.mx-page') to be visible
+
+  name: 'TimeoutError'
+}
+
+Node.js v22.22.0
+## slice log after the probe (CoreSeam node, ERROR lines)
+ERROR - Connector: An error has occurred while handling the request. [User 'journey_fnadm' with  and roles 'FunctionalAdministrator']: Exception while retrieving data for 'AssetManagement.Snippet_Asset_DataTabs.
+ERROR - Connector: An error has occurred while handling the request. [User 'journey_fnadm' with  and roles 'FunctionalAdministrator']: Exception while retrieving data for 'AssetManagement.Snippet_Asset_Details.r
+ERROR - Connector: An error has occurred while handling the request. [User 'journey_fnadm' with  and roles 'FunctionalAdministrator']: Exception while retrieving data for 'AssetManagement.Snippet_Asset_Details.r
+ERROR - Connector: An error has occurred while handling the request. [User 'journey_fnadm' with  and roles 'FunctionalAdministrator']: Exception while retrieving data for 'AssetManagement.Snippet_Asset_Details.r
+ERROR - Connector: An error has occurred while handling the request. [User 'journey_fnadm' with  and roles 'FunctionalAdministrator']: Connect to 127.0.0.1:8580 [/127.0.0.1] failed: Connection refused
+ERROR - Connector: An error has occurred while handling the request. : Maximum number of sessions exceeded! (You are currently using a trial license)
+
+# third form, after `mxcli run restart -p AssetsApp.mpr` (the second form could not log in: "Maximum number of sessions exceeded! (You are currently using a trial license)")
+asset details with monolith down: dialogs = ["Error An error occurred, please contact your system administrator. OK"]  title = Mendix - Asset details
+node:internal/process/promises:394
+    triggerUncaughtException(err, true /* fromPromise */);
+    ^
+
+locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByRole('tab', { name: 'Opening times' })
+    - locator resolved to <a href="#" role="tab" tabindex="-1" id="id_slq_16-t3" aria-selected="false" data-roving-tabindex="" class="mx-name-tabPage4" aria-controls="id_slq_16-p3">Opening times</a>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is visible, enabled and stable
+## slice log after the third form (CoreSeam node + connection errors)
+ERROR - Connector: An error has occurred while handling the request. [User 'journey_fnadm' with  and roles 'FunctionalAdministrator']: Connect to 127.0.0.1:8580 [/127.0.0.1] failed: Connection refused
+com.mendix.core.CoreRuntimeException: Connect to 127.0.0.1:8580 [/127.0.0.1] failed: Connection refused
+Caused by: org.apache.http.conn.HttpHostConnectException: Connect to 127.0.0.1:8580 [/127.0.0.1] failed: Connection refused
+Caused by: java.net.ConnectException: Connection refused

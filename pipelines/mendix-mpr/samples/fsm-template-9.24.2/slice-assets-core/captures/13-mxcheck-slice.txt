@@ -1,0 +1,6 @@
+$ mx(11.13) check AssetsApp.mpr   # final
+Loading the mpr file.
+The mpr file version is '11.13.0'.
+Checking app for errors...
+The app contains: 0 errors.
+real 10 s

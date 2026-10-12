@@ -1,0 +1,20 @@
+$ mxcli exec mdl/slice-core-regroup.mdl -p AssetsApp.mpr   # on the pre-rewire backup
+Connected to: AssetsApp.mpr (Mendix 11.13.0)
+Dropped entity: CustomerManagement.ContactPerson
+Dropped entity: CustomerManagement.SLA
+Dropped entity: CustomerManagement.MonoAsset
+Dropped entity: CustomerManagement.Contract
+Dropped entity: CustomerManagement.Customer
+Dropped entity: RosterManagement.Roster
+Dropped entity: RosterManagement.MonoAsset
+Created 8 navigation associations
+
+From CoreSeam.CoreAPI into TicketManagement: 5 created, 0 updated, 0 skipped, 0 failed
+Reconciled 6 access rule(s) for new association
+Created association: AssetManagement.Asset_Customer
+Reconciled 6 access rule(s) for new association
+Created association: AssetManagement.Asset_Contract
+Reconciled 6 access rule(s) for new association
+Created association: AssetManagement.Asset_UmbrellaContract
+Altered OData client: CoreSeam.CoreAPI
+exit=0

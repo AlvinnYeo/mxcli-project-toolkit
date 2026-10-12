@@ -1,0 +1,15 @@
+# ERROR lines on both runtimes after both journeys (counted, timestamps stripped)
+## slice
+     14 ERROR - Connector: 404 - file not found for file: resources%2Ffonts%2FMaterial-icons%2FMaterialIconsOutlined-Regular.woff2
+     14 ERROR - Connector: 404 - file not found for file: resources%2Ffonts%2FMaterial-icons%2FMaterialIconsOutlined-Regular.woff
+     14 ERROR - Connector: 404 - file not found for file: resources%2Ffonts%2FMaterial-icons%2FMaterialIconsOutlined-Regular.ttf
+     10 ERROR - Connector: 404 - file not found for file: resources%2Fimg%2FSiemensAGLogin.png
+     10 ERROR - Connector: 404 - file not found for file: resources%2FInlogscherm-logo.svg
+## slice: CoreSeam log node
+INFO - CoreSeam: monolith roster create for asset b1db09d1-9178-48ac-a20c-acea2dae19f8: created 2
+INFO - CoreSeam: monolith roster delete: deleted 2
+INFO - CoreSeam: monolith roster create for asset 03459e29-c64e-44bd-89c4-f29f7a482b6c: created 3
+INFO - CoreSeam: monolith roster delete: deleted 3
+## monolith (the one failure is the first boot: password policy, capture 03a)
+      1 ERROR - Core: An exception occurred while running the after-startup-action.
+      1 ERROR - M2EE: Starting Mendix Runtime failed.

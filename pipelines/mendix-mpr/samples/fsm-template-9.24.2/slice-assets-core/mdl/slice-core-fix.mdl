@@ -1,0 +1,63 @@
+mdl 1;
+-- Asset access rules still name CustomerManagement.SLA_Asset (FSM: SLA_Asset owner Both, so Asset's rules carried it);
+-- the association is gone (SLA is external, its navigation is TicketManagement.SLA_Asset): rewrite those rules without it.
+-- and restore Asset_Customer / Asset_Contract / Asset_UmbrellaContract on them: dropping the stub entities removed the
+-- associations silently, and their member rights went with them (FSM grants: read for the 3 roles, write for the 2 Edit roles).
+revoke all on entity AssetManagement.Asset from AssetManagement.ViewAll;
+grant read (AssetID, SystemID, "Description", Notes, Address, ZipCode, City, FullAddress, HasOpeningTimes, Asset_Dossier, Asset_Structure, Asset_AgreementGroup, Asset_Manufacturer, Asset_Technician_Preferred, Asset_Customer, Asset_Contract, Asset_UmbrellaContract) on entity AssetManagement.Asset to AssetManagement.ViewAll;
+revoke all on entity AssetManagement.Asset from AssetManagement.EditAsset;
+grant read (SystemID, Notes, FullAddress, HasOpeningTimes, AssetID, "Description", Address, ZipCode, City, Asset_Dossier, Asset_Structure, Asset_AgreementGroup, Asset_Manufacturer, Asset_Technician_Preferred, Asset_Customer, Asset_Contract, Asset_UmbrellaContract), write (AssetID, "Description", Address, ZipCode, City, Asset_Dossier, Asset_Structure, Asset_AgreementGroup, Asset_Manufacturer, Asset_Technician_Preferred, Asset_Customer, Asset_Contract, Asset_UmbrellaContract) on entity AssetManagement.Asset to AssetManagement.EditAsset;
+revoke all on entity AssetManagement.Asset from AssetManagement.EditAssetAdmin;
+grant read (FullAddress, AssetID, SystemID, "Description", Notes, Address, ZipCode, City, HasOpeningTimes, Asset_Dossier, Asset_Structure, Asset_AgreementGroup, Asset_Manufacturer, Asset_Technician_Preferred, Asset_Customer, Asset_Contract, Asset_UmbrellaContract), write (AssetID, SystemID, "Description", Notes, Address, ZipCode, City, HasOpeningTimes, Asset_Dossier, Asset_Structure, Asset_AgreementGroup, Asset_Manufacturer, Asset_Technician_Preferred, Asset_Customer, Asset_Contract, Asset_UmbrellaContract) on entity AssetManagement.Asset to AssetManagement.EditAssetAdmin;
+
+-- moved pages: combo boxes now list the monolith's customers/contracts (external entities, set a slice-owned
+-- association); grid columns that showed a customer or technician THROUGH a local -> external association on a
+-- database-sourced grid are dropped: the grid query would have to join the local table with the remote entity set.
+alter snippet AssetManagement.Snippet_Asset_Details {
+  replace dv_referenceSelector8 with {
+    dataview dv_referenceSelector8 (DataSource: $Asset) {
+      combobox referenceSelector8 (Label: 'Customer', Association: AssetManagement.Asset_Customer, DataSource: database TicketManagement.Customer, CaptionAttribute: CustomerName)
+    }
+  };
+  replace dv_referenceSelector9 with {
+    dataview dv_referenceSelector9 (DataSource: $Asset) {
+      combobox referenceSelector9 (Label: 'Umbrella contract', Association: AssetManagement.Asset_UmbrellaContract, DataSource: database TicketManagement.Contract, CaptionAttribute: Description)
+    }
+  };
+  replace dv_referenceSelector11 with {
+    dataview dv_referenceSelector11 (DataSource: $Asset) {
+      combobox referenceSelector11 (Label: 'Contract', Association: AssetManagement.Asset_Contract, DataSource: database TicketManagement.Contract, CaptionAttribute: Description)
+    }
+  };
+};
+alter page AssetManagement.Asset_Overview {
+  replace grid1 with {
+    datagrid grid1 (DataSource: DATABASE AssetManagement.Asset SORT BY AssetID ASC, Selection: Single) {
+      column (Attribute: AssetID, Caption: 'Asset ID')
+      column (Attribute: Description, Caption: 'Name')
+      column (Attribute: Asset_Manufacturer/Name, Caption: 'Manufacturer')
+      column (Attribute: Asset_Dossier/Name, Caption: 'Dossier')
+      column (Attribute: Address, Caption: 'Address')
+      column (Attribute: ZipCode, Caption: 'Zip code')
+      column (Attribute: City, Caption: 'City')
+      column (Caption: ' ') {
+        actionbutton actionButton1 (Caption: 'Open', Action: SHOW PAGE AssetManagement.Asset_View(Asset = $currentObject))
+        actionbutton actionButton3 (Caption: 'Delete', Action: CALL MICROFLOW AssetManagement.ACT_Asset_Delete(Asset = $currentObject))
+      }
+    }
+  };
+};
+alter page Part.Part_View {
+  replace grid1 with {
+    datagrid grid1 (DataSource: DATABASE AssetManagement.Asset WHERE [Part.AssetPart_Asset/Part.AssetPart/Part.AssetPart_Part = $Part], Selection: Single) {
+      column (Attribute: AssetID, Caption: 'Asset ID')
+      column (Attribute: Description, Caption: 'Description')
+      column (Attribute: Asset_Manufacturer/Name, Caption: 'Manufacturer')
+      column (Attribute: Address, Caption: 'Address')
+      column (Attribute: City, Caption: 'City')
+      column (Caption: ' ') {
+        actionbutton actionButton2 (Caption: 'Open', Action: SHOW PAGE AssetManagement.Asset_View(Asset = $currentObject))
+      }
+    }
+  };
+};

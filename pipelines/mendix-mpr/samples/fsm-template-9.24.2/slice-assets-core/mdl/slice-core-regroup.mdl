@@ -1,0 +1,22 @@
+mdl 1;
+-- Increment 6, slice: external entities that navigate to each other must live in ONE module. Navigation
+-- associations (Ticket_Asset, Roster_Asset, ContactPerson_Asset, SLA_*) are created by `create external entities`
+-- only between entities of the same module, a hand-made association between two external entities has no remote
+-- navigation behind it, and a second external entity on the same entity set is CE6609. The published association
+-- graph is connected (Asset - Ticket - WorkOrder - Appointment, Asset - Roster, Asset - ContactPerson - Customer /
+-- Contract, Asset - SLA - Contract / Customer), so all of it goes into TicketManagement: that keeps the qualified
+-- names the moved Part/Tool flows use (TicketManagement.WorkOrder, .Appointment). Technician has no navigation and
+-- stays Technician.Technician. CustomerManagement.* and RosterManagement.Roster consumers are rewired by name.
+drop external entity CustomerManagement.ContactPerson;
+drop external entity CustomerManagement.SLA;
+drop external entity CustomerManagement.MonoAsset;
+drop external entity CustomerManagement.Contract;
+drop external entity CustomerManagement.Customer;
+drop external entity RosterManagement.Roster;
+drop external entity RosterManagement.MonoAsset;
+create external entities from CoreSeam.CoreAPI into TicketManagement entities (Customer, Contract, ContactPerson, SLA, Roster);
+create or modify association AssetManagement.Asset_Customer from AssetManagement.Asset to TicketManagement.Customer storage table;
+create or modify association AssetManagement.Asset_Contract from AssetManagement.Asset to TicketManagement.Contract storage table;
+create or modify association AssetManagement.Asset_UmbrellaContract from AssetManagement.Asset to TicketManagement.Contract storage table;
+-- the consumed service: headers microflow, not configuration microflow (CE6808 on 11.13 with ConfigurationMicroflow)
+alter consumed odata service CoreSeam.CoreAPI set (HeadersMicroflow: microflow CoreSeam.GetAuthHeaders);

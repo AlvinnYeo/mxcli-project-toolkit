@@ -1,0 +1,22 @@
+# monolith CoreAPI/CoreActions (10.24, port 8580); machine account assets_slice, password from the machine-local constant store (not shown)
+$ GET odata/core/v1/Technician (machine role)
+{"@odata.context":"http://127.0.0.1:8580/odata/core/v1/$metadata#Technician(TechnicianID,TechnicianName,EmployeeNumber)","value":[{"TechnicianID":1,"TechnicianName":"Journey Technician","EmployeeNumber":"JOURNEY-T1"}]}
+HTTP 200
+$ GET odata/core/v1/Technician (no credentials)
+HTTP 401
+$ GET odata/core/v1/Technician (human role journey_fnadm)
+HTTP 404
+$ POST rest/core/v1/rosters (machine role, asset CURL-A1)
+created 1
+HTTP 200
+$ GET odata/core/v1/Roster with Roster_Asset expanded
+{"@odata.context":"http://127.0.0.1:8580/odata/core/v1/$metadata#Roster(PublicID,StartDate)","value":[{"PublicID":1,"StartDate":"2026-10-11T22:00:00.000Z","Roster_Asset":{"SystemID":"CURL-A1"}}]}
+HTTP 200
+$ GET odata/core/v1/Roster filtered over the navigation (what the slice grid sends)
+{"@odata.context":"http://127.0.0.1:8580/odata/core/v1/$metadata#Roster(PublicID)","value":[{"PublicID":1}]}
+HTTP 200
+$ POST rest/core/v1/rosters (no credentials)
+HTTP 401
+$ POST rest/core/v1/rosters/delete-for-asset (machine role)
+deleted 1
+HTTP 200

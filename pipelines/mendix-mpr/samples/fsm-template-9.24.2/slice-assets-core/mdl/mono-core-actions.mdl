@@ -1,0 +1,102 @@
+mdl 1;
+-- Increment 6, monolith side: writes that carry behaviour go over a published REST action (decompose-app.md
+-- Stage 5), primitive query parameters only, so no JSON structures or mappings. The slice calls these from the
+-- asset tab (create roster, delete rosters) with an `on error without rollback` handler.
+-- Roster ownership stays with the monolith (the planner reads rosters); the slice never writes a Roster row.
+
+-- The monolith's asset rows are its mirror of the slice's system of record; a roster must hang off one, so the
+-- create action upserts the mirror by SystemID (the cross-app join key). Commit without events: the mirror is not
+-- a business create (Asset's own events would push to the device sync, which belongs to the Mobile partition).
+create or modify microflow CoreSeam.Asset_UpsertMirror (
+  $AssetSystemID: String,
+  $AssetID: String,
+  $AssetDescription: String
+) returns AssetManagement.Asset
+begin
+  retrieve $Existing from AssetManagement.Asset where [SystemID = $AssetSystemID] first;
+  if $Existing = empty then
+    $New = create AssetManagement.Asset (SystemID = $AssetSystemID, AssetID = $AssetID, Description = $AssetDescription);
+    commit $New without events;
+    return $New;
+  else
+    change $Existing (AssetID = $AssetID, Description = $AssetDescription);
+    commit $Existing without events;
+    return $Existing;
+  end if;
+end;
+
+create or modify microflow CoreSeam.API_Roster_Create (
+  $AssetSystemID: String,
+  $AssetID: String,
+  $AssetDescription: String,
+  $StartDate: String,
+  $EndDate: String
+) returns String
+begin
+  if $AssetSystemID = empty or trim($AssetSystemID) = '' then
+    return 'error: AssetSystemID required';
+  end if;
+  $Asset = call microflow CoreSeam.Asset_UpsertMirror(AssetSystemID = $AssetSystemID, AssetID = $AssetID, AssetDescription = $AssetDescription);
+  $Roster = create RosterManagement.Roster (Roster_Asset = $Asset, SystemID = $AssetSystemID + '-' + formatDateTime([%CurrentDateTime%], 'yyyyMMddHHmmssSSS'));
+  change $Roster (StartDate = parseDateTime($StartDate, 'yyyy-MM-dd'), EndDate = parseDateTime($EndDate, 'yyyy-MM-dd'));
+  commit $Roster;
+  return 'created ' + toString($Roster/PublicID);
+end;
+
+-- delete through the monolith's own Roster_Delete, so whatever it does beyond the delete still happens
+create or modify microflow CoreSeam.API_Roster_Delete (
+  $PublicID: Long
+) returns String
+begin
+  retrieve $Roster from RosterManagement.Roster where [PublicID = $PublicID] first;
+  if $Roster = empty then
+    return 'absent ' + toString($PublicID);
+  end if;
+  call microflow RosterManagement.Roster_Delete(Roster = $Roster);
+  return 'deleted ' + toString($PublicID);
+end;
+
+create or modify microflow CoreSeam.API_Rosters_DeleteForAsset (
+  $AssetSystemID: String
+) returns String
+begin
+  retrieve $Rosters from RosterManagement.Roster where [RosterManagement.Roster_Asset/AssetManagement.Asset/SystemID = $AssetSystemID];
+  $Count = count $Rosters;
+  call microflow RosterManagement.RosterList_Delete(RosterList = $Rosters);
+  return 'deleted ' + toString($Count);
+end;
+
+grant execute on microflow CoreSeam.API_Roster_Create to CoreSeam.APIClient;
+grant execute on microflow CoreSeam.API_Roster_Delete to CoreSeam.APIClient;
+grant execute on microflow CoreSeam.API_Rosters_DeleteForAsset to CoreSeam.APIClient;
+grant create, read (SystemID, AssetID, "Description"), write (SystemID, AssetID, "Description") on entity AssetManagement.Asset to AssetManagement.CoreAPI;
+grant create, delete, read (PublicID, SystemID, StartDate, EndDate, StartTime, EndTime, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday, Roster_Asset), write (SystemID, StartDate, EndDate, Roster_Asset) on entity RosterManagement.Roster to RosterManagement.CoreAPI;
+
+create or modify published rest service CoreSeam.CoreActions (
+  Path: 'rest/core/v1',
+  Version: '1.0.0',
+  ServiceName: 'FSM core seam (writes)',
+  Authentication: (basic)
+)
+{
+  resource 'rosters' {
+    post '' microflow CoreSeam.API_Roster_Create;
+    post 'delete' microflow CoreSeam.API_Roster_Delete;
+    post 'delete-for-asset' microflow CoreSeam.API_Rosters_DeleteForAsset;
+  }
+};
+grant access on published rest service CoreSeam.CoreActions to CoreSeam.APIClient;
+
+-- the slice's API account, created at startup; the password is a machine-local constant (sentinel default)
+create constant CoreSeam.SliceAPIUserName ( Type: String, DefaultValue: 'assets_slice' );
+create constant CoreSeam.SliceAPIUserPassword ( Type: String, DefaultValue: '__SET_ME__' );
+create or modify microflow AssetsSeam.ASU_EnsureJourneyAccounts ()
+begin
+  call microflow AssetsSeam.EnsureJourneyAccount(Name = @AssetsSeam.JourneyUserName, Password = @AssetsSeam.JourneyUserPassword, RoleName = 'FunctionalAdministrator');
+  call microflow AssetsSeam.EnsureJourneyAccount(Name = 'journey_techadm', Password = @AssetsSeam.JourneyUserPassword, RoleName = 'TechnicalAdministrator');
+  if @CoreSeam.SliceAPIUserPassword = '__SET_ME__' then
+    log warning node 'CoreSeam' 'CoreSeam.SliceAPIUserPassword is not set on this machine: slice API account not created';
+  else
+    call microflow AssetsSeam.EnsureJourneyAccount(Name = @CoreSeam.SliceAPIUserName, Password = @CoreSeam.SliceAPIUserPassword, RoleName = 'CoreAPIClient');
+  end if;
+end;

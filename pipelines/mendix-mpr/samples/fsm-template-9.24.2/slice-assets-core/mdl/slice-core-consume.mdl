@@ -1,0 +1,52 @@
+mdl 1;
+-- Increment 6, slice side (AssetsApp 11.13): consume the monolith's CoreAPI (OData) and replace the CUT STUB
+-- entities by external entities OF THE SAME QUALIFIED NAME. Cross-module references (pages, microflows, the
+-- slice-owned associations Asset_Customer / Asset_Contract / Asset_UmbrellaContract / Asset_Technician_Preferred /
+-- SuggestedPart_WorkOrder / SelectedTool_WorkOrder / UsedPart_Appointment) bind by name, so they re-bind to the
+-- external entity; associations OWNED by a stub entity (Ticket_Asset, Roster_Asset, ContactPerson_Asset, SLA_*,
+-- Technician_Warehouse, WorkOrderAssignment_*, Appointment_WorkOrder) cannot survive: an external entity cannot own
+-- an association to a local entity. They are dropped here and their consumers rewritten in slice-core-rewire.mdl.
+create module CoreSeam;
+create constant CoreSeam.CoreODataUrl ( Type: String, DefaultValue: 'http://127.0.0.1:8580/odata/core/v1/' );
+create constant CoreSeam.CoreBaseUrl ( Type: String, DefaultValue: 'http://127.0.0.1:8580' );
+create constant CoreSeam.CoreAPIUserName ( Type: String, DefaultValue: 'assets_slice' );
+create constant CoreSeam.CoreAPIPassword ( Type: String, DefaultValue: '__SET_ME__' );
+create or modify module role CoreSeam.User description 'reads monolith core data (external entities), calls the core REST actions';
+
+create or modify microflow CoreSeam.GetAuthHeaders ()
+returns List of System.HttpHeader
+begin
+  $Token = call java action CommunityCommons.Base64Encode(value = @CoreSeam.CoreAPIUserName + ':' + @CoreSeam.CoreAPIPassword);
+  $Headers = create list of System.HttpHeader;
+  $Authorization = create System.HttpHeader (Key = 'Authorization', Value = 'Basic ' + $Token);
+  add $Authorization to $Headers;
+  return $Headers;
+end;
+
+create consumed odata service CoreSeam.CoreAPI (
+  Version: '1.0.0',
+  ODataVersion: OData4,
+  MetadataUrl: 'core-metadata.xml',
+  Timeout: 60,
+  ServiceUrl: CoreSeam.CoreODataUrl,
+  ConfigurationMicroflow: microflow CoreSeam.GetAuthHeaders
+);
+
+-- stub-owned associations (cannot be owned by an external entity)
+drop association Administration.Account_Technician;
+drop association CustomerManagement.ContactPerson_Asset;
+drop association CustomerManagement.ContactPerson_Contract;
+drop association CustomerManagement.ContactPerson_Customer;
+drop association CustomerManagement.ContactPerson_Dossier;
+drop association CustomerManagement.SLA_Asset;
+drop association CustomerManagement.SLA_Contract;
+drop association CustomerManagement.SLA_Customer;
+drop association CustomerManagement.SLA_UmbrellaContract;
+drop association RosterManagement.Roster_Asset;
+drop association Technician.Technician_Warehouse;
+drop association TicketManagement.Appointment_WorkOrder;
+drop association TicketManagement.Ticket_Asset;
+drop association TicketManagement.Ticket_Priority;
+drop association TicketManagement.Ticket_TicketType;
+drop association TicketManagement.WorkOrderAssignment_Technician;
+drop association TicketManagement.WorkOrderAssignment_WorkOrder;

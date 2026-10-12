@@ -1,0 +1,86 @@
+mdl 1;
+-- Increment 6, monolith side (FSM 10.24 converted copy): the monolith PUBLISHES the core the Assets & Parts slice
+-- depends on (decompose-app.md Stage 2, "monolith publishes first"). Reads: OData service CoreSeam.CoreAPI.
+-- Writes with behaviour: REST service CoreSeam.CoreActions (roster create / delete), see mono-core-actions.mdl.
+--
+-- KEYS. An OData key must be unique, required and stable (CE6624). Of the ten core entities only Technician has
+-- one (TechnicianID, AutoNumber). Customer, Contract, ContactPerson, SLA, Priority, TicketType have no candidate at
+-- all; Ticket, WorkOrder, Appointment, Roster carry SystemID but nothing proves every create path fills it, and a
+-- unique rule on an attribute some flow leaves empty would make that flow's commit fail. So each gets a new
+-- PublicID: AutoNumber -- additive (one column + sequence), never fails a commit, needs no unique rule.
+-- The monolith's own Asset rows (its mirror of the slice's system-of-record) key on SystemID with a unique rule:
+-- the same rationale the slice used in increment 5 (every create path sets SystemID = RandomHash).
+create module CoreSeam;
+
+alter entity CustomerManagement.Customer add attribute if not exists PublicID: AutoNumber default 1;
+alter entity CustomerManagement.Contract add attribute if not exists PublicID: AutoNumber default 1;
+alter entity CustomerManagement.ContactPerson add attribute if not exists PublicID: AutoNumber default 1;
+alter entity CustomerManagement.SLA add attribute if not exists PublicID: AutoNumber default 1;
+alter entity TicketManagement.Ticket add attribute if not exists PublicID: AutoNumber default 1;
+alter entity TicketManagement.Priority add attribute if not exists PublicID: AutoNumber default 1;
+alter entity TicketManagement.TicketType add attribute if not exists PublicID: AutoNumber default 1;
+alter entity TicketManagement.WorkOrder add attribute if not exists PublicID: AutoNumber default 1;
+alter entity TicketManagement.Appointment add attribute if not exists PublicID: AutoNumber default 1;
+alter entity RosterManagement.Roster add attribute if not exists PublicID: AutoNumber default 1;
+alter entity AssetManagement.Asset modify attribute SystemID: String(200) unique error message 'SystemID must be unique';
+
+-- one machine module role per owning module; read-only, exactly the published members
+create or modify module role CoreSeam.APIClient description 'Machine role: the Assets & Parts slice calling the monolith';
+create or modify module role Technician.CoreAPI description 'Slice reads technicians over OData';
+create or modify module role CustomerManagement.CoreAPI description 'Slice reads customers, contracts, contacts, SLAs over OData';
+create or modify module role TicketManagement.CoreAPI description 'Slice reads tickets, work orders over OData';
+create or modify module role RosterManagement.CoreAPI description 'Slice reads and (via REST) writes rosters';
+create or modify module role AssetManagement.CoreAPI description 'Slice reads the monolith asset mirror (join key)';
+
+grant read (TechnicianID, TechnicianName, TelephoneNumber, EmailAddress, EmployeeNumber, CompanyName, IsActive, IsExternal) on entity Technician.Technician to Technician.CoreAPI;
+grant read (PublicID, CustomerID, DebtorNumber, CustomerName, Email, PhoneNumber, ReferenceNumber) on entity CustomerManagement.Customer to CustomerManagement.CoreAPI;
+grant read (PublicID, Number, "Description", AdministrativeContactPersonName, AdministrativeEmailAddress) on entity CustomerManagement.Contract to CustomerManagement.CoreAPI;
+grant read (PublicID, Name, PhoneNumber, EmailAddress, "Description", ContactPerson_Asset, ContactPerson_Customer, ContactPerson_Contract) on entity CustomerManagement.ContactPerson to CustomerManagement.CoreAPI;
+grant read (PublicID, Number, "Description", SLAtype, HighPriorityResponseTime, MediumPriorityResponseTime, LowPriorityResponseTime, SLA_Asset, SLA_Contract, SLA_Customer, SLA_UmbrellaContract) on entity CustomerManagement.SLA to CustomerManagement.CoreAPI;
+grant read (PublicID, TicketID, "Status", ShortDescription, "Description", CallerName, CreationTime, DueDate, Ticket_Asset, Ticket_Priority, Ticket_TicketType) on entity TicketManagement.Ticket to TicketManagement.CoreAPI;
+grant read (PublicID, Code, "Description", IsActive) on entity TicketManagement.Priority to TicketManagement.CoreAPI;
+grant read (PublicID, Code, Name, ExpectedDuration) on entity TicketManagement.TicketType to TicketManagement.CoreAPI;
+grant read (PublicID, WorkOrderID, "Status", ShortDescription, DueDate, WorkOrder_Ticket) on entity TicketManagement.WorkOrder to TicketManagement.CoreAPI;
+grant read (PublicID, AppointmentID, "Status", PlannedWorkStart, PlannedWorkEnd, Appointment_WorkOrder) on entity TicketManagement.Appointment to TicketManagement.CoreAPI;
+grant read (PublicID, StartDate, EndDate, StartTime, EndTime, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday, Roster_Asset) on entity RosterManagement.Roster to RosterManagement.CoreAPI;
+grant read (SystemID, AssetID, "Description") on entity AssetManagement.Asset to AssetManagement.CoreAPI;
+
+create or modify published odata service CoreSeam.CoreAPI (
+  path: 'odata/core/v1/',
+  version: '1.0.0',
+  ODataVersion: OData4,
+  namespace: 'FSM.Core',
+  ServiceName: 'CoreAPI',
+  PublishAssociations: Yes,
+  Authentication: (basic)
+)
+{
+  publish entity Technician.Technician as 'Technician' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (TechnicianID (KEY, Filterable, Sortable), TechnicianName (Filterable, Sortable), TelephoneNumber, EmailAddress, EmployeeNumber (Filterable), CompanyName, IsActive (Filterable), IsExternal (Filterable));
+  publish entity CustomerManagement.Customer as 'Customer' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), CustomerID (Filterable, Sortable), DebtorNumber, CustomerName (Filterable, Sortable), Email, PhoneNumber, ReferenceNumber);
+  publish entity CustomerManagement.Contract as 'Contract' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), Number (Filterable, Sortable), Description (Filterable), AdministrativeContactPersonName, AdministrativeEmailAddress);
+  publish entity CustomerManagement.ContactPerson as 'ContactPerson' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), Name (Filterable, Sortable), PhoneNumber, EmailAddress, Description, ContactPerson_Asset as 'ContactPerson_Asset', ContactPerson_Customer as 'ContactPerson_Customer', ContactPerson_Contract as 'ContactPerson_Contract');
+  publish entity CustomerManagement.SLA as 'SLA' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported)
+  expose (PublicID (KEY, Filterable, Sortable), Number (Filterable, Sortable), Description, SLAtype (Filterable), HighPriorityResponseTime, MediumPriorityResponseTime, LowPriorityResponseTime, SLA_Asset as 'SLA_Asset', SLA_Contract as 'SLA_Contract', SLA_Customer as 'SLA_Customer', SLA_UmbrellaContract as 'SLA_UmbrellaContract');
+  publish entity TicketManagement.Ticket as 'Ticket' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), TicketID (Filterable, Sortable), Status (Filterable), ShortDescription (Filterable, Sortable), Description, CallerName, CreationTime (Filterable, Sortable), DueDate (Filterable, Sortable), Ticket_Asset as 'Ticket_Asset', Ticket_Priority as 'Ticket_Priority', Ticket_TicketType as 'Ticket_TicketType');
+  publish entity TicketManagement.Priority as 'Priority' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported)
+  expose (PublicID (KEY, Filterable, Sortable), Code (Filterable), Description (Filterable, Sortable), IsActive (Filterable));
+  publish entity TicketManagement.TicketType as 'TicketType' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported)
+  expose (PublicID (KEY, Filterable, Sortable), Code (Filterable), Name (Filterable, Sortable), ExpectedDuration);
+  publish entity TicketManagement.WorkOrder as 'WorkOrder' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), WorkOrderID (Filterable, Sortable), Status (Filterable), ShortDescription (Filterable), DueDate (Filterable, Sortable), WorkOrder_Ticket as 'WorkOrder_Ticket');
+  publish entity TicketManagement.Appointment as 'Appointment' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), AppointmentID (Filterable), Status (Filterable), PlannedWorkStart (Filterable, Sortable), PlannedWorkEnd, Appointment_WorkOrder as 'Appointment_WorkOrder');
+  publish entity RosterManagement.Roster as 'Roster' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), StartDate (Filterable, Sortable), EndDate (Filterable, Sortable), StartTime (Sortable), EndTime, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday, Roster_Asset as 'Roster_Asset');
+  publish entity AssetManagement.Asset as 'MonoAsset' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (SystemID (KEY, Filterable, Sortable), AssetID (Filterable, Sortable), Description (Filterable));
+};
+grant access on published odata service CoreSeam.CoreAPI to CoreSeam.APIClient;
+
+-- machine user role: the only role granted on the service
+create user role CoreAPIClient (ModuleRoles: (System.User, CoreSeam.APIClient, Technician.CoreAPI, CustomerManagement.CoreAPI, TicketManagement.CoreAPI, RosterManagement.CoreAPI, AssetManagement.CoreAPI), Description: 'Machine role: the Assets & Parts slice (OData read, REST write)', CheckSecurity: true);

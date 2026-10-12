@@ -1,0 +1,8 @@
+$ mx(11.13) check AssetsApp.mpr   # after the first full rewire run (before the regroup)
+      2 [CE6593] "Association 'SLA_Asset' cannot have write rights, because write access of the association could not be determined" at Access rule of entity 'AssetManagement.Asset'
+      1 [CE6808] "The microflow that configures a consumed OData service should return a System.ConsumedODataConfiguration" at Consumed OData service 'CoreSeam.CoreAPI', Microflow 'CoreSeam.GetAuthHeaders'
+      1 [CE6609] "External entity with the same remote source already exists." at Entity 'CustomerManagement.MonoAsset', Entity 'RosterManagement.MonoAsset', Entity 'TicketManagement.MonoAsset'
+      1 [CE0161] "Error(s) in XPath constraint." at Retrieve object(s) activity 'Retrieve list of Tool from database'
+      1 [CE0066] "Entity access is out of date. Please update security by clicking the 'Update security' button in the domain model editor." at Domain model of module 'AssetManagement'
+      1 [CE0007] "Please re-select module roles." at Access rule of entity 'Technician.Technician'
+The app contains: 7 errors.

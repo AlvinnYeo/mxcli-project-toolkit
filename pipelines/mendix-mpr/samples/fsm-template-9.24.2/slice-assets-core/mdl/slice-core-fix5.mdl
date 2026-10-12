@@ -1,0 +1,62 @@
+mdl 1;
+-- Increment 6, slice: two corrections found while writing the ledger (both folded back into slice-core-rewire.mdl):
+-- the Standard-SLA fallback of Asset_GetRelevantSLA, and the contacts grid's Customer(s)/Contract(s) columns, which
+-- run over navigations BETWEEN external entities (ContactPerson -> Customer / Contract, same service) and so can stay.
+drop microflow AssetManagement.Asset_GetRelevantSLA;
+create or modify microflow AssetManagement.Asset_GetRelevantSLA (
+  $Asset: AssetManagement.Asset
+)
+returns TicketManagement.SLA
+folder 'Objects/Asset'
+export level api
+begin
+  retrieve $SLA_Asset from TicketManagement.SLA where [TicketManagement.SLA_Asset/TicketManagement.MonoAsset/SystemID = $Asset/SystemID] first;
+  if $SLA_Asset != empty then
+    return $SLA_Asset;
+  end if;
+  retrieve $Contract from $Asset/AssetManagement.Asset_Contract;
+  if $Contract != empty then
+    retrieve $SLA_Contract from TicketManagement.SLA where [TicketManagement.SLA_Contract/TicketManagement.Contract/PublicID = $Contract/PublicID] first;
+    if $SLA_Contract != empty then
+      return $SLA_Contract;
+    end if;
+  end if;
+  retrieve $Umbrella from $Asset/AssetManagement.Asset_UmbrellaContract;
+  if $Umbrella != empty then
+    retrieve $SLA_Umbrella from TicketManagement.SLA where [TicketManagement.SLA_UmbrellaContract/TicketManagement.Contract/PublicID = $Umbrella/PublicID] first;
+    if $SLA_Umbrella != empty then
+      return $SLA_Umbrella;
+    end if;
+  end if;
+  retrieve $Customer from $Asset/AssetManagement.Asset_Customer;
+  if $Customer != empty then
+    retrieve $SLA_Customer from TicketManagement.SLA where [TicketManagement.SLA_Customer/TicketManagement.Customer/PublicID = $Customer/PublicID] first;
+    if $SLA_Customer != empty then
+      return $SLA_Customer;
+    end if;
+  end if;
+  -- FSM's last fallback: the Standard SLA. The published enumeration arrives as a String (Edm.String in $metadata).
+  retrieve $SLA_Standard from TicketManagement.SLA where [SLAtype = 'Standard'] first;
+  return $SLA_Standard;
+end;
+alter snippet AssetManagement.Snippet_Asset_DataTabs {
+  replace grid2 with {
+      datagrid grid2 (
+        DataSource: database from TicketManagement.ContactPerson where [TicketManagement.ContactPerson_Asset/TicketManagement.MonoAsset/SystemID = $Asset/SystemID] sort by Name asc,
+        Selection: Single
+      ) {
+        column (Attribute: Name, Caption: 'Name')
+        column (Attribute: PhoneNumber, Caption: 'Phone number')
+        column (Attribute: EmailAddress, Caption: 'Email')
+        column (Attribute: Description, Caption: 'Job description')
+        column (Attribute: ContactPerson_Customer/CustomerName, Caption: 'Customer(s)')
+        column (Attribute: ContactPerson_Contract/Number, Caption: 'Contract(s)')
+        column (Caption: ' ', ShowContentAs: customContent) {
+          actionbutton actionButton2 (
+            Caption: 'Open',
+            Action: show page CustomerManagement.ContactPerson_View(ContactPerson = $currentObject)
+          )
+        }
+      }
+  };
+};

@@ -1,0 +1,15 @@
+$ mx(10.24) check fsm.mpr
+The mpr file version is '10.24.0.73019'.
+Loading the mpr file.
+The mpr file version is '10.24.0.73019'.
+Checking app for errors...
+The app contains: 0 errors.
+real 30 s
+$ mxbuild(10.24.0) --java-home=<jdk21> --java-exe-path=<jdk21>/bin/java --target=deploy fsm.mpr
+Post-processing generation results...
+Executing step 'Bundle application'
+Compiling Java...
+Executing step 'Clean up'
+Cleaning up...
+BUILD SUCCEEDED
+exit=0 real 51 s

@@ -1,0 +1,3 @@
+mdl 1;
+revoke all on entity Part.Part from Part.ViewMy;
+grant read (PartID, SystemID, Name, "Description", Price, IsAdditionalPart, IsActive, Vendor, Part_UnitOfMeasure) on entity Part.Part to Part.ViewMy where [WarehouseManagement.Inventory_Part/WarehouseManagement.Inventory/WarehouseManagement.Inventory_Warehouse/WarehouseManagement.Warehouse/CoreSeam.TechnicianLink_Warehouse/CoreSeam.TechnicianLink/CoreSeam.TechnicianLink_Account = '[%CurrentUser%]'];

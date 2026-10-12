@@ -1,0 +1,8 @@
+mdl 1;
+-- The Asset access rules keep a MemberAccess for the dropped CustomerManagement.SLA_Asset that `describe` no longer
+-- shows and `revoke all` + `grant` does not remove (mx check CE1613 x3). Workaround: re-create an association of
+-- that name (from a throw-away entity in its module) and drop it again; DROP ASSOCIATION reconciles the rules.
+create persistent entity CustomerManagement.TmpReconcile ( Note: String(10) );
+create association CustomerManagement.SLA_Asset from CustomerManagement.TmpReconcile to AssetManagement.Asset;
+drop association CustomerManagement.SLA_Asset;
+drop entity CustomerManagement.TmpReconcile;

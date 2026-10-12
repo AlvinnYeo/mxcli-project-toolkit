@@ -1,0 +1,798 @@
+<?xml version="1.0" encoding="UTF-8"?><edmx:Edmx xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx" Version="4.0">
+  <edmx:DataServices>
+    <Schema xmlns="http://docs.oasis-open.org/odata/ns/edm" Namespace="FSM.Core">
+      <EntityType Name="Technician">
+        <Key>
+          <PropertyRef Name="TechnicianID"/>
+        </Key>
+        <Property Name="TechnicianID" Nullable="false" Type="Edm.Int64"/>
+        <Property MaxLength="200" Name="TechnicianName" Type="Edm.String"/>
+        <Property MaxLength="200" Name="TelephoneNumber" Type="Edm.String"/>
+        <Property MaxLength="200" Name="EmailAddress" Type="Edm.String"/>
+        <Property MaxLength="200" Name="EmployeeNumber" Type="Edm.String"/>
+        <Property MaxLength="200" Name="CompanyName" Type="Edm.String"/>
+        <Property Name="IsActive" Type="Edm.Boolean"/>
+        <Property Name="IsExternal" Type="Edm.Boolean"/>
+      </EntityType>
+      <EntityType Name="Customer">
+        <Key>
+          <PropertyRef Name="PublicID"/>
+        </Key>
+        <Property Name="PublicID" Nullable="false" Type="Edm.Int64"/>
+        <Property MaxLength="200" Name="CustomerID" Type="Edm.String"/>
+        <Property MaxLength="200" Name="DebtorNumber" Type="Edm.String"/>
+        <Property MaxLength="200" Name="CustomerName" Type="Edm.String"/>
+        <Property MaxLength="200" Name="Email" Type="Edm.String"/>
+        <Property MaxLength="200" Name="PhoneNumber" Type="Edm.String"/>
+        <Property MaxLength="200" Name="ReferenceNumber" Type="Edm.String"/>
+      </EntityType>
+      <EntityType Name="Contract">
+        <Key>
+          <PropertyRef Name="PublicID"/>
+        </Key>
+        <Property Name="PublicID" Nullable="false" Type="Edm.Int64"/>
+        <Property MaxLength="200" Name="Number" Type="Edm.String"/>
+        <Property MaxLength="200" Name="Description" Type="Edm.String"/>
+        <Property MaxLength="200" Name="AdministrativeContactPersonName" Type="Edm.String"/>
+        <Property MaxLength="200" Name="AdministrativeEmailAddress" Type="Edm.String"/>
+      </EntityType>
+      <EntityType Name="ContactPerson">
+        <Key>
+          <PropertyRef Name="PublicID"/>
+        </Key>
+        <Property Name="PublicID" Nullable="false" Type="Edm.Int64"/>
+        <Property MaxLength="200" Name="Name" Type="Edm.String"/>
+        <Property MaxLength="200" Name="PhoneNumber" Type="Edm.String"/>
+        <Property MaxLength="200" Name="EmailAddress" Type="Edm.String"/>
+        <Property MaxLength="max" Name="Description" Type="Edm.String"/>
+        <NavigationProperty Name="ContactPerson_Asset" Type="Collection(FSM.Core.Asset)"/>
+        <NavigationProperty Name="ContactPerson_Customer" Type="Collection(FSM.Core.Customer)"/>
+        <NavigationProperty Name="ContactPerson_Contract" Type="Collection(FSM.Core.Contract)"/>
+      </EntityType>
+      <EntityType Name="SLA">
+        <Key>
+          <PropertyRef Name="PublicID"/>
+        </Key>
+        <Property Name="PublicID" Nullable="false" Type="Edm.Int64"/>
+        <Property MaxLength="200" Name="Number" Type="Edm.String"/>
+        <Property MaxLength="200" Name="Description" Type="Edm.String"/>
+        <Property Name="SLAtype" Type="Edm.String"/>
+        <Property Name="HighPriorityResponseTime" Type="Edm.Int64"/>
+        <Property Name="MediumPriorityResponseTime" Type="Edm.Int64"/>
+        <Property Name="LowPriorityResponseTime" Type="Edm.Int64"/>
+        <NavigationProperty Name="SLA_Asset" Type="FSM.Core.Asset"/>
+        <NavigationProperty Name="SLA_Contract" Type="FSM.Core.Contract"/>
+        <NavigationProperty Name="SLA_Customer" Type="FSM.Core.Customer"/>
+        <NavigationProperty Name="SLA_UmbrellaContract" Type="FSM.Core.Contract"/>
+      </EntityType>
+      <EntityType Name="Ticket">
+        <Key>
+          <PropertyRef Name="PublicID"/>
+        </Key>
+        <Property Name="PublicID" Nullable="false" Type="Edm.Int64"/>
+        <Property MaxLength="200" Name="TicketID" Type="Edm.String"/>
+        <Property Name="Status" Type="Edm.String"/>
+        <Property MaxLength="36" Name="ShortDescription" Type="Edm.String"/>
+        <Property MaxLength="4000" Name="Description" Type="Edm.String"/>
+        <Property MaxLength="200" Name="CallerName" Type="Edm.String"/>
+        <Property Name="CreationTime" Type="Edm.DateTimeOffset"/>
+        <Property Name="DueDate" Type="Edm.DateTimeOffset"/>
+        <NavigationProperty Name="Ticket_Asset" Type="FSM.Core.Asset"/>
+        <NavigationProperty Name="Ticket_Priority" Type="FSM.Core.Priority"/>
+        <NavigationProperty Name="Ticket_TicketType" Type="FSM.Core.TicketType"/>
+      </EntityType>
+      <EntityType Name="Priority">
+        <Key>
+          <PropertyRef Name="PublicID"/>
+        </Key>
+        <Property Name="PublicID" Nullable="false" Type="Edm.Int64"/>
+        <Property MaxLength="200" Name="Code" Type="Edm.String"/>
+        <Property MaxLength="200" Name="Description" Type="Edm.String"/>
+        <Property Name="IsActive" Type="Edm.Boolean"/>
+      </EntityType>
+      <EntityType Name="TicketType">
+        <Key>
+          <PropertyRef Name="PublicID"/>
+        </Key>
+        <Property Name="PublicID" Nullable="false" Type="Edm.Int64"/>
+        <Property MaxLength="200" Name="Code" Type="Edm.String"/>
+        <Property MaxLength="200" Name="Name" Type="Edm.String"/>
+        <Property Name="ExpectedDuration" Type="Edm.Int64"/>
+      </EntityType>
+      <EntityType Name="WorkOrder">
+        <Key>
+          <PropertyRef Name="PublicID"/>
+        </Key>
+        <Property Name="PublicID" Nullable="false" Type="Edm.Int64"/>
+        <Property MaxLength="36" Name="WorkOrderID" Type="Edm.String"/>
+        <Property Name="Status" Type="Edm.String"/>
+        <Property MaxLength="36" Name="ShortDescription" Type="Edm.String"/>
+        <Property Name="DueDate" Type="Edm.DateTimeOffset"/>
+        <NavigationProperty Name="WorkOrder_Ticket" Type="FSM.Core.Ticket"/>
+      </EntityType>
+      <EntityType Name="Appointment">
+        <Key>
+          <PropertyRef Name="PublicID"/>
+        </Key>
+        <Property Name="PublicID" Nullable="false" Type="Edm.Int64"/>
+        <Property MaxLength="36" Name="AppointmentID" Type="Edm.String"/>
+        <Property Name="Status" Type="Edm.String"/>
+        <Property Name="PlannedWorkStart" Type="Edm.DateTimeOffset"/>
+        <Property Name="PlannedWorkEnd" Type="Edm.DateTimeOffset"/>
+        <NavigationProperty Name="Appointment_WorkOrder" Type="FSM.Core.WorkOrder"/>
+      </EntityType>
+      <EntityType Name="Roster">
+        <Key>
+          <PropertyRef Name="PublicID"/>
+        </Key>
+        <Property Name="PublicID" Nullable="false" Type="Edm.Int64"/>
+        <Property Name="StartDate" Type="Edm.DateTimeOffset"/>
+        <Property Name="EndDate" Type="Edm.DateTimeOffset"/>
+        <Property Name="StartTime" Type="Edm.DateTimeOffset"/>
+        <Property Name="EndTime" Type="Edm.DateTimeOffset"/>
+        <Property Name="Monday" Type="Edm.Boolean"/>
+        <Property Name="Tuesday" Type="Edm.Boolean"/>
+        <Property Name="Wednesday" Type="Edm.Boolean"/>
+        <Property Name="Thursday" Type="Edm.Boolean"/>
+        <Property Name="Friday" Type="Edm.Boolean"/>
+        <Property Name="Saturday" Type="Edm.Boolean"/>
+        <Property Name="Sunday" Type="Edm.Boolean"/>
+        <NavigationProperty Name="Roster_Asset" Type="FSM.Core.Asset"/>
+      </EntityType>
+      <EntityType Name="Asset">
+        <Key>
+          <PropertyRef Name="SystemID"/>
+        </Key>
+        <Property MaxLength="200" Name="SystemID" Nullable="false" Type="Edm.String"/>
+        <Property MaxLength="200" Name="AssetID" Type="Edm.String"/>
+        <Property MaxLength="200" Name="Description" Type="Edm.String"/>
+      </EntityType>
+      <EntityContainer Name="Entities">
+        <EntitySet EntityType="FSM.Core.Technician" Name="Technician">
+          <Annotation Term="Org.OData.Capabilities.V1.InsertRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Insertable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.UpdateRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Updatable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.DeleteRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Deletable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.FilterRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Filterable"/>
+              <PropertyValue Property="NonFilterableProperties">
+                <Collection>
+                  <PropertyPath>TelephoneNumber</PropertyPath>
+                  <PropertyPath>EmailAddress</PropertyPath>
+                  <PropertyPath>CompanyName</PropertyPath>
+                </Collection>
+              </PropertyValue>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.SortRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Sortable"/>
+              <PropertyValue Property="NonSortableProperties">
+                <Collection>
+                  <PropertyPath>TelephoneNumber</PropertyPath>
+                  <PropertyPath>EmailAddress</PropertyPath>
+                  <PropertyPath>EmployeeNumber</PropertyPath>
+                  <PropertyPath>CompanyName</PropertyPath>
+                  <PropertyPath>IsActive</PropertyPath>
+                  <PropertyPath>IsExternal</PropertyPath>
+                </Collection>
+              </PropertyValue>
+            </Record>
+          </Annotation>
+          <Annotation Bool="true" Term="Org.OData.Capabilities.V1.TopSupported"/>
+          <Annotation Bool="true" Term="Org.OData.Capabilities.V1.SkipSupported"/>
+          <Annotation Term="Org.OData.Capabilities.V1.CountRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Countable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.SearchRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Searchable"/>
+            </Record>
+          </Annotation>
+        </EntitySet>
+        <EntitySet EntityType="FSM.Core.Customer" Name="Customer">
+          <Annotation Term="Org.OData.Capabilities.V1.InsertRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Insertable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.UpdateRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Updatable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.DeleteRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Deletable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.FilterRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Filterable"/>
+              <PropertyValue Property="NonFilterableProperties">
+                <Collection>
+                  <PropertyPath>DebtorNumber</PropertyPath>
+                  <PropertyPath>Email</PropertyPath>
+                  <PropertyPath>PhoneNumber</PropertyPath>
+                  <PropertyPath>ReferenceNumber</PropertyPath>
+                </Collection>
+              </PropertyValue>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.SortRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Sortable"/>
+              <PropertyValue Property="NonSortableProperties">
+                <Collection>
+                  <PropertyPath>DebtorNumber</PropertyPath>
+                  <PropertyPath>Email</PropertyPath>
+                  <PropertyPath>PhoneNumber</PropertyPath>
+                  <PropertyPath>ReferenceNumber</PropertyPath>
+                </Collection>
+              </PropertyValue>
+            </Record>
+          </Annotation>
+          <Annotation Bool="true" Term="Org.OData.Capabilities.V1.TopSupported"/>
+          <Annotation Bool="true" Term="Org.OData.Capabilities.V1.SkipSupported"/>
+          <Annotation Term="Org.OData.Capabilities.V1.CountRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Countable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.SearchRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Searchable"/>
+            </Record>
+          </Annotation>
+        </EntitySet>
+        <EntitySet EntityType="FSM.Core.Contract" Name="Contract">
+          <Annotation Term="Org.OData.Capabilities.V1.InsertRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Insertable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.UpdateRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Updatable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.DeleteRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Deletable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.FilterRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Filterable"/>
+              <PropertyValue Property="NonFilterableProperties">
+                <Collection>
+                  <PropertyPath>AdministrativeContactPersonName</PropertyPath>
+                  <PropertyPath>AdministrativeEmailAddress</PropertyPath>
+                </Collection>
+              </PropertyValue>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.SortRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Sortable"/>
+              <PropertyValue Property="NonSortableProperties">
+                <Collection>
+                  <PropertyPath>Description</PropertyPath>
+                  <PropertyPath>AdministrativeContactPersonName</PropertyPath>
+                  <PropertyPath>AdministrativeEmailAddress</PropertyPath>
+                </Collection>
+              </PropertyValue>
+            </Record>
+          </Annotation>
+          <Annotation Bool="true" Term="Org.OData.Capabilities.V1.TopSupported"/>
+          <Annotation Bool="true" Term="Org.OData.Capabilities.V1.SkipSupported"/>
+          <Annotation Term="Org.OData.Capabilities.V1.CountRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Countable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.SearchRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Searchable"/>
+            </Record>
+          </Annotation>
+        </EntitySet>
+        <EntitySet EntityType="FSM.Core.ContactPerson" Name="ContactPerson">
+          <NavigationPropertyBinding Path="ContactPerson_Asset" Target="MonoAsset"/>
+          <NavigationPropertyBinding Path="ContactPerson_Contract" Target="Contract"/>
+          <NavigationPropertyBinding Path="ContactPerson_Customer" Target="Customer"/>
+          <Annotation Term="Org.OData.Capabilities.V1.InsertRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Insertable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.UpdateRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Updatable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.DeleteRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Deletable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.FilterRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Filterable"/>
+              <PropertyValue Property="NonFilterableProperties">
+                <Collection>
+                  <PropertyPath>PhoneNumber</PropertyPath>
+                  <PropertyPath>EmailAddress</PropertyPath>
+                  <PropertyPath>Description</PropertyPath>
+                </Collection>
+              </PropertyValue>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.SortRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Sortable"/>
+              <PropertyValue Property="NonSortableProperties">
+                <Collection>
+                  <PropertyPath>PhoneNumber</PropertyPath>
+                  <PropertyPath>EmailAddress</PropertyPath>
+                  <PropertyPath>Description</PropertyPath>
+                </Collection>
+              </PropertyValue>
+            </Record>
+          </Annotation>
+          <Annotation Bool="true" Term="Org.OData.Capabilities.V1.TopSupported"/>
+          <Annotation Bool="true" Term="Org.OData.Capabilities.V1.SkipSupported"/>
+          <Annotation Term="Org.OData.Capabilities.V1.CountRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Countable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.SearchRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Searchable"/>
+            </Record>
+          </Annotation>
+        </EntitySet>
+        <EntitySet EntityType="FSM.Core.SLA" Name="SLA">
+          <NavigationPropertyBinding Path="SLA_Asset" Target="MonoAsset"/>
+          <NavigationPropertyBinding Path="SLA_Contract" Target="Contract"/>
+          <NavigationPropertyBinding Path="SLA_Customer" Target="Customer"/>
+          <NavigationPropertyBinding Path="SLA_UmbrellaContract" Target="Contract"/>
+          <Annotation Term="Org.OData.Capabilities.V1.InsertRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Insertable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.UpdateRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Updatable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.DeleteRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Deletable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.FilterRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Filterable"/>
+              <PropertyValue Property="NonFilterableProperties">
+                <Collection>
+                  <PropertyPath>Description</PropertyPath>
+                  <PropertyPath>HighPriorityResponseTime</PropertyPath>
+                  <PropertyPath>MediumPriorityResponseTime</PropertyPath>
+                  <PropertyPath>LowPriorityResponseTime</PropertyPath>
+                </Collection>
+              </PropertyValue>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.SortRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Sortable"/>
+              <PropertyValue Property="NonSortableProperties">
+                <Collection>
+                  <PropertyPath>Description</PropertyPath>
+                  <PropertyPath>SLAtype</PropertyPath>
+                  <PropertyPath>HighPriorityResponseTime</PropertyPath>
+                  <PropertyPath>MediumPriorityResponseTime</PropertyPath>
+                  <PropertyPath>LowPriorityResponseTime</PropertyPath>
+                </Collection>
+              </PropertyValue>
+            </Record>
+          </Annotation>
+          <Annotation Bool="true" Term="Org.OData.Capabilities.V1.TopSupported"/>
+          <Annotation Bool="true" Term="Org.OData.Capabilities.V1.SkipSupported"/>
+          <Annotation Term="Org.OData.Capabilities.V1.CountRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Countable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.SearchRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Searchable"/>
+            </Record>
+          </Annotation>
+        </EntitySet>
+        <EntitySet EntityType="FSM.Core.Ticket" Name="Ticket">
+          <NavigationPropertyBinding Path="Ticket_Asset" Target="MonoAsset"/>
+          <NavigationPropertyBinding Path="Ticket_Priority" Target="Priority"/>
+          <NavigationPropertyBinding Path="Ticket_TicketType" Target="TicketType"/>
+          <Annotation Term="Org.OData.Capabilities.V1.InsertRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Insertable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.UpdateRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Updatable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.DeleteRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Deletable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.FilterRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Filterable"/>
+              <PropertyValue Property="NonFilterableProperties">
+                <Collection>
+                  <PropertyPath>Description</PropertyPath>
+                  <PropertyPath>CallerName</PropertyPath>
+                </Collection>
+              </PropertyValue>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.SortRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Sortable"/>
+              <PropertyValue Property="NonSortableProperties">
+                <Collection>
+                  <PropertyPath>Status</PropertyPath>
+                  <PropertyPath>Description</PropertyPath>
+                  <PropertyPath>CallerName</PropertyPath>
+                </Collection>
+              </PropertyValue>
+            </Record>
+          </Annotation>
+          <Annotation Bool="true" Term="Org.OData.Capabilities.V1.TopSupported"/>
+          <Annotation Bool="true" Term="Org.OData.Capabilities.V1.SkipSupported"/>
+          <Annotation Term="Org.OData.Capabilities.V1.CountRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Countable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.SearchRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Searchable"/>
+            </Record>
+          </Annotation>
+        </EntitySet>
+        <EntitySet EntityType="FSM.Core.Priority" Name="Priority">
+          <Annotation Term="Org.OData.Capabilities.V1.InsertRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Insertable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.UpdateRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Updatable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.DeleteRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Deletable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.FilterRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Filterable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.SortRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Sortable"/>
+              <PropertyValue Property="NonSortableProperties">
+                <Collection>
+                  <PropertyPath>Code</PropertyPath>
+                  <PropertyPath>IsActive</PropertyPath>
+                </Collection>
+              </PropertyValue>
+            </Record>
+          </Annotation>
+          <Annotation Bool="true" Term="Org.OData.Capabilities.V1.TopSupported"/>
+          <Annotation Bool="true" Term="Org.OData.Capabilities.V1.SkipSupported"/>
+          <Annotation Term="Org.OData.Capabilities.V1.CountRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Countable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.SearchRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Searchable"/>
+            </Record>
+          </Annotation>
+        </EntitySet>
+        <EntitySet EntityType="FSM.Core.TicketType" Name="TicketType">
+          <Annotation Term="Org.OData.Capabilities.V1.InsertRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Insertable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.UpdateRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Updatable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.DeleteRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Deletable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.FilterRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Filterable"/>
+              <PropertyValue Property="NonFilterableProperties">
+                <Collection>
+                  <PropertyPath>ExpectedDuration</PropertyPath>
+                </Collection>
+              </PropertyValue>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.SortRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Sortable"/>
+              <PropertyValue Property="NonSortableProperties">
+                <Collection>
+                  <PropertyPath>Code</PropertyPath>
+                  <PropertyPath>ExpectedDuration</PropertyPath>
+                </Collection>
+              </PropertyValue>
+            </Record>
+          </Annotation>
+          <Annotation Bool="true" Term="Org.OData.Capabilities.V1.TopSupported"/>
+          <Annotation Bool="true" Term="Org.OData.Capabilities.V1.SkipSupported"/>
+          <Annotation Term="Org.OData.Capabilities.V1.CountRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Countable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.SearchRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Searchable"/>
+            </Record>
+          </Annotation>
+        </EntitySet>
+        <EntitySet EntityType="FSM.Core.WorkOrder" Name="WorkOrder">
+          <NavigationPropertyBinding Path="WorkOrder_Ticket" Target="Ticket"/>
+          <Annotation Term="Org.OData.Capabilities.V1.InsertRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Insertable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.UpdateRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Updatable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.DeleteRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Deletable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.FilterRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Filterable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.SortRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Sortable"/>
+              <PropertyValue Property="NonSortableProperties">
+                <Collection>
+                  <PropertyPath>Status</PropertyPath>
+                  <PropertyPath>ShortDescription</PropertyPath>
+                </Collection>
+              </PropertyValue>
+            </Record>
+          </Annotation>
+          <Annotation Bool="true" Term="Org.OData.Capabilities.V1.TopSupported"/>
+          <Annotation Bool="true" Term="Org.OData.Capabilities.V1.SkipSupported"/>
+          <Annotation Term="Org.OData.Capabilities.V1.CountRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Countable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.SearchRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Searchable"/>
+            </Record>
+          </Annotation>
+        </EntitySet>
+        <EntitySet EntityType="FSM.Core.Appointment" Name="Appointment">
+          <NavigationPropertyBinding Path="Appointment_WorkOrder" Target="WorkOrder"/>
+          <Annotation Term="Org.OData.Capabilities.V1.InsertRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Insertable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.UpdateRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Updatable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.DeleteRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Deletable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.FilterRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Filterable"/>
+              <PropertyValue Property="NonFilterableProperties">
+                <Collection>
+                  <PropertyPath>PlannedWorkEnd</PropertyPath>
+                </Collection>
+              </PropertyValue>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.SortRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Sortable"/>
+              <PropertyValue Property="NonSortableProperties">
+                <Collection>
+                  <PropertyPath>AppointmentID</PropertyPath>
+                  <PropertyPath>Status</PropertyPath>
+                  <PropertyPath>PlannedWorkEnd</PropertyPath>
+                </Collection>
+              </PropertyValue>
+            </Record>
+          </Annotation>
+          <Annotation Bool="true" Term="Org.OData.Capabilities.V1.TopSupported"/>
+          <Annotation Bool="true" Term="Org.OData.Capabilities.V1.SkipSupported"/>
+          <Annotation Term="Org.OData.Capabilities.V1.CountRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Countable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.SearchRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Searchable"/>
+            </Record>
+          </Annotation>
+        </EntitySet>
+        <EntitySet EntityType="FSM.Core.Roster" Name="Roster">
+          <NavigationPropertyBinding Path="Roster_Asset" Target="MonoAsset"/>
+          <Annotation Term="Org.OData.Capabilities.V1.InsertRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Insertable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.UpdateRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Updatable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.DeleteRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Deletable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.FilterRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Filterable"/>
+              <PropertyValue Property="NonFilterableProperties">
+                <Collection>
+                  <PropertyPath>StartTime</PropertyPath>
+                  <PropertyPath>EndTime</PropertyPath>
+                  <PropertyPath>Monday</PropertyPath>
+                  <PropertyPath>Tuesday</PropertyPath>
+                  <PropertyPath>Wednesday</PropertyPath>
+                  <PropertyPath>Thursday</PropertyPath>
+                  <PropertyPath>Friday</PropertyPath>
+                  <PropertyPath>Saturday</PropertyPath>
+                  <PropertyPath>Sunday</PropertyPath>
+                </Collection>
+              </PropertyValue>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.SortRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Sortable"/>
+              <PropertyValue Property="NonSortableProperties">
+                <Collection>
+                  <PropertyPath>EndTime</PropertyPath>
+                  <PropertyPath>Monday</PropertyPath>
+                  <PropertyPath>Tuesday</PropertyPath>
+                  <PropertyPath>Wednesday</PropertyPath>
+                  <PropertyPath>Thursday</PropertyPath>
+                  <PropertyPath>Friday</PropertyPath>
+                  <PropertyPath>Saturday</PropertyPath>
+                  <PropertyPath>Sunday</PropertyPath>
+                </Collection>
+              </PropertyValue>
+            </Record>
+          </Annotation>
+          <Annotation Bool="true" Term="Org.OData.Capabilities.V1.TopSupported"/>
+          <Annotation Bool="true" Term="Org.OData.Capabilities.V1.SkipSupported"/>
+          <Annotation Term="Org.OData.Capabilities.V1.CountRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Countable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.SearchRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Searchable"/>
+            </Record>
+          </Annotation>
+        </EntitySet>
+        <EntitySet EntityType="FSM.Core.Asset" Name="MonoAsset">
+          <Annotation Term="Org.OData.Capabilities.V1.InsertRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Insertable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.UpdateRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Updatable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.DeleteRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Deletable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.FilterRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Filterable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.SortRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Sortable"/>
+              <PropertyValue Property="NonSortableProperties">
+                <Collection>
+                  <PropertyPath>Description</PropertyPath>
+                </Collection>
+              </PropertyValue>
+            </Record>
+          </Annotation>
+          <Annotation Bool="true" Term="Org.OData.Capabilities.V1.TopSupported"/>
+          <Annotation Bool="true" Term="Org.OData.Capabilities.V1.SkipSupported"/>
+          <Annotation Term="Org.OData.Capabilities.V1.CountRestrictions">
+            <Record>
+              <PropertyValue Bool="true" Property="Countable"/>
+            </Record>
+          </Annotation>
+          <Annotation Term="Org.OData.Capabilities.V1.SearchRestrictions">
+            <Record>
+              <PropertyValue Bool="false" Property="Searchable"/>
+            </Record>
+          </Annotation>
+        </EntitySet>
+        <Annotation Bool="false" Term="Org.OData.Capabilities.V1.BatchSupported"/>
+        <Annotation Bool="false" Term="Org.OData.Capabilities.V1.CrossJoinSupported"/>
+        <Annotation Bool="true" Term="Org.OData.Capabilities.V1.QuerySegmentSupported"/>
+        <Annotation Term="Org.OData.Capabilities.V1.SupportedFormats">
+          <Collection>
+            <String>application/json</String>
+          </Collection>
+        </Annotation>
+      </EntityContainer>
+    </Schema>
+  </edmx:DataServices>
+</edmx:Edmx>

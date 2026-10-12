@@ -1,0 +1,135 @@
+$ mxcli exec mdl/mono-core-publish.mdl -p fsm.mpr
+Connected to: fsm.mpr (Mendix 10.24.0.73019)
+Created module: CoreSeam
+Added attribute 'PublicID' to entity CustomerManagement.Customer
+Warning: CustomerManagement.Customer.PublicID is not readable by CustomerManagement.EditAll, CustomerManagement.ViewAll, CustomerManagement.ViewMy
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (PublicID) on entity CustomerManagement.Customer to CustomerManagement.EditAll;
+    grant read (PublicID) on entity CustomerManagement.Customer to CustomerManagement.ViewAll;
+    grant read (PublicID) on entity CustomerManagement.Customer to CustomerManagement.ViewMy;
+Added attribute 'PublicID' to entity CustomerManagement.Contract
+Warning: CustomerManagement.Contract.PublicID is not readable by CustomerManagement.EditAll, CustomerManagement.ViewAll, CustomerManagement.ViewMy
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (PublicID) on entity CustomerManagement.Contract to CustomerManagement.EditAll;
+    grant read (PublicID) on entity CustomerManagement.Contract to CustomerManagement.ViewAll;
+    grant read (PublicID) on entity CustomerManagement.Contract to CustomerManagement.ViewMy;
+Added attribute 'PublicID' to entity CustomerManagement.ContactPerson
+Warning: CustomerManagement.ContactPerson.PublicID is not readable by CustomerManagement.EditAll, CustomerManagement.ViewAll, CustomerManagement.ViewMy
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (PublicID) on entity CustomerManagement.ContactPerson to CustomerManagement.EditAll;
+    grant read (PublicID) on entity CustomerManagement.ContactPerson to CustomerManagement.ViewAll;
+    grant read (PublicID) on entity CustomerManagement.ContactPerson to CustomerManagement.ViewMy;
+Added attribute 'PublicID' to entity CustomerManagement.SLA
+Warning: CustomerManagement.SLA.PublicID is not readable by CustomerManagement.EditAll, CustomerManagement.ViewAll
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (PublicID) on entity CustomerManagement.SLA to CustomerManagement.EditAll;
+    grant read (PublicID) on entity CustomerManagement.SLA to CustomerManagement.ViewAll;
+Added attribute 'PublicID' to entity TicketManagement.Ticket
+Warning: TicketManagement.Ticket.PublicID is not readable by TicketManagement.TicketEditAll, TicketManagement.TicketEditAllAdmin, TicketManagement.TicketViewAll
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (PublicID) on entity TicketManagement.Ticket to TicketManagement.TicketEditAll;
+    grant read (PublicID) on entity TicketManagement.Ticket to TicketManagement.TicketEditAllAdmin;
+    grant read (PublicID) on entity TicketManagement.Ticket to TicketManagement.TicketViewAll;
+Added attribute 'PublicID' to entity TicketManagement.Priority
+Warning: TicketManagement.Priority.PublicID is not readable by TicketManagement.PriorityEditAll, TicketManagement.PriorityViewAll
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (PublicID) on entity TicketManagement.Priority to TicketManagement.PriorityEditAll;
+    grant read (PublicID) on entity TicketManagement.Priority to TicketManagement.PriorityViewAll;
+Added attribute 'PublicID' to entity TicketManagement.TicketType
+Warning: TicketManagement.TicketType.PublicID is not readable by TicketManagement.TicketTypeEditAll, TicketManagement.TicketTypeViewAll
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (PublicID) on entity TicketManagement.TicketType to TicketManagement.TicketTypeEditAll;
+    grant read (PublicID) on entity TicketManagement.TicketType to TicketManagement.TicketTypeViewAll;
+Added attribute 'PublicID' to entity TicketManagement.WorkOrder
+Warning: TicketManagement.WorkOrder.PublicID is not readable by TicketManagement.WorkorderEditAll, TicketManagement.WorkorderEditAllAdmin, TicketManagement.WorkorderViewAll
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (PublicID) on entity TicketManagement.WorkOrder to TicketManagement.WorkorderEditAll;
+    grant read (PublicID) on entity TicketManagement.WorkOrder to TicketManagement.WorkorderEditAllAdmin;
+    grant read (PublicID) on entity TicketManagement.WorkOrder to TicketManagement.WorkorderViewAll;
+Added attribute 'PublicID' to entity TicketManagement.Appointment
+Warning: TicketManagement.Appointment.PublicID is not readable by TicketManagement.AppointmentEditAllAdmin, TicketManagement.AppointmentViewAll, TicketManagement._AddOn_AppointmentNewEdit
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (PublicID) on entity TicketManagement.Appointment to TicketManagement.AppointmentEditAllAdmin;
+    grant read (PublicID) on entity TicketManagement.Appointment to TicketManagement.AppointmentViewAll;
+    grant read (PublicID) on entity TicketManagement.Appointment to TicketManagement._AddOn_AppointmentNewEdit;
+Added attribute 'PublicID' to entity RosterManagement.Roster
+Warning: RosterManagement.Roster.PublicID is not readable by RosterManagement.EditAll, RosterManagement.ViewAll, RosterManagement.ViewMy
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (PublicID) on entity RosterManagement.Roster to RosterManagement.EditAll;
+    grant read (PublicID) on entity RosterManagement.Roster to RosterManagement.ViewAll;
+    grant read (PublicID) on entity RosterManagement.Roster to RosterManagement.ViewMy;
+Modified attribute 'SystemID' on entity AssetManagement.Asset
+Created module role: CoreSeam.APIClient
+Created module role: Technician.CoreAPI
+Created module role: CustomerManagement.CoreAPI
+Created module role: TicketManagement.CoreAPI
+Created module role: RosterManagement.CoreAPI
+Created module role: AssetManagement.CoreAPI
+Granted access on Technician.Technician to Technician.CoreAPI
+  Result: read (TechnicianID, TechnicianName, TelephoneNumber, EmailAddress, IsExternal, EmployeeNumber, CompanyName, IsActive)
+Granted access on CustomerManagement.Customer to CustomerManagement.CoreAPI
+  Result: read (CustomerID, DebtorNumber, CustomerName, "Email", PhoneNumber, ReferenceNumber, PublicID)
+Granted access on CustomerManagement.Contract to CustomerManagement.CoreAPI
+  Result: read (Number, "Description", AdministrativeContactPersonName, AdministrativeEmailAddress, PublicID)
+Granted access on CustomerManagement.ContactPerson to CustomerManagement.CoreAPI
+  Result: read (Name, PhoneNumber, EmailAddress, "Description", PublicID, ContactPerson_Customer, ContactPerson_Contract, ContactPerson_Asset)
+Granted access on CustomerManagement.SLA to CustomerManagement.CoreAPI
+  Result: read (Number, "Description", SLAtype, HighPriorityResponseTime, MediumPriorityResponseTime, LowPriorityResponseTime, PublicID, SLA_Customer, SLA_Contract, SLA_UmbrellaContract, SLA_Asset)
+Granted access on TicketManagement.Ticket to TicketManagement.CoreAPI
+  Result: read (TicketID, "Status", ShortDescription, "Description", CallerName, CreationTime, DueDate, PublicID, Ticket_Priority, Ticket_TicketType, Ticket_Asset)
+Granted access on TicketManagement.Priority to TicketManagement.CoreAPI
+  Result: read (Code, "Description", IsActive, PublicID)
+Granted access on TicketManagement.TicketType to TicketManagement.CoreAPI
+  Result: read (Code, Name, ExpectedDuration, PublicID)
+Granted access on TicketManagement.WorkOrder to TicketManagement.CoreAPI
+  Result: read (WorkOrderID, "Status", ShortDescription, DueDate, PublicID, WorkOrder_Ticket)
+Granted access on TicketManagement.Appointment to TicketManagement.CoreAPI
+  Result: read (AppointmentID, "Status", PlannedWorkStart, PlannedWorkEnd, PublicID, Appointment_WorkOrder)
+Granted access on RosterManagement.Roster to RosterManagement.CoreAPI
+  Result: read (StartDate, EndDate, StartTime, EndTime, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday, PublicID, Roster_Asset)
+Granted access on AssetManagement.Asset to AssetManagement.CoreAPI
+  Result: read (AssetID, SystemID, "Description")
+Created OData service: CoreSeam.CoreAPI
+Granted access on OData service CoreSeam.CoreAPI to CoreSeam.APIClient
+Created user role: CoreAPIClient
+exit=0 real 15.35 s
+$ mxcli exec mdl/mono-core-actions.mdl -p fsm.mpr
+Connected to: fsm.mpr (Mendix 10.24.0.73019)
+1 info note not shown — run `mxcli check <lab>/web-core/mdl/mono-core-actions.mdl` to see them (or pass --verbose)
+Created microflow: CoreSeam.Asset_UpsertMirror
+Created microflow: CoreSeam.API_Roster_Create
+Created microflow: CoreSeam.API_Roster_Delete
+Created microflow: CoreSeam.API_Rosters_DeleteForAsset
+Granted execute access on CoreSeam.API_Roster_Create to CoreSeam.APIClient
+Granted execute access on CoreSeam.API_Roster_Delete to CoreSeam.APIClient
+Granted execute access on CoreSeam.API_Rosters_DeleteForAsset to CoreSeam.APIClient
+Granted access on AssetManagement.Asset to AssetManagement.CoreAPI
+  Result: create, read (AssetID, SystemID, "Description"), write (AssetID, SystemID, "Description")
+Granted access on RosterManagement.Roster to RosterManagement.CoreAPI
+  Result: create, delete, read (StartTime, EndTime, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday, PublicID, SystemID, StartDate, EndDate, Roster_Asset), write (SystemID, StartDate, EndDate, Roster_Asset)
+Created published rest service CoreSeam.CoreActions
+Granted access on published rest service CoreSeam.CoreActions to CoreSeam.APIClient
+Created constant: CoreSeam.SliceAPIUserName
+Created constant: CoreSeam.SliceAPIUserPassword
+Modified microflow: AssetsSeam.ASU_EnsureJourneyAccounts (spliced: 1 inserted)
+exit=0 real 22.76 s

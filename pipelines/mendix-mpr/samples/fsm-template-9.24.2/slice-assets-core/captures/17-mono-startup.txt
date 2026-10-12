@@ -1,0 +1,4 @@
+$ mxcli run restart -p fsm.mpr   (10.24 monolith, ports 8580/8590, serve 6643)
+stopped: pid 8009 in 500ms
+running: http://127.0.0.1:8580/ (pid 29281, no watch, log .mxcli/run.log)
+exit=0 real 68 s

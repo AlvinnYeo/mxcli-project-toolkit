@@ -1,0 +1,9 @@
+$ mx(10.24) check fsm.mpr
+Checking your app for issues...
+Checking the version of the mpr file.
+The mpr file version is '10.24.0.73019'.
+Loading the mpr file.
+The mpr file version is '10.24.0.73019'.
+Checking app for errors...
+The app contains: 0 errors.
+real 29 s

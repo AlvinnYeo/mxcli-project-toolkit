@@ -1,0 +1,46 @@
+$ mxcli exec mdl/slice-core-consume.mdl -p AssetsApp.mpr
+Connected to: AssetsApp.mpr (Mendix 11.13.0)
+Created module: CoreSeam
+Created constant: CoreSeam.CoreODataUrl
+Created constant: CoreSeam.CoreBaseUrl
+Created constant: CoreSeam.CoreAPIUserName
+Created constant: CoreSeam.CoreAPIPassword
+Created module role: CoreSeam.User
+Created microflow: CoreSeam.GetAuthHeaders
+Created OData client: CoreSeam.CoreAPI
+  Cached $metadata: 12 entity types, 0 actions
+Reconciled 3 access rule(s) after dropping the association
+Dropped cross-module association: Administration.Account_Technician
+Reconciled 1 access rule(s) after dropping the association
+Dropped cross-module association: CustomerManagement.ContactPerson_Asset
+Reconciled 1 access rule(s) after dropping the association
+Dropped association: CustomerManagement.ContactPerson_Contract
+Reconciled 1 access rule(s) after dropping the association
+Dropped association: CustomerManagement.ContactPerson_Customer
+Reconciled 1 access rule(s) after dropping the association
+Dropped cross-module association: CustomerManagement.ContactPerson_Dossier
+Reconciled 1 access rule(s) after dropping the association
+Dropped cross-module association: CustomerManagement.SLA_Asset
+Reconciled 2 access rule(s) after dropping the association
+Dropped association: CustomerManagement.SLA_Contract
+Reconciled 2 access rule(s) after dropping the association
+Dropped association: CustomerManagement.SLA_Customer
+Reconciled 2 access rule(s) after dropping the association
+Dropped association: CustomerManagement.SLA_UmbrellaContract
+Reconciled 1 access rule(s) after dropping the association
+Dropped cross-module association: RosterManagement.Roster_Asset
+Reconciled 1 access rule(s) after dropping the association
+Dropped cross-module association: Technician.Technician_Warehouse
+Reconciled 1 access rule(s) after dropping the association
+Dropped association: TicketManagement.Appointment_WorkOrder
+Reconciled 1 access rule(s) after dropping the association
+Dropped cross-module association: TicketManagement.Ticket_Asset
+Reconciled 1 access rule(s) after dropping the association
+Dropped association: TicketManagement.Ticket_Priority
+Reconciled 1 access rule(s) after dropping the association
+Dropped association: TicketManagement.Ticket_TicketType
+Reconciled 1 access rule(s) after dropping the association
+Dropped cross-module association: TicketManagement.WorkOrderAssignment_Technician
+Reconciled 1 access rule(s) after dropping the association
+Dropped association: TicketManagement.WorkOrderAssignment_WorkOrder
+exit=0

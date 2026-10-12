@@ -1,0 +1,75 @@
+$ mxcli exec mdl/slice-core-fix.mdl -p AssetsApp.mpr
+Connected to: AssetsApp.mpr (Mendix 11.13.0)
+Revoked access on AssetManagement.Asset from AssetManagement.ViewAll
+  Result: (no access)
+Granted access on AssetManagement.Asset to AssetManagement.ViewAll
+  Result: read (AssetID, SystemID, "Description", Notes, Address, ZipCode, City, FullAddress, HasOpeningTimes, Asset_Dossier, Asset_Structure, Asset_AgreementGroup, Asset_Manufacturer, Asset_Technician_Preferred, Asset_Customer, Asset_Contract, Asset_UmbrellaContract)
+Revoked access on AssetManagement.Asset from AssetManagement.EditAsset
+  Result: (no access)
+Granted access on AssetManagement.Asset to AssetManagement.EditAsset
+  Result: read (SystemID, Notes, FullAddress, HasOpeningTimes, AssetID, "Description", Address, ZipCode, City, Asset_Dossier, Asset_Structure, Asset_AgreementGroup, Asset_Manufacturer, Asset_Technician_Preferred, Asset_Customer, Asset_Contract, Asset_UmbrellaContract), write (AssetID, "Description", Address, ZipCode, City, Asset_Dossier, Asset_Structure, Asset_AgreementGroup, Asset_Manufacturer, Asset_Technician_Preferred, Asset_Customer, Asset_Contract, Asset_UmbrellaContract)
+Revoked access on AssetManagement.Asset from AssetManagement.EditAssetAdmin
+  Result: (no access)
+Granted access on AssetManagement.Asset to AssetManagement.EditAssetAdmin
+  Result: read (FullAddress, AssetID, SystemID, "Description", Notes, Address, ZipCode, City, HasOpeningTimes, Asset_Dossier, Asset_Structure, Asset_AgreementGroup, Asset_Manufacturer, Asset_Technician_Preferred, Asset_Customer, Asset_Contract, Asset_UmbrellaContract), write (AssetID, SystemID, "Description", Notes, Address, ZipCode, City, HasOpeningTimes, Asset_Dossier, Asset_Structure, Asset_AgreementGroup, Asset_Manufacturer, Asset_Technician_Preferred, Asset_Customer, Asset_Contract, Asset_UmbrellaContract)
+Altered snippet AssetManagement.Snippet_Asset_Details
+Altered page AssetManagement.Asset_Overview
+Altered page Part.Part_View
+exit=0
+$ mxcli exec mdl/slice-core-fix2.mdl -p AssetsApp.mpr
+Connected to: AssetsApp.mpr (Mendix 11.13.0)
+(no module)
+-----------
+  ✗ association CustomerManagement.SLA_Asset is declared in module CustomerManagement but its FROM entity CoreSeam.TechnicianLink lives in CoreSeam — Mendix stores an association in the module of its FROM entity, so this writes a dangling pointer and the project can no longer be opened (KeyNotFoundException while loading, not a build error) [MDL070]
+      at CustomerManagement.SLA_Asset
+      → Reverse it — `from AssetManagement.Asset to CoreSeam.TechnicianLink` — or declare it in CoreSeam, or model the relationship as a join entity in CustomerManagement with a reference to each side (the usual answer when the FROM entity is in System or a Marketplace module, which must not be written to).
+
+1 issues: 1 errors, 0 warnings, 0 info
+
+Refusing to execute: 1 error(s) above. Nothing was written.
+  exec applies statements one at a time and cannot roll back, so a script
+  with a known error would leave the model partly updated.
+  Fix them, or re-run with --no-check to apply the script anyway.
+exit=1
+$ mxcli exec mdl/slice-core-fix2.mdl -p AssetsApp.mpr   # 2nd form
+Connected to: AssetsApp.mpr (Mendix 11.13.0)
+Created entity: CustomerManagement.TmpReconcile
+Reconciled 3 access rule(s) in module AssetManagement for new association
+Created association: CustomerManagement.SLA_Asset
+Dropped cross-module association: CustomerManagement.SLA_Asset
+Dropped entity: CustomerManagement.TmpReconcile
+exit=0
+$ mxcli exec mdl/slice-core-fix3.mdl -p AssetsApp.mpr
+Connected to: AssetsApp.mpr (Mendix 11.13.0)
+Unchanged OData client: CoreSeam.CoreAPI
+exit=0
+$ mxcli exec mdl/slice-core-fix3.mdl -p AssetsApp.mpr   # 2nd form
+Connected to: AssetsApp.mpr (Mendix 11.13.0)
+Created microflow: CoreSeam.GetODataConfiguration
+Altered OData client: CoreSeam.CoreAPI
+exit=0
+$ mxcli exec mdl/slice-core-fix3.mdl -p AssetsApp.mpr   # 3rd form (CE1135: URL in constant AND microflow)
+Connected to: AssetsApp.mpr (Mendix 11.13.0)
+Dropped microflow: CoreSeam.GetODataConfiguration
+Created microflow: CoreSeam.GetODataConfiguration
+Altered OData client: CoreSeam.CoreAPI
+exit=0
+$ mxcli exec mdl/slice-core-fix3.mdl -p AssetsApp.mpr   # final form, on backup 11 (earlier forms: see the script header)
+Connected to: AssetsApp.mpr (Mendix 11.13.0)
+Dropped OData client: CoreSeam.CoreAPI
+Created OData client: CoreSeam.CoreAPI
+  Cached $metadata: 12 entity types, 0 actions
+exit=0
+$ mxcli exec mdl/slice-core-fix4.mdl -p AssetsApp.mpr   # Part.ViewMy members (the rewire grant had dropped IsAdditionalPart, Part_UnitOfMeasure; fixed in slice-core-rewire.mdl too)
+Connected to: AssetsApp.mpr (Mendix 11.13.0)
+Revoked access on Part.Part from Part.ViewMy
+  Result: (no access)
+Granted access on Part.Part to Part.ViewMy
+  Result: read (PartID, SystemID, Name, "Description", Price, IsAdditionalPart, IsActive, Vendor, Part_UnitOfMeasure)
+exit=0
+$ mxcli exec mdl/slice-core-fix5.mdl -p AssetsApp.mpr
+Connected to: AssetsApp.mpr (Mendix 11.13.0)
+Dropped microflow: AssetManagement.Asset_GetRelevantSLA
+Created microflow: AssetManagement.Asset_GetRelevantSLA
+Altered snippet AssetManagement.Snippet_Asset_DataTabs
+exit=0

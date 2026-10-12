@@ -1,0 +1,5 @@
+$ mxcli exec mdl/mono-core-journey.mdl -p fsm.mpr
+Connected to: fsm.mpr (Mendix 10.24.0.73019)
+Created microflow: CoreSeam.ASU_EnsureJourneyTechnician
+Modified microflow: AssetsSeam.ASU_EnsureJourneyAccounts (spliced: 1 inserted)
+exit=0

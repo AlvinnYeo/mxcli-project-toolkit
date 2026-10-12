@@ -1,0 +1,13 @@
+$ mxcli run --local --detach --db-type hsqldb --app-port 8580 --admin-port 8590 --serve-port 6643 -p fsm.mpr   # first boot after the publish: "failed: starting runtime: start failed after creating or updating the database schema" (the command output itself was overwritten by the retry; run.log kept)
+
+# .mxcli/run.log, relevant lines
+ - This requires the password to contain non-alphanumeric characters. For example: ! # $ or %)
+2026-10-12 11:33:38.393 INFO - Core: Running after-startup-action...
+2026-10-12 11:33:40.912 ERROR - Core: An exception occurred while running the after-startup-action.
+2026-10-12 11:33:40.914 ERROR - M2EE: Starting Mendix Runtime failed.
+Caused by: com.mendix.m2ee.api.InfoAdminException: The after-startup-action failed with an exception or returned false.
+Caused by: com.mendix.systemwideinterfaces.MendixRuntimeException: Object id: <n>, validation errors: (member: Password, message: Password does not meet password policy criteria:
+
+# fix: password regenerated with symbols (Mendix password policy needs a non-alphanumeric character); second boot:
+running: http://127.0.0.1:8580/ (pid 8009, no watch, log .mxcli/run.log)
+exit=0 real 88 s

@@ -1,0 +1,15 @@
+$ SLICE_URL=http://127.0.0.1:8480 SLICE_MPR=<lab>/web-assets/AssetsApp/AssetsApp.mpr MONO_MPR=<lab>/web-assets/mono/fsm.mpr MXCLI=<lab>/mxcli JOURNEY_PW=*** node core-seam.journey.js   # Playwright 1.56.1, headless Chromium, both apps running, final model
+  PASS  [slice login] logged in to the slice as journey_fnadm
+  PASS  [slice: technician served by the monolith] combo box lists "Journey Technician" from external entity Technician.Technician (monolith OData CoreAPI) — ledger: out Technician.Technician -> resolved:odata (slice-core-external.mdl)
+  PASS  [slice: technician served by the monolith] asset AJ-261012115934 committed in the slice database — [{"AssetID":"AJ-261012115934","SystemID":"f7b56312-03e5-40f1-9156-81436582c5f7"}]
+  PASS  [slice -> monolith: roster created over REST] asset details show preferred technician "Journey Technician" (local -> external association, slice-owned)
+  PASS  [slice -> monolith: roster created over REST] roster committed in the MONOLITH database on its asset mirror (SystemID = slice asset) — [{"AssetID":"AJ-261012115934","PublicID":"4","StartDate":"Sun Oct 11 22:00:00 UTC 2026","SystemID":"f7b56312-03e5-40f1-9156-81436582c5f7"}] — ledger: out RosterManagement.Roster -> resolved:rest (CoreSeam.Roster_CreateRemote)
+  PASS  [monolith -> slice: roster read over OData] asset tab grid lists the roster from external entity TicketManagement.Roster (Roster_Asset/MonoAsset/SystemID filter) — rows 0 -> 1
+  PASS  [slice -> monolith: roster deleted over REST] roster gone from the monolith database (RosterManagement.ACT_Roster_Delete -> POST rosters/delete) — [] — ledger: check-only RosterManagement.ACT_Roster_Delete -> resolved:rest
+  PASS  [monolith -> slice: tickets and contacts tabs over OData] Tickets tab grid (external entity, filtered over a navigation to MonoAsset) renders with no error dialog — error dialogs: 0 (monolith holds no tickets/contacts for this asset: an empty grid is the expected content)
+  PASS  [monolith -> slice: tickets and contacts tabs over OData] Contacts tab grid (external entity, filtered over a navigation to MonoAsset) renders with no error dialog — error dialogs: 0 (monolith holds no tickets/contacts for this asset: an empty grid is the expected content)
+
+core-seam journey: 9/9 assertions passed in 7.8 s — PASS
+  ids: asset=AJ-261012115934
+  trace rung: NOT RUN (no OTel exporter on either app)
+exit=0 wall 8 s
