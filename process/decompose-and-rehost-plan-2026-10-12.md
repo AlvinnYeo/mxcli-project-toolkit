@@ -1,6 +1,8 @@
 # Plan: monolith decomposition and MPR-to-MDL rehost — two new pipelines
 
-**Status:** draft for discussion, 2026-10-12. Nothing in this plan is built yet.
+**Status:** 2026-10-12, increment 1 done on both tracks (results in §5); increment 2 next.
+**Decisions since the draft:** no Event Broker licence → Business Events is **not** an integration lane,
+a crossing edge becomes OData or REST or it blocks. The FSM template reads on Mendix 9.24.2 (MPR v1).
 **Decisions already taken in the conversation that produced it:** Mendix version upgrades are
 out of scope (apps on Mendix 9 and above only; the upgrade hop itself is the customer's job).
 Two tracks remain and run in parallel: **Decompose** (split one app into several) and
@@ -17,7 +19,7 @@ Two tracks remain and run in parallel: **Decompose** (split one app into several
 | Mendix apps cannot share a database; integration is OData (external entities), REST or Business Events | Every edge across the cut becomes an HTTP call. Edge weight is the cost of the cut |
 | External entities cannot own associations, cannot aggregate, and every *Send External Object* is its own transaction | An edge carrying an association, an aggregate, or a shared transaction scores as a bad cut |
 | No cross-app workflow; no shared user table (OIDC Provider module brokers identity; Mendix SSO deprecated May 2026) | A workflow or a security role that spans the cut is a blocker, not a cost |
-| Business Events need a paid Event Broker licence and carry flat payloads | Async edges are an option only when the licence exists (open question §6) |
+| Business Events need a paid Event Broker licence and carry flat payloads | **Not a lane here** (decided 2026-10-12: no licence). Async edges are out of the table |
 | Every app is a cloud node; pricing is per app | The number of target apps is a licensing decision before an architecture one |
 | Module export to `.mpk` works only for a self-contained module and the same Studio Pro version; no tool moves a module with its transitive closure | The cut has to be executed by regeneration (MDL), not by export/import |
 
@@ -30,7 +32,9 @@ cut ladder). The missing half is **scoring a proposed cut and executing it**.
 
 ### Rehost — what mxcli can and cannot do today (v0.26.0, probed in a cloud container 2026-10-12)
 
-- `mxcli describe module <M>` emits a whole module as re-executable MDL (`mdl 1;` header). 25
+- The MDL statement `describe module <M> with all` (via `-c`) emits a whole module as re-executable MDL
+  (`mdl 1;` header); the *subcommand* `mxcli describe module <M>` emits only the module and its roles
+  (found in increment 1a, `pipelines/mendix-mpr/README.md`). 25
   document types are covered, including nanoflows, Java actions (signature only — the body is a
   stub, `migrate-general.md`), JavaScript actions, scheduled events, queues, REST and OData
   services, mappings, JSON structures.
@@ -79,7 +83,7 @@ mode with a new Stage 3 instrument and a per-slice Stage 5 loop**.
 | Stage | Reuses | New |
 |---|---|---|
 | 0a Map | `app-facts.sh`, `app-report.sh`, dossier §3, layer map | — |
-| 0b Scope ✋ | interview protocol | The three questions: why split (team, cadence, licence, risk), how many apps may exist (licensing), which integration lanes are allowed (OData/REST; Business Events only with licence) |
+| 0b Scope ✋ | interview protocol | The three questions: why split (team, cadence, licence, risk), how many apps may exist (licensing), which integration lanes are allowed (OData/REST only — no Event Broker licence) |
 | 3 Cut scoring ✋ | `layering-review.md` cut ladder | `bin/cut-score.sh`: for each candidate partition (from the layer map's levels, or user-named), score every crossing edge by ref kind: `associate` (external-entity rewrite, no aggregates), `call` (OData action or REST), workflow crossing (blocker), security role crossing (blocker), shared `System.FileDocument` (REST, binaries), scheduled event ownership. Output: `analysis/cut-score.html|json`, one row per edge with a lane and a cost class; a partition's total is the sum. User picks or amends; decision in `PROJECT.md` |
 | 4 Landscape blueprint | `architecture-blueprint.md` | A target-landscape section: apps, published services per edge, identity broker, the data ownership per entity |
 | 5 Slice loop (strangler) | `iterative-build-loop.md`, `existing-app-change.md` | Per slice: (1) regenerate the slice's module(s) into the new app with the Rehost extractor; (2) replace each crossing edge in the monolith by a consumed service and in the new app by a published one; (3) regression baseline from Track B on both sides; (4) data copy per owned entity; (5) retire the module in the monolith. The monolith stays live throughout — the "keep the core and phase out" answer |
@@ -112,10 +116,10 @@ silent.
 
 | # | Track | Target | Deliverable | Runs where |
 |---|---|---|---|---|
-| 1 | Rehost | ako/mxcli-banking (11.x, one module) | round-trip: describe → new app → exec → struct diff; first ledger format | cloud, now |
-| 1 | Decompose | Tier 0 synthetic: 4 modules, one tangle, built in Mendix **10.24** with `mxcli new` | `cut-score.sh` v0 over `dependencies.json`; proves the edge classifier on a known answer | cloud, now |
+| 1 | Rehost | ako/mxcli-banking (11.x, one module) | **DONE 2026-10-12** — `pipelines/mendix-mpr/rehost-extract.sh`: 155/155 docs, 154 identical, mx check 0, mxbuild green, struct diff empty; ledger format set | cloud |
+| 1 | Decompose | Tier 0 synthetic: 4 modules, one tangle, built in Mendix **10.24** with `mxcli new` | **DONE 2026-10-12** — `bin/cut-score.sh` + `tests/wave2/test-cut-score.sh` (56 checks): tangle → blocker, foreign aggregate → costly, association-only → acceptable, all found. Not yet in a skill or the routing table | cloud |
 | 2 | Rehost | GenAI Showcase (48 modules, 11.12) | scale: time per module, ledger over a real widget mix | cloud |
-| 2 | Decompose | FSM template (9.24.2) | **the Mendix 9 read probe**, then cut scoring on a real tangle | cloud, needs user PAT for `mxcli auth login` + `marketplace download` |
+| 2 | Decompose | FSM template (9.24.2) | **Read probe PASSED 2026-10-12** (MPR v1, 45 own modules, 1896 microflows; captures in `pipelines/mendix-mpr/samples/fsm-template-9.24.2/`). Next: `cut-score.sh` on the planner-vs-NativeMobile seam through `Synchronization` | cloud |
 | 3 | both | FSM | first actual slice: one module out, two edges rewired, journeys across the cut | cloud |
 | 4 | both | user's Mendix 11 project | fidelity ledger and cut score on a real customer-shaped app; read-only | user's container |
 
@@ -127,7 +131,7 @@ layouts, a cited field run per instrument, a producer for every artifact consume
 ## 6. Open questions (answers go to `PROJECT.md` of the first field project)
 
 1. Target landscape: Mendix apps only, or may a slice leave Mendix? (changes the lane table in cut scoring)
-2. Is the Event Broker licence available to the customers this is for? If not, Business Events is not a lane.
+2. ~~Event Broker licence?~~ **Answered 2026-10-12: no.** Business Events is not a lane.
 3. Rehost done-criterion: model builds clean, or parity proven by the Track B regression baseline?
-4. FSM download: the user's Mendix PAT is needed in the cloud container; pull before 1 Nov 2026.
+4. ~~FSM download~~ **Done in the cloud container 2026-10-12** (`MENDIX_PAT`). Still: keep a copy on a user machine before 1 Nov 2026 — the container is ephemeral.
 5. Data migration during a slice (copy per owned entity): in scope of the toolkit, or always a customer job?
