@@ -14,7 +14,7 @@ no message-definition document at all) would otherwise have cost GenAICommons it
 """
 import os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from mdlsplit import split_statements
+from mdlsplit import split_statements, strip_deferred
 
 src, out, deferred = sys.argv[1], sys.argv[2], sys.argv[3]
 text = open(src, encoding='utf-8', newline='').read()
@@ -38,7 +38,7 @@ for i, s in enumerate(stmts):
 if hit is None: print(0); sys.exit(0)
 with open(deferred, 'a', encoding='utf-8', newline='') as f:
     if os.path.getsize(deferred) == 0: f.write('mdl 1;\n')
-    f.write('-- deferred: exec refused this statement: %s\n%s\n' % (err[:300].replace('\n', ' '), stmts[hit]))
+    f.write('-- deferred: exec refused this statement: %s\n%s\n' % (err[:400].replace('\n', ' '), strip_deferred(stmts[hit])))
 rest = [s for s in stmts[hit + 1:]]
 open(src, 'w', encoding='utf-8', newline='').write('mdl 1;\n' + '\n'.join(s for s in rest if s.strip() != 'mdl 1;') + '\n')
 print(1)

@@ -7,23 +7,25 @@ end in ';', and the plain column-0 rule cut those flows into fragments that were
 Text is passed through byte-for-byte: no newline translation (CRLF inside literals is load-bearing)."""
 import re
 OPENER = re.compile(r'^(create|grant|revoke|alter|drop|delete|mdl|@|/\*|--)')
+# after an INDENTED terminator only a keyword opener closes the statement (never a comment or @)
+STRONG = re.compile(r'^(create|grant|revoke|alter|drop|delete) ')
 def split_statements(text):
-    stmts, cur, state, pending = [], [], 'code', False      # state: code | str | dollar | block
+    stmts, cur, state, pending = [], [], 'code', None       # state: code | str | dollar | block
     for ln in text.split('\n'):
         start = state
         # a candidate boundary closes only when the next non-blank line opens a statement: Studio Pro
         # emits multi-line expressions with continuation lines at column 0 ("else $X, Y = $Z);")
         if pending and ln.strip():
-            if start == 'code' and OPENER.match(ln):
+            if start == 'code' and (OPENER if pending == 'col0' else STRONG).match(ln):
                 stmts.append('\n'.join(cur)); cur = []
-            pending = False
-        i, n = 0, len(ln)
+            pending = None
+        i, n, comment = 0, len(ln), False
         while i < n:
             c = ln[i]
             if state == 'code':
                 if c == "'": state = 'str'
                 elif ln.startswith('$$', i): state = 'dollar'; i += 1
-                elif ln.startswith('--', i): break                 # comment to end of line
+                elif ln.startswith('--', i): comment = True; break  # comment to end of line
                 elif ln.startswith('/*', i): state = 'block'; i += 1
             elif state == 'str':
                 if c == "'": state = 'code'                        # '' escape toggles twice, net unchanged
@@ -37,7 +39,17 @@ def split_statements(text):
         # (GenAI Showcase: 15 java actions of GenAICommons merged into one "statement", and check's
         # statement numbers no longer matched ours). The opener lookahead above still guards the
         # multi-line-literal case.
-        if state == 'code' and ln and not ln[0].isspace() and ln.rstrip().endswith(';'):
-            pending = True
+        # a json structure with a CUSTOM NAME map ends on an indented `  );` (GenAI Showcase, 2026-10-13:
+        # 4 modules split 1-9 statements short of mxcli's count, so check's `statement N:` mapped onto
+        # the wrong statement or past the end — FINDINGS E1b). An indented terminator closes only when
+        # the next non-blank line opens with a column-0 keyword.
+        if state == 'code' and not comment and ln.rstrip().endswith(';'):
+            pending = 'col0' if not ln[0].isspace() else 'indent'
     if pending and cur: stmts.append('\n'.join(cur)); cur = []
     return stmts, '\n'.join(cur)
+
+def strip_deferred(s):
+    """Drop the leading `-- deferred: …` reason lines a statement carries from an earlier pass."""
+    ls = s.split('\n')
+    while ls and (ls[0].startswith('-- deferred:') or not ls[0].strip()): ls.pop(0)
+    return '\n'.join(ls)

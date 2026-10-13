@@ -5,7 +5,7 @@
 #   pipelines/mendix-mpr/rehost-extract.sh <source.mpr> <target.mpr> <out-dir> [Module ...]
 #
 #   <out-dir>/captures/   verbatim mxcli output (golden fixtures: list modules, show <type> <Module>,
-#                         project-tree.json, check/exec logs)
+#                         project-tree.json, check/exec logs, timings.tsv per module, phases.tsv per phase)
 #   <out-dir>/mdl/        <Module>.mdl (source describe), <Module>.ordered.mdl (what was executed),
 #                         target-<Module>.mdl (describe of the target afterwards), _settings/_userroles
 #   <out-dir>/fidelity-ledger.tsv   one row per source document (denominator in the header)
@@ -44,6 +44,9 @@ mkdir -p "$OUT/captures" "$OUT/mdl"
 mx() { "$MXCLI" "$@" 2>&1 | grep -v 'vibe-coded PoC'; }   # one warning line per call, drop it
 log() { printf '%s\n' "$*" >&2; }
 
+T_START=$("$PY" -c 'import time; print("%.3f" % time.time())')
+phase() { "$PY" -c 'import sys, time; t = time.time(); print("%s\t%.1f" % (sys.argv[1], t - float(open(sys.argv[2]).read() or sys.argv[3])))' "$1" "$OUT/captures/.phase-mark" "$T_START" >> "$OUT/captures/phases.tsv"; "$PY" -c 'import time; print("%.3f" % time.time())' > "$OUT/captures/.phase-mark"; }
+printf 'phase\tseconds\n' > "$OUT/captures/phases.tsv"; : > "$OUT/captures/.phase-mark"
 # ---- 1. inventory (golden captures) ---------------------------------------------------------
 mx -p "$SRC" list modules > "$OUT/captures/list-modules.txt"
 "$MXCLI" -p "$SRC" project-tree --json 2>/dev/null > "$OUT/captures/project-tree.json"
@@ -60,6 +63,7 @@ for M in "${MODULES[@]}"; do
   done
 done
 
+phase inventory
 # ---- 2. extract -------------------------------------------------------------------------------
 # describe_module <mpr> <Module> <out.mdl>: `describe module … with all` plus every describable
 # document of the module that the whole-module emitter omits, described one by one from the
@@ -100,7 +104,10 @@ PYEOF
   done
   rm -f "$out.tree.json"
 }
-now() { date +%s.%N; }
+# timing in Python: `date +%s.%N` and `bc` do not exist on stock macOS
+now() { "$PY" -c 'import time; print("%.3f" % time.time())'; }
+since() { "$PY" -c 'import sys, time; print("%.1f" % (time.time() - float(sys.argv[1])))' "$1"; }
+diff_s() { "$PY" -c 'import sys; print("%.1f" % (float(sys.argv[2]) - float(sys.argv[1])))' "$1" "$2"; }
 TIMES="$OUT/captures/timings.tsv"
 printf 'module\tdescribe_s\ttopo_s\tcheck_s\texec_s\tdescribe_target_s\n' > "$TIMES"
 declare -A T_DESC T_TOPO T_CHECK T_EXEC T_TDESC
@@ -112,7 +119,7 @@ for M in "${MODULES[@]}"; do
   t1=$(now)
   "$PY" -I "$HERE/lib/topo-order-mdl.py" "$OUT/mdl/$M.mdl" "$OUT/mdl/$M.ordered.mdl" 2>>"$OUT/captures/describe-$M.stderr"
   "$PY" -I "$HERE/lib/fix-describe-output.py" "$OUT/mdl/$M.ordered.mdl" "$OUT/mdl/$M.ordered.mdl" 2>>"$OUT/captures/describe-$M.stderr"
-  T_DESC[$M]=$(echo "$t1-$t0" | bc); T_TOPO[$M]=$(echo "$(now)-$t1" | bc)
+  T_DESC[$M]=$(diff_s "$t0" "$t1"); T_TOPO[$M]=$(since "$t1")
 done
 # module order: replay the modules so that each is created after every listed module it references
 # (qualified-name mention in its describe output); REHOST_KEEP_ORDER=1 keeps the order given. A cycle
@@ -142,6 +149,7 @@ awk -F'|' 'NR>3 && NF>3 { gsub(/ /,"",$2); if ($2!="") print $2 }' "$OUT/capture
   "$MXCLI" -p "$SRC" describe userrole "$r" 2>/dev/null | grep -v 'vibe-coded PoC' >> "$OUT/mdl/_userroles.mdl"
 done
 
+phase describe_topo_userroles
 # ---- 3. check, then exec into the target (modules in replay order) ---------------------------
 # check is all-or-nothing per file, so a statement it rejects is moved to mdl/<M>.deferred.mdl
 # (lib/quarantine-mdl.py) and the rest of the module is executed; the deferred statements are retried
@@ -157,24 +165,34 @@ check_exec() {   # check_exec <label> <script.mdl> <deferred.mdl>  — returns 0
       # exec stops at the first statement it cannot write: defer that one, keep going with the rest
       cp "$OUT/captures/exec-$L.txt" "$OUT/captures/exec-$L.round$round.txt"
       moved=$("$PY" -I "$HERE/lib/exec-resume.py" "$f" "$OUT/captures/exec-$L.txt" "$d")
-      [ "$moved" -gt 0 ] || { log "exec $L FAILED — see captures/exec-$L.txt"; return 1; }
+      [ "$moved" -gt 0 ] || { exec_each "$L" "$f" "$d"; return $?; }
       log "exec $L: 1 statement deferred, resuming after it (round $round)"
       [ "$(grep -c '^create\|^grant\|^revoke\|^alter' "$f")" -gt 0 ] || return 0
       continue
     fi
     cp "$OUT/captures/check-$L.txt" "$OUT/captures/check-$L.round$round.txt"
     moved=$("$PY" -I "$HERE/lib/quarantine-mdl.py" "$f" "$OUT/captures/check-$L.txt" "$d")
-    [ "$moved" -gt 0 ] || { log "check $L FAILED and no statement could be quarantined — see captures/check-$L.txt"; return 1; }
+    [ "$moved" -gt 0 ] || { exec_each "$L" "$f" "$d"; return $?; }
     log "check $L: $moved statement(s) deferred (round $round)"
     [ "$(grep -c '^create\|^grant\|^revoke\|^alter' "$f")" -gt 0 ] || { log "check $L: nothing left to execute"; return 1; }
   done
-  log "check $L FAILED after $round rounds — see captures/check-$L.txt"; return 1
+  log "check $L still failing after $round rounds — see captures/check-$L.txt"; exec_each "$L" "$f" "$d"
+}
+# exec_each: the error could not be placed on a statement — execute the rest one statement at a time,
+# deferring each failure with its verbatim error (FINDINGS E2: this used to drop the module silently)
+exec_each() {
+  local L="$1" f="$2" d="$3" r
+  log "check/exec $L: error not mappable to a statement — executing one statement at a time (captures/exec-each-$L.txt)"
+  r=$("$PY" -I "$HERE/lib/exec-each.py" "$MXCLI" "$TGT" "$f" "$d" "$OUT/captures/exec-each-$L.txt")
+  log "exec-each $L: ${r% *} landed, ${r#* } deferred"
+  [ "${r% *}" -gt 0 ]
 }
 for M in "${MODULES[@]}"; do
   t0=$(now); : > "$OUT/mdl/$M.deferred.mdl"
   check_exec "$M" "$OUT/mdl/$M.ordered.mdl" "$OUT/mdl/$M.deferred.mdl" || status=1
-  T_CHECK[$M]=$(echo "$(now)-$t0" | bc); T_EXEC[$M]=in_check
+  T_CHECK[$M]=$(since "$t0"); T_EXEC[$M]=in_check
 done
+phase check_exec
 # retry the deferred statements until a full pass defers everything it tried again
 for pass in 1 2 3 4 5 6; do
   progress=0
@@ -197,6 +215,7 @@ done
 mx exec -p "$TGT" "$OUT/mdl/_settings.mdl"  > "$OUT/captures/exec-_settings.txt"  || status=1
 mx exec -p "$TGT" "$OUT/mdl/_userroles.mdl" > "$OUT/captures/exec-_userroles.txt" || status=1
 
+phase deferred_retries_settings
 # ---- 4. compare and ledger ---------------------------------------------------------------------
 {
   echo "# Fidelity ledger — $(basename "$SRC") -> $(basename "$TGT"), $(mx --version | head -1), $(date +%F)"
@@ -204,7 +223,7 @@ mx exec -p "$TGT" "$OUT/mdl/_userroles.mdl" > "$OUT/captures/exec-_userroles.txt
   echo "module	document	type	verdict	evidence"
 } > "$OUT/fidelity-ledger.tsv"
 for M in "${MODULES[@]}"; do
-  t0=$(now); describe_module "$TGT" "$M" "$OUT/mdl/target-$M.mdl"; T_TDESC[$M]=$(echo "$(now)-$t0" | bc)
+  t0=$(now); describe_module "$TGT" "$M" "$OUT/mdl/target-$M.mdl"; T_TDESC[$M]=$(since "$t0")
   "$PY" -I "$HERE/lib/compare-mdl.py" "$OUT/mdl/$M.mdl" "$OUT/mdl/target-$M.mdl" "$M" 2>/dev/null >> "$OUT/fidelity-ledger.tsv"
   printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$M" "${T_DESC[$M]:-}" "${T_TOPO[$M]:-}" "${T_CHECK[$M]:-}" "${T_EXEC[$M]:-}" "${T_TDESC[$M]:-}" >> "$TIMES"
 done
@@ -229,5 +248,6 @@ with open(sys.argv[2],'a') as f:
     f.write('# denominator: %d describable documents in the source catalog for %s; %d covered by rows, %d listed as not-emitted\n'%(len(cat),','.join(mods),len(cat&covered),len(missing)))
 print('catalog=%d covered=%d not-emitted=%d'%(len(cat),len(cat&covered),len(missing)))
 PYEOF
+phase target_describe_ledger; rm -f "$OUT/captures/.phase-mark"
 log "ledger: $OUT/fidelity-ledger.tsv"
 exit $status
