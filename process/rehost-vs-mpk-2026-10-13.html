@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rehost vs MPK</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: one reading column, status rail of cards, a loop diagram, numbered only where order is real (stages, increments). */
+  :root {
+    --ground: #f5f7fa;
+    --surface: #ffffff;
+    --surface-2: #eaeff5;
+    --ink: #17202b;
+    --ink-2: #3b4a5c;
+    --muted: #66778c;
+    --line: #d9e0e8;
+    --line-strong: #b9c5d3;
+    --accent: #0f4c81;
+    --accent-soft: #dce9f6;
+    --pass: #166534; --pass-soft: #dcfce7;
+    --warn: #92400e; --warn-soft: #fef3c7;
+    --fail: #991b1b; --fail-soft: #fee2e2;
+    --sans: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0f141a; --surface: #161d26; --surface-2: #1d2733;
+      --ink: #e6ecf3; --ink-2: #c0cbd8; --muted: #8796a8;
+      --line: #273342; --line-strong: #364659;
+      --accent: #6fb1ea; --accent-soft: #15314a;
+      --pass: #86efac; --pass-soft: #14321f;
+      --warn: #fcd34d; --warn-soft: #3a2a08;
+      --fail: #fca5a5; --fail-soft: #3b1414;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0f141a; --surface: #161d26; --surface-2: #1d2733;
+    --ink: #e6ecf3; --ink-2: #c0cbd8; --muted: #8796a8;
+    --line: #273342; --line-strong: #364659;
+    --accent: #6fb1ea; --accent-soft: #15314a;
+    --pass: #86efac; --pass-soft: #14321f;
+    --warn: #fcd34d; --warn-soft: #3a2a08;
+    --fail: #fca5a5; --fail-soft: #3b1414;
+    color-scheme: dark;
+  }
+  body { background: var(--ground); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.55; }
+  .wrap { max-width: 980px; margin: 0 auto; padding-block: 40px 72px; padding-inline: 20px; }
+  header.top { border-bottom: 1px solid var(--line); padding-bottom: 24px; margin-bottom: 36px; }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  h1 { font-size: clamp(30px, 4.5vw, 42px); line-height: 1.1; margin: 8px 0 12px; text-wrap: balance; font-weight: 700; letter-spacing: -.01em; }
+  h2 { font-size: 24px; margin: 48px 0 12px; letter-spacing: -.01em; text-wrap: balance; }
+  h3 { font-size: 17px; margin: 24px 0 8px; }
+  p { max-width: 70ch; margin: 0 0 12px; color: var(--ink-2); }
+  p.lead { font-size: 18px; color: var(--ink); }
+  code { font-family: var(--mono); font-size: .88em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+  .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin: 16px 0 8px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; min-width: 0; }
+  .card h3 { margin: 0 0 6px; font-size: 16px; }
+  .card p { font-size: 15px; margin-bottom: 8px; }
+  .card p:last-child { margin-bottom: 0; }
+  .pill { display: inline-block; font-family: var(--mono); font-size: 11.5px; letter-spacing: .04em; padding: 2px 8px; border-radius: 999px; border: 1px solid transparent; vertical-align: middle; }
+  .pill.done { background: var(--pass-soft); color: var(--pass); }
+  .pill.run { background: var(--warn-soft); color: var(--warn); }
+  .pill.next { background: var(--accent-soft); color: var(--accent); }
+  .pill.open { background: var(--fail-soft); color: var(--fail); }
+  .tablewrap { overflow-x: auto; margin: 14px 0 6px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-family: var(--mono); font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); font-weight: 500; background: var(--surface-2); }
+  tr:last-child td { border-bottom: 0; }
+  td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  ol.stages { counter-reset: s; list-style: none; padding: 0; margin: 12px 0; display: grid; gap: 10px; }
+  ol.stages li { display: grid; grid-template-columns: 44px 1fr; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; min-width: 0; }
+  ol.stages li::before { counter-increment: s; content: counter(s); font-family: var(--mono); font-size: 20px; color: var(--accent); font-weight: 500; line-height: 1.2; }
+  ol.stages li strong { display: block; margin-bottom: 2px; }
+  ol.stages li span { color: var(--ink-2); font-size: 15px; }
+  .loop { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 8px; overflow-x: auto; margin: 16px 0; }
+  .loop pre.mermaid { margin: 0; min-width: 620px; }
+  .callout { border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 18px 0; }
+  .callout p { color: var(--ink); margin-bottom: 6px; }
+  .callout p:last-child { margin-bottom: 0; }
+  ul.tight { margin: 8px 0 12px; padding-left: 20px; color: var(--ink-2); max-width: 75ch; }
+  ul.tight li { margin-bottom: 6px; }
+  .kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; font-size: 15px; margin: 10px 0 16px; }
+  .kv dt { font-family: var(--mono); font-size: 12.5px; color: var(--muted); padding-top: 2px; }
+  .kv dd { margin: 0; color: var(--ink-2); min-width: 0; }
+  footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 13.5px; color: var(--muted); }
+  @media (max-width: 480px) { .kv { grid-template-columns: 1fr; } .kv dt { padding-top: 8px; } }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">Answer &middot; 2026-10-13 &middot; Rehost vs MPK</div>
+  <h1>How quick is module &rarr; MDL &rarr; module, and how does it compare with an MPK move?</h1>
+  <p class="lead">The machine step takes seconds to minutes. It works cleanly on small, same-version apps with standard features. It breaks on Java actions, rules, legacy widgets, native layouts, recursion and 9.x authoring. For moving modules between apps, an MPK package is faster and keeps IDs.</p>
+</header>
+
+<h2>The answer</h2>
+<div class="grid">
+  <div class="card"><h3>How quick <span class="pill done">fast</span></h3><p>Seconds to minutes, for the machine step only. A 155-document app took 35 s end to end. A 36-module app took about 36 min.</p><p>Review, repair and test time is on top and is not measured here.</p></div>
+  <div class="card"><h3>Works cleanly when <span class="pill done">proven</span></h3><p>The app is small, source and target are the same Mendix version, and it uses standard features. Banking: 154 of 155 documents identical, <code>mx check</code> 0 errors, build succeeded.</p></div>
+  <div class="card"><h3>Breaks on <span class="pill open">limits</span></h3><p>Java actions with type parameters, rules, legacy widgets, native layouts, mutual recursion, and Mendix 9.x authoring. The 48-module GenAI app: 29 of 36 modules landed, build failed with 14 errors.</p></div>
+</div>
+
+<h2>Terms, once</h2>
+<ul class="tight">
+  <li><strong>MDL</strong> is Mendix's text language for describing a model: entities, microflows, pages.</li>
+  <li><strong>mxcli</strong> is the command-line tool that reads and writes MDL against a <code>.mpr</code> project.</li>
+  <li><strong>describe</strong> turns a model document into MDL text. <strong>exec</strong> runs MDL text and writes the document into a project.</li>
+  <li><strong>MPK</strong> is Mendix's own module package: a zip with the module's model units plus its Java, theme and widget files.</li>
+  <li><strong>Rehost</strong> is regenerating a module (or app) through MDL into a fresh project.</li>
+</ul>
+
+<h2>1. How Rehost works</h2>
+<p>Four steps. <strong>No person and no AI authors anything in this step.</strong> It is a machine round trip: the model describes itself, and the text is written back.</p>
+<ol class="stages">
+  <li><div><strong>Describe each module to MDL text</strong><span>Per module, plus every document type the whole-module describe leaves out (nanoflows, snippets, mappings and others), one by one.</span></div></li>
+  <li><div><strong>Check</strong><span><code>mxcli check</code> validates the text. It is all-or-nothing per file, so rejected statements are quarantined and the rest goes on.</span></div></li>
+  <li><div><strong>Write into a fresh project</strong><span>Repair loop: check, quarantine, exec, resume. A statement that fails is deferred with its error; the rest continues. Deferred statements retry in passes.</span></div></li>
+  <li><div><strong>Describe the target and compare</strong><span>The target is described again and every document is compared with the source. The result is the fidelity ledger: identical, drift, failed, not emitted, not expressible.</span></div></li>
+</ol>
+
+<h2>2. Speed</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>Step</th><th>Measured</th><th>Source</th></tr></thead>
+<tbody>
+<tr><td>Describe, per small module</td><td class="num">1&ndash;17 s</td><td>GenAI app, 36 modules</td></tr>
+<tr><td>Describe, per large module</td><td class="num">up to 114 s</td><td>GenAI app</td></tr>
+<tr><td>Describe, all 36 modules</td><td class="num">865 s</td><td>GenAI app</td></tr>
+<tr><td>Write, per module</td><td>not measured separately</td><td>no per-module timing recorded</td></tr>
+<tr><td>Check, per module</td><td>not measured separately</td><td>no per-module timing recorded</td></tr>
+<tr><td>Full small app (155 documents)</td><td class="num">35 s end to end</td><td>Banking</td></tr>
+<tr><td>Full large app (36 modules regenerated)</td><td class="num">about 36 min</td><td>GenAI app</td></tr>
+</tbody></table></div>
+<p>The 36 min reused earlier describes. The GenAI findings record about 30 min more when fresh.</p>
+
+<h2>3. What the two field runs delivered</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>Result</th><th>Banking (small)</th><th>GenAI (large)</th></tr></thead>
+<tbody>
+<tr><td>Documents</td><td class="num">155 of 155 emitted</td><td class="num">2776 in catalog</td></tr>
+<tr><td>Identical on target</td><td class="num">154</td><td class="num">579</td></tr>
+<tr><td>Drift</td><td class="num">1 (doc comment)</td><td class="num">271</td></tr>
+<tr><td>Failed exec</td><td class="num">0</td><td class="num">1993</td></tr>
+<tr><td>Modules landed</td><td>all</td><td class="num">29 of 36</td></tr>
+<tr><td><code>mx check</code></td><td class="num">0 errors</td><td class="num">14 errors (CE1613)</td></tr>
+<tr><td>Build</td><td>BUILD SUCCEEDED</td><td>BUILD FAILED</td></tr>
+</tbody></table></div>
+<p>Of the 1993 failures, 1520 are seven whole modules the toolkit's own repair step dropped. That is a toolkit defect, not a Mendix limit, and it is still open.</p>
+
+<h3>Where it breaks</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Class</th><th>What happens</th></tr></thead>
+<tbody>
+<tr><td>Java action type parameters</td><td>Described with no type parameter; exec writes entity <code>.Entity</code>. 7 of the 14 build errors.</td></tr>
+<tr><td>Rules</td><td>Cannot be described or created. 12 rules; 8 microflows that call them failed.</td></tr>
+<tr><td>Legacy widgets</td><td>No headless route to the React client (22 &times; CE0582 in the FSM web slice).</td></tr>
+<tr><td>Native layouts</td><td>A native slice cannot start from <code>mxcli new</code>; there is no native profile.</td></tr>
+<tr><td>Mutual recursion</td><td>exec refuses forward references, so both flows and every caller stay deferred.</td></tr>
+<tr><td>Mendix 9.x authoring</td><td>mxcli cannot create or alter microflows in a 9.x project.</td></tr>
+<tr><td>Describe output that check rejects</td><td>30 documents in the GenAI run (data views lost, widget parameter forms and others).</td></tr>
+<tr><td>Message definitions</td><td><strong>Correction:</strong> these <em>are</em> expressible. The GenAI failure was ordering: the collection was never emitted before the export mapping that uses it.</td></tr>
+</tbody></table></div>
+
+<h2>4. Rehost vs MPK, side by side</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>Row</th><th>Rehost (MDL)</th><th>MPK move</th></tr></thead>
+<tbody>
+<tr><td>What moves</td><td>Documents regenerated from text, into a fresh project</td><td>The module's units byte for byte, plus Java, theme and widget files</td></tr>
+<tr><td>Fidelity</td><td>Banking 154/155 identical; GenAI 579 identical, 271 drift</td><td>NativeNote 66/66 describe-identical; Assets slice 207 identical, 5 drift</td></tr>
+<tr><td>Speed</td><td>35 s for 155 documents; about 36 min for 36 modules</td><td>Export under 1 s; install about 8 s per module</td></tr>
+<tr><td>IDs and data</td><td>New IDs are generated</td><td>Entity IDs preserved, measured 9.24 to 10.24 to 11.13</td></tr>
+<tr><td>Java and jars</td><td>Java actions are a hand-off class</td><td>Java folders arrive byte-identical</td></tr>
+<tr><td>Widgets</td><td>Legacy widgets and some pages not carried</td><td>Widget packages travel with the module</td></tr>
+<tr><td>Version hops</td><td>Same-version only so far</td><td>11.13 refuses packages older than 10.21; a 9.x source goes through 10.24 first (<code>mx convert</code>, about 35 s)</td></tr>
+<tr><td>Clean-up of the old model</td><td>Yes: you get a clean project and MDL you own</td><td>No: the module arrives as it was, errors and all; edges to missing modules must be fixed</td></tr>
+<tr><td>Re-run behaviour</td><td>Repeatable; regenerates again</td><td>Installs new modules only</td></tr>
+<tr><td>Typical use</td><td>Re-platform, audit as text, regenerate parts</td><td>Move modules between apps (Decompose)</td></tr>
+</tbody></table></div>
+<p>Both are headless: no Studio Pro was used in the runs.</p>
+
+<h2>5. How to use it in practice</h2>
+<ol class="stages">
+  <li><div><strong>Rehost (MDL)</strong><span>A clean re-platform of a small to medium app, an audit or inventory of a model as text, or regenerating parts of an app.</span></div></li>
+  <li><div><strong>MPK</strong><span>Moving modules between apps (Decompose), keeping data and IDs.</span></div></li>
+  <li><div><strong>Hybrid</strong><span>MPK to move, MDL for the edges and the seams.</span></div></li>
+</ol>
+
+<h3>What a Rehost does not carry</h3>
+<ul class="tight">
+  <li>Passwords and demo-user secrets (described as a masked value).</li>
+  <li>Constants and certificates.</li>
+  <li>The theme.</li>
+  <li>Project security level (described as a report, not MDL).</li>
+  <li>Environment configuration.</li>
+</ul>
+<div class="callout"><p><strong>Run the same journeys against source and target afterwards.</strong> Identical describe output does not prove identical behaviour. The Banking run was proven statically only: <code>mx check</code>, build and describe compare.</p></div>
+
+<h2>6. Not proven yet</h2>
+<ul class="tight">
+  <li><span class="pill open">open</span> A 9 or 10 source regenerated into 11. Reading a 9.24 source works; a Rehost from it was never run.</li>
+  <li><span class="pill open">open</span> A large Rehost that reaches build-green. GenAI got to 14 errors.</li>
+  <li><span class="pill open">open</span> Journey parity between a rehosted target and its source.</li>
+</ul>
+
+<footer>Evidence: Banking and GenAI field runs, the MPK export probe, and the NativeNote and Assets slices, all 2026-10-12. The choice between the two is Step 0 of the rehost skill.</footer>
+</div>
+</body>
+</html>
