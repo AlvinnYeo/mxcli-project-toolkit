@@ -26,7 +26,7 @@
 # is an intent question, answered against the module brief, not here.
 #
 # Usage: bin/graph-sweep.sh [--module <Name>] [--min-elements N] [--tsv]
-# Exit:  0 swept · 2 instrument fault (stale catalog, empty graph, missing db)
+# Exit:  0 swept · 2 instrument fault (stale catalog, empty graph, no 'call' edges, missing db)
 
 set -uo pipefail
 
@@ -110,18 +110,33 @@ if [ "$CAT_MTIME" != "$MPR_MTIME" ]; then
   exit 2
 fi
 
-if [ "$BUILD_MODE" != "full" ]; then
-  echo "FAULT: catalog build_mode is '$BUILD_MODE'; reference edges require 'full'." >&2
-  echo "       Rebuild: ./mxcli -p $MPR -c 'REFRESH CATALOG FULL'" >&2
-  exit 2
-fi
-
-# --- guard 2: non-vacuous ------------------------------------------------------------------
+# --- guard 2: non-vacuous, measured on the edges this sweep reads -------------------------
 # An empty graph produces zero findings, which is indistinguishable from a clean model.
+#
+# WHY NOT `build_mode` (fixed 2026-10-13, reported from the field 2026-10-11): this guard used
+# to refuse any catalog whose catalog_meta.build_mode was not the literal 'full'. mxcli v0.24.0
+# writes 'source' even after `REFRESH CATALOG FULL`, and that catalog held 5,368 typed refs
+# rows. So the sweep FAULTed on every run on that mxcli, on a fresh, complete catalog:
+#   FAULT: catalog build_mode is 'source'; reference edges require 'full'.
+# The label was a proxy for "the reference edges are there". Test that directly instead: the
+# orphan finding reads RefKind 'call' (with action/menu_item/show_page/datasource), and a
+# catalog built without edges (the old 'fast' mode) has none. Zero 'call' edges is the
+# signature of a catalog that cannot answer the question, whatever its label says.
+# Assumption, stated: a real model with microflows has at least one microflow-to-microflow
+# call. A model with literally none would FAULT here; the message says what was counted.
 REFS=$(q "SELECT COUNT(*) FROM refs;")
 OBJS=$(q "SELECT COUNT(*) FROM objects;")
 if [ "${REFS:-0}" -eq 0 ] || [ "${OBJS:-0}" -eq 0 ]; then
-  echo "FAULT: graph is empty (refs=$REFS objects=$OBJS). Refusing to report a clean sweep." >&2
+  echo "FAULT: graph is empty (refs=$REFS objects=$OBJS, build_mode '${BUILD_MODE:-unset}'). Refusing to report a clean sweep." >&2
+  echo "       Rebuild: ./mxcli -p $MPR -c 'REFRESH CATALOG FULL'" >&2
+  exit 2
+fi
+CALLS=$(q "SELECT COUNT(*) FROM refs WHERE RefKind='call';")
+if [ "${CALLS:-0}" -eq 0 ]; then
+  KINDS="$(q "SELECT RefKind || '=' || COUNT(*) FROM refs GROUP BY RefKind ORDER BY COUNT(*) DESC LIMIT 8;" | paste -sd' ' -)"
+  echo "FAULT: catalog has 0 'call' edges (build_mode '${BUILD_MODE:-unset}', $REFS refs: ${KINDS:-none})." >&2
+  echo "       The orphan finding reads 'call' edges; without them every microflow looks orphaned." >&2
+  echo "       Rebuild: ./mxcli -p $MPR -c 'REFRESH CATALOG FULL'" >&2
   exit 2
 fi
 
@@ -195,7 +210,7 @@ fi
 N_UNWIRED=$(printf '%s\n' "$WIRING" | awk -F'|' 'NF && $3==0' | grep -c . || true)
 N_ORPH=$(printf '%s\n' "$ORPHANS" | grep -c . || true)
 
-echo "graph-sweep · catalog $CAT_MTIME · $OBJS objects · $REFS typed edges"
+echo "graph-sweep · catalog $CAT_MTIME (build_mode ${BUILD_MODE:-unset}) · $OBJS objects · $REFS typed edges ($CALLS call)"
 echo
 echo "  module wiring (>= $MIN_ELEMENTS elements)"
 printf '    %-24s %8s %9s %10s\n' MODULE ELEMENTS INBOUND OUTBOUND
