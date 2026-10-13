@@ -1,0 +1,32 @@
+mdl 1;
+-- delta after CE0644 (applied on top of slice-seam-stubs-replace.mdl's first run)
+-- `on error without rollback` inside a loop is refused (CE0644 "Error handling type must be 'Rollback' inside a looped
+-- activity."): the REST call sits in a per-item sub-microflow, the loop calls it
+create or modify microflow DispatchSeam.WorkOrder_RemoveTechnician_One (
+  $WorkOrder: TicketManagement.WorkOrder,
+  $Technician: Technician.Technician
+)
+begin
+  $Response = call rest service post '{1}/rest/dispatchcore/v1/workorders/remove-technician?WorkOrderPublicID={2}&TechnicianSystemID={3}' with (
+    {1} = @DispatchSeam.CoreBaseUrl,
+    {2} = toString($WorkOrder/PublicID),
+    {3} = urlEncode($Technician/SystemID)
+  ) (
+    Authentication: basic (Username: @DispatchSeam.CoreAPIUserName, Password: @DispatchSeam.CoreAPIPassword),
+    Timeout: 30,
+  ) returns String on error without rollback begin
+    log error node 'DispatchSeam' 'monolith remove-technician on work order {1} failed: {2}' with ({1} = toString($WorkOrder/PublicID), {2} = $latestError/Message);
+    return;
+  end error;
+  log info node 'DispatchSeam' 'monolith remove-technician: {1}' with ({1} = $Response);
+end;
+drop microflow TicketManagement.WorkOrder_RemoveTechnician;
+create or modify microflow TicketManagement.WorkOrder_RemoveTechnician (
+  $WorkOrderList: List of TicketManagement.WorkOrder,
+  $Technician: Technician.Technician
+)
+begin
+  loop $WorkOrder in $WorkOrderList begin
+    call microflow DispatchSeam.WorkOrder_RemoveTechnician_One(WorkOrder = $WorkOrder, Technician = $Technician);
+  end loop;
+end;

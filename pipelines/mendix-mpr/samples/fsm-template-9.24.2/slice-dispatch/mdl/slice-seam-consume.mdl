@@ -1,0 +1,60 @@
+mdl 1;
+-- Increment 8, slice side (DispatchApp 11.13): consume the monolith's DispatchCore (OData) and replace the CUT STUB
+-- TicketManagement entities by external entities of the SAME qualified name (seam recipe A), all in ONE consumer
+-- module (P6: navigations only exist inside one module). Consumer auth through HeadersMicroflow (P12, 11.x).
+create module DispatchSeam;
+create constant DispatchSeam.CoreODataUrl ( Type: String, DefaultValue: 'http://127.0.0.1:8680/odata/dispatchcore/v1/' );
+create constant DispatchSeam.CoreBaseUrl ( Type: String, DefaultValue: 'http://127.0.0.1:8680' );
+create constant DispatchSeam.CoreAPIUserName ( Type: String, DefaultValue: 'dispatch_slice' );
+create constant DispatchSeam.CoreAPIPassword ( Type: String, DefaultValue: '__SET_ME__' );
+create or modify module role DispatchSeam.User description 'reads monolith dispatch core (external entities), calls the core REST actions';
+
+create or modify microflow DispatchSeam.GetAuthHeaders ()
+returns List of System.HttpHeader
+begin
+  $Token = call java action CommunityCommons.Base64Encode(value = @DispatchSeam.CoreAPIUserName + ':' + @DispatchSeam.CoreAPIPassword);
+  $Headers = create list of System.HttpHeader;
+  $Authorization = create System.HttpHeader (Key = 'Authorization', Value = 'Basic ' + $Token);
+  add $Authorization to $Headers;
+  return $Headers;
+end;
+grant execute on microflow DispatchSeam.GetAuthHeaders to DispatchSeam.User;
+
+create consumed odata service DispatchSeam.DispatchCore (
+  Version: '1.0.0',
+  ODataVersion: OData4,
+  MetadataUrl: 'dispatchcore-metadata.xml',
+  Timeout: 60,
+  ServiceUrl: DispatchSeam.CoreODataUrl,
+  HeadersMicroflow: microflow DispatchSeam.GetAuthHeaders
+);
+
+-- recipe A step 1-2: stub-owned associations (an external entity cannot own one). Recorded owners: all owned by the
+-- TicketManagement stub entities; the navigations that come back with the external entities replace the ones
+-- between monolith entities; those to Technician/Skill/TechnicianGroup come back pointing at the MONO mirrors.
+drop association TicketManagement.Appointment_WorkOrder;
+drop association TicketManagement.AppointmentAssignment_Appointment;
+drop association TicketManagement.AppointmentAssignment_Technician;
+drop association TicketManagement.Ticket_Asset;
+drop association TicketManagement.Ticket_Priority;
+drop association TicketManagement.WorkOrder_Skill;
+drop association TicketManagement.WorkOrder_TechnicianGroup;
+drop association TicketManagement.WorkOrder_Ticket;
+drop association TicketManagement.WorkOrderAssignment_Technician;
+drop association TicketManagement.WorkOrderAssignment_WorkOrder;
+drop association TicketManagement._Appointment_Technician;
+drop association TicketManagement._WorkOrder_Technician;
+-- step 3: stub entities (drop entity also deletes, silently, the slice-owned associations to them: re-created below)
+drop entity TicketManagement.WorkOrderAssignment;
+drop entity TicketManagement.AppointmentAssignment;
+drop entity TicketManagement.Appointment;
+drop entity TicketManagement.WorkOrder;
+drop entity TicketManagement.Ticket;
+drop entity TicketManagement.Priority;
+-- step 4: one consumer module
+create external entities from DispatchSeam.DispatchCore into TicketManagement entities (WorkOrder, Appointment, Ticket, Priority, WorkOrderAssignment, AppointmentAssignment, MonoTechnician, MonoTechnicianGroup, MonoSkill);
+-- step 5: slice-owned associations to the core, local entity as owner; no delete behaviour toward an external entity
+-- (orphans when the monolith deletes: hand-off rows, P13)
+create or modify association RosterManagement.Roster_Ticket_PreferredStartWindow from RosterManagement.Roster to TicketManagement.Ticket storage table;
+create or modify association Scheduler.PlannerContext_WorkOrder_Selected from Scheduler.PlannerContext to TicketManagement.WorkOrder storage table;
+create or modify association TimeRegistration.TimeRegistration_Appointment from TimeRegistration.TimeRegistration to TicketManagement.Appointment storage table;

@@ -1,0 +1,3 @@
+mdl 1;
+-- refresh after the Sortable change on the publisher (mono-dispatch-publish-sortable.mdl)
+create external entities from DispatchSeam.DispatchCore into TicketManagement entities (WorkOrder, Appointment, Ticket, Priority, WorkOrderAssignment, AppointmentAssignment, MonoTechnician, MonoTechnicianGroup, MonoSkill);

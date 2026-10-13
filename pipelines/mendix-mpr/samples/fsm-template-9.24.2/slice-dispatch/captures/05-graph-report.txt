@@ -1,0 +1,186 @@
+WARNING: This is a vibe-coded PoC, alpha quality, use with caution.
+Cache invalid: MPR path changed
+2026/10/13 04:06:58 warning: skipping com.mendix.widget.web.PopupMenu.mpk: package.xml: zip: checksum error
+Widget definitions: 0 new, 11 refreshed
+2026/10/13 04:06:59 warning: skipping com.mendix.widget.web.PopupMenu.mpk: package.xml: zip: checksum error
+✓ Modules: 59
+✓ Entities: 299
+✓ Attributes: 1426
+✓ Entity Event Handlers: 6
+✓ Associations: 294
+✓ Enumerations: 85
+✓ Enumeration values: 455
+✓ Constants: 48
+✓ ConstantValues: 0
+✓ Java Actions: 162
+✓ Java Action Parameters: 311
+✓ JavaScript Actions: 81
+✓ Image Collections: 19
+✓ Icon Collections: 0
+✓ Menus: 2
+✓ Page Templates: 71
+✓ Data Transformers: 0
+✓ Scheduled Events: 9
+✓ Task Queues: 0
+✓ Regular Expressions: 5
+✓ Agent-editor documents: 0
+✓ Microflows: 1896
+✓ Nanoflows: 675
+✓ Rules: 63
+✓ Flow parameters: 3170
+✓ Activities: 19905
+✓ Pages: 253
+✓ Widgets: 5030
+✓ Snippets: 107
+✓ Snippet widgets: 1896
+✓ Building blocks: 163
+✓ Layouts: 40
+✓ OData Clients: 0
+✓ OData Services: 0
+✓ Business Event Services: 0
+✓ widget_definitions: 70
+✓ Database Connections: 0
+✓ JAR Dependencies: 0
+✓ REST Clients: 0
+✓ Published REST Services: 4
+✓ Published REST Operations: 6
+✓ External Entities: 0
+✓ External Actions: 0
+✓ Business Events: 0
+✓ Contract Entities: 0
+✓ Contract Messages: 0
+✓ Navigation profiles: 2
+✓ Navigation menu items: 42
+✓ Navigation role homes: 9
+✓ RoleMappings: 316
+✓ JSON Structures: 1
+✓ Import Mappings: 4
+✓ Export Mappings: 3
+✓ XPath Expressions: 777
+✓ References: 19857
+✓ Permissions: 6650
+✓ strings: 14315
+✓ Catalog cached to mono/.mxcli/catalog.db
+# Graph report — mono/fsm.mpr
+
+Architecture map from `CATALOG.graph_*` (top 15 per section, framework modules excluded).
+
+## God nodes — most depended-upon / highest fan-out
+
+| Asset | ObjectType | InDegree | OutDegree | Degree |
+|---|---|---|---|---|
+| MasterData.Masterdata_Overview_MxAdmin | PAGE | 1 | 303 | 304 |
+| TicketManagement.WorkOrder | ENTITY | 275 | 3 | 278 |
+| Technician.Technician | ENTITY | 228 | 0 | 228 |
+| NativeMobile.NativeAppointment | ENTITY | 205 | 6 | 211 |
+| TicketManagement.Ticket | ENTITY | 169 | 2 | 171 |
+| TicketManagement.Appointment | ENTITY | 158 | 1 | 159 |
+| TicketManagement.WorkOrder_Ticket | ASSOCIATION | 132 | 2 | 134 |
+| NativeModelCheck.NativeModelCheck | ENTITY | 119 | 1 | 120 |
+| NativeModelCheck.LogMessage_Create | MICROFLOW | 110 | 9 | 119 |
+| NativeMobile.NativeWorkOrder | ENTITY | 112 | 5 | 117 |
+| AssetManagement.Asset | ENTITY | 109 | 0 | 109 |
+| Synchronization.OfflineAction_AppendReviewMessage | MICROFLOW | 104 | 3 | 107 |
+| NativeMobile.DS_GetObjectCounts | NANOFLOW | 1 | 104 | 105 |
+| Administration.Account | ENTITY | 99 | 2 | 101 |
+| Form.FormVersion | ENTITY | 98 | 2 | 100 |
+
+## Module coupling — cross-module edges (surprise edges)
+
+| SourceModule | TargetModule | Edges | RefKinds |
+|---|---|---|---|
+| MasterData | TicketManagement | 295 | parameter,retrieve,call,delete,datasource,member |
+| NativeMobileRelated | NativeMobile | 251 | parameter,return,create,retrieve,call,change,delete,datasource,action,show_page,member,xpath |
+| Synchronization | NativeMobile | 236 | parameter,retrieve,return,delete,call,member,xpath |
+| Synchronization | TicketManagement | 185 | parameter,retrieve,return,call,change,associate,member,value,xpath |
+| Scheduler | TicketManagement | 172 | call,parameter,return,retrieve,show_page,associate,datasource,action,member,value,xpath |
+| Synchronization | Form | 148 | call,retrieve,parameter,return,change,associate,datasource,member,xpath |
+| TicketManagement | Technician | 147 | retrieve,parameter,return,call,associate,datasource,show_page,member,xpath |
+| Synchronization | NativeMobileForm | 125 | retrieve,parameter,call,return,change,member,xpath |
+| Dashboard | TicketManagement | 119 | call,retrieve,parameter,return,datasource,action,show_page,member,xpath |
+| Technician | TicketManagement | 112 | return,show_page,retrieve,call,datasource,member,xpath |
+| MasterData | Form | 110 | parameter,call,datasource,show_page,member |
+| Synchronization | Part | 109 | call,parameter,return,retrieve,change,member,xpath |
+| Synchronization | NativeMobilePart | 105 | parameter,retrieve,call,change,commit,member,xpath |
+| MasterData | Part | 101 | parameter,call,datasource,member |
+| MasterData | NativeMobile | 99 | retrieve,call,return,parameter,member,xpath |
+
+## Module cohesion — lowest first (most entangled)
+
+| ModuleName | IntraEdges | InterEdges | CohesionPct |
+|---|---|---|---|
+| Navigation | 0 | 103 | 0 |
+| NativeRestAPI | 4 | 52 | 7.1 |
+| General | 11 | 107 | 9.3 |
+| MasterData | 138 | 1156 | 10.7 |
+| ModuleIntegration_Administration_Impl | 17 | 99 | 14.7 |
+| ModuleIntegration_Logging_Impl | 3 | 17 | 15 |
+| ModuleIntegration_DeepLink_Impl | 9 | 41 | 18 |
+| FSM_Specific | 4 | 13 | 23.5 |
+| NativeMobileRelated | 187 | 548 | 25.4 |
+| CommunityCommons | 5 | 12 | 29.4 |
+| Visualizations | 33 | 59 | 35.9 |
+| Synchronization | 881 | 1494 | 37.1 |
+| AppSettings | 84 | 138 | 37.8 |
+| Utils | 17 | 27 | 38.6 |
+| IDCreation | 9 | 12 | 42.9 |
+
+## Dead documents — referenceable but no inbound edge
+
+| QualifiedName | ObjectType | ModuleName |
+|---|---|---|
+| CommunityCommons.ImageDimensions | ENTITY | CommunityCommons |
+| CommunityCommons.SplitItem | ENTITY | CommunityCommons |
+| DeepLink.Microflow_Select_DataGrid | ENTITY | DeepLink |
+| JWT.JWTPlainText | ENTITY | JWT |
+| JWT.PublicClaimResponse | ENTITY | JWT |
+| MendixSSO.AdditionalScopes | ENTITY | MendixSSO |
+| MendixSSO.AuthRequest | ENTITY | MendixSSO |
+| MendixSSO.AuthenticateEnvironmentRequest | ENTITY | MendixSSO |
+| MendixSSO.MendixSSOConfigurationView | ENTITY | MendixSSO |
+| NanoflowCommons.Geolocation | ENTITY | NanoflowCommons |
+| NanoflowCommons.Position | ENTITY | NanoflowCommons |
+| NativeMobileResources.DeviceInfo | ENTITY | NativeMobileResources |
+| NativeMobileResources.ImageMetaData | ENTITY | NativeMobileResources |
+| ObjectHandling.ListObject | ENTITY | ObjectHandling |
+| Scheduler.PageContext_View_DataGrid | ENTITY | Scheduler |
+
+## Reference kinds — edge vocabulary
+
+| RefKind | SourceType | TargetType | Count | Pct |
+|---|---|---|---|---|
+| call | MICROFLOW | MICROFLOW | 2322 | 11.7 |
+| parameter | MICROFLOW | ENTITY | 1788 | 9 |
+| member | PAGE | ATTRIBUTE | 1512 | 7.6 |
+| member | MICROFLOW | ATTRIBUTE | 1336 | 6.7 |
+| call | NANOFLOW | NANOFLOW | 890 | 4.5 |
+| retrieve | MICROFLOW | ENTITY | 731 | 3.7 |
+| member | MICROFLOW | ASSOCIATION | 660 | 3.3 |
+| parameter | NANOFLOW | ENTITY | 632 | 3.2 |
+| associate | ASSOCIATION | ENTITY | 588 | 3 |
+| member | SNIPPET | ATTRIBUTE | 582 | 2.9 |
+| member | NANOFLOW | ATTRIBUTE | 516 | 2.6 |
+| xpath | MICROFLOW | ASSOCIATION | 499 | 2.5 |
+| xpath | MICROFLOW | ATTRIBUTE | 480 | 2.4 |
+| return | MICROFLOW | ENTITY | 460 | 2.3 |
+| change | MICROFLOW | ENTITY | 423 | 2.1 |
+
+## Entity hotspots — used by the most flows
+
+| Entity | UsedByFlows | AcrossModules |
+|---|---|---|
+| TicketManagement.WorkOrder | 162 | Technician,LoadTest,General,AppSettings,MasterData,Form,Skill,Scheduler,NativeMobileAsset,Tool,NativeMobileRelated,NativeModelCheck,Part,IDCreation,Synchronization,TicketManagement,Visualizations |
+| Technician.Technician | 145 | Technician,LoadTest,RosterManagement,MasterData,Skill,AssetManagement,NativeMobile,FSMPublishedAPI,Scheduler,Dashboard,NativeModelCheck,Synchronization,TicketManagement |
+| NativeMobile.NativeAppointment | 136 | AppSettings,MasterData,NativeMobile,NativeMobileRelated,NativeModelCheck,Synchronization,NativeMobileTimeRegistration,NativeMobileAsset,NativeReason,NativeMobilePart,NativeTechnician |
+| TicketManagement.Ticket | 106 | Technician,LoadTest,General,AppSettings,MasterData,Skill,FSMPublishedAPI,Dashboard,NativeModelCheck,IDCreation,Synchronization,TicketManagement,Visualizations |
+| TicketManagement.Appointment | 97 | Technician,LoadTest,General,AppSettings,MasterData,Scheduler,NativeMobileAsset,Dashboard,NativeMobileRelated,NativeModelCheck,IDCreation,Synchronization,TicketManagement,Visualizations |
+| NativeMobile.NativeWorkOrder | 71 | AppSettings,MasterData,NativeMobile,NativeMobileAsset,NativeMobileRelated,NativeModelCheck,Synchronization,NativeNote |
+| Form.FormVersion | 64 | LoadTest,Form,Synchronization,TicketManagement |
+| AssetManagement.Asset | 61 | LoadTest,MasterData,AssetManagement,FSMPublishedAPI,NativeMobileAsset,Dashboard,NativeModelCheck,Part,Synchronization,TicketManagement |
+| NativeMobile.NativeWorkOrderAssignment | 59 | AppSettings,MasterData,NativeMobile,NativeMobileRelated,NativeModelCheck,Synchronization,NativeTechnician |
+| NativeMobilePart.NativeUsedPart | 53 | AppSettings,MasterData,NativeMobile,NativeMobileRelated,NativeModelCheck,NativeMobilePart,Synchronization |
+| NativeMobile.NativeTicket | 52 | AppSettings,MasterData,NativeMobile,NativeMobileAsset,NativeModelCheck,Synchronization,TicketManagement |
+| NativeNote.NativeNote | 51 | MasterData,NativeNote,NativeMobileRelated,NativeModelCheck,Synchronization,NativeMobile |
+| Administration.Account | 49 | Technician,DemoUserSwitcher,General,Administration,NativeRestAPI,Scheduler,Utils,Synchronization,ModuleIntegration_Administration_Impl,TicketManagement,NativeMobile |
+| NativeMobileTimeRegistration.NativeWorkBreak | 42 | MasterData,NativeMobileTimeRegistration,NativeModelCheck,Synchronization,NativeTechnician,NativeMobile |
+| NativeMobileForm.NativeInstanceItem | 41 | AppSettings,MasterData,NativeMobileForm,NativeMobileRelated,NativeModelCheck,Synchronization,NativeMobile |

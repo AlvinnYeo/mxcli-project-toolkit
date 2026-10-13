@@ -1,0 +1,23 @@
+$ mxcli -p DispatchApp.mpr exec mdl/edges-A3-java.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Parse error: line 16:19 mismatched input '<>' expecting ')'  [see: mxcli syntax <topic>, e.g. entity | microflow | page]
+Parse error: line 18: the statement ending at ":" has no terminating `;`: under mdl 1 every statement ends with `;`
+exit=1 real 0.2 s
+$ mxcli -p DispatchApp.mpr exec mdl/edges-A3-java.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Created module: ObjectHandling
+Module 'Visualizations' already exists
+Created module: ValidationFeedback
+Created java action: ObjectHandling.getGUID
+Created java action: Visualizations.JA_CanWriteAttribute_User
+Created java action: ValidationFeedback.JA_RetrieveObjectByGUID
+exit=0 real 0.8 s
+$ mxcli -p DispatchApp.mpr exec mdl/edges-A3-java.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Module 'ObjectHandling' already exists
+Module 'Visualizations' already exists
+Module 'ValidationFeedback' already exists
+Modified java action: ObjectHandling.getGUID
+Modified java action: Visualizations.JA_CanWriteAttribute_User
+Modified java action: ValidationFeedback.JA_RetrieveObjectByGUID
+exit=0 real 0.7 s

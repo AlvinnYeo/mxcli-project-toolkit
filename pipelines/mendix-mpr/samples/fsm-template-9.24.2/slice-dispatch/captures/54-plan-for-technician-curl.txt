@@ -1,0 +1,29 @@
+before: [
+  {
+    "n": "1"
+  }
+]
+POST rest/dispatchcore/v1/workorders/plan-for-technician (machine) -> (200, '2')
+POST ... (no credentials) -> 401
+after: [
+  {
+    "n": "2"
+  }
+]
+new appointment: [
+  {
+    "PlannedWorkEnd": "Mon Mar 03 09:30:00 UTC 2031",
+    "PlannedWorkStart": "Mon Mar 03 08:00:00 UTC 2031",
+    "PublicID": "2",
+    "Status": "Planned"
+  }
+]
+assignment: [
+  {
+    "Status": "Auto_accepted"
+  },
+  {
+    "Status": null
+  }
+]
+POST rest/dispatchcore/v1/workorders/remove-technician (machine) -> 200 removed 1

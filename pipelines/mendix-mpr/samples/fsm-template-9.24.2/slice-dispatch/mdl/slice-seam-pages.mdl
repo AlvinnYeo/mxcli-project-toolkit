@@ -1,0 +1,18 @@
+mdl 1;
+-- Increment 8 seam, planner page: enumeration-attribute visibility rules cannot hold a String attribute (P8, CE0749)
+-- -> expression visibility; galleries over a REVERSE navigation of an external entity (CE8812: OData publishes the
+-- navigation on the owner only) and over the TechnicianGroup mirror -> HAND-OFF texts.
+alter page Scheduler.PageContext_View {
+  set (Visible: $currentObject/Status = 'OnHold' or $currentObject/Status = '_New' or $currentObject/Status = 'Planned' or $currentObject/Status = 'In_progress' or $currentObject/Status = 'Finished' or $currentObject/Status = 'Cancelled') on text14;
+  set (Visible: $currentObject/Status = 'Partially_planned') on text28;
+  set (Visible: $currentObject/Status = '_New' or $currentObject/Status = 'Partially_planned') on actionButton5;
+  replace gallery3 with {
+    dynamictext gallery3 (Content: 'HAND-OFF: appointments of this work order (reverse navigation, not readable over OData v1)')
+  };
+  replace gallery4 with {
+    dynamictext gallery4 (Content: 'HAND-OFF: assignments of this work order (reverse navigation, not readable over OData v1)')
+  };
+  replace gallery5 with {
+    dynamictext gallery5 (Content: 'HAND-OFF: technician groups of this work order (monolith mirror, not the slice''s groups)')
+  };
+};

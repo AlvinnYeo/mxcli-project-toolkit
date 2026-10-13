@@ -1,0 +1,12 @@
+$ mxcli -p DispatchApp.mpr exec mdl/slice-seam-lane-2.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+(no module)
+-----------
+  ⚠ page DispatchSeam.Appointments_FromCore: DataView `dvRequest` contains input fields but is not inside a layout grid — label and input widths only render correctly inside a layoutgrid [MPR010]
+      at 
+      → Wrap dataview `dvRequest` in `layoutgrid { row { column (desktopwidth: autofill) { … } } }`
+
+1 issues: 0 errors, 1 warnings, 0 info
+Modified microflow: DispatchSeam.ACT_Appointment_Plan (spliced: 1 replaced)
+Replaced page DispatchSeam.Appointments_FromCore
+exit=0 real 2.4 s

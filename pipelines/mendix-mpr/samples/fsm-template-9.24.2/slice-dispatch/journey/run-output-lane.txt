@@ -1,0 +1,16 @@
+=== run 1
+run J8-261013050900
+  PASS  [read: monolith appointment listed in the slice over OData (ledger: TicketManagement.Appointment out-rows)] row J8-APPT-1 visible in the slice grid, and present in the MONOLITH database — [{"PublicID":"1","SystemID":"J8-APPT-1"}]
+  PASS  [write: plan in monolith over REST (ledger: TicketManagement.Appointment_PlanManual out-row)] PlanRequest J8-261013050900 in the SLICE database with the monolith's answer — [{"AppointmentPublicID":"1","PlannedWorkStart":"Tue Oct 20 05:09:09 UTC 2026","Response":"planned 1","RunID":"J8-261013050900","TechnicianSystemID":"J8-TECH-1"}]
+  PASS  [write: plan in monolith over REST (ledger: TicketManagement.Appointment_PlanManual out-row)] the MONOLITH database holds the same planned start, status Planned (behaviour ran) — [{"PlannedWorkStart":"Tue Oct 20 05:09:09 UTC 2026","Status":"Planned","SystemID":"J8-APPT-1"}]
+  PASS  [auth: machine role only on both monolith services] OData 200 machine / 401 none; REST 401 none — 200/401/401
+total 10.2 s
+exit=0
+=== run 2
+run J8-261013050911
+  PASS  [read: monolith appointment listed in the slice over OData (ledger: TicketManagement.Appointment out-rows)] row J8-APPT-1 visible in the slice grid, and present in the MONOLITH database — [{"PublicID":"1","SystemID":"J8-APPT-1"}]
+  PASS  [write: plan in monolith over REST (ledger: TicketManagement.Appointment_PlanManual out-row)] PlanRequest J8-261013050911 in the SLICE database with the monolith's answer — [{"AppointmentPublicID":"1","PlannedWorkStart":"Tue Oct 20 05:09:16 UTC 2026","Response":"planned 1","RunID":"J8-261013050911","TechnicianSystemID":"J8-TECH-1"}]
+  PASS  [write: plan in monolith over REST (ledger: TicketManagement.Appointment_PlanManual out-row)] the MONOLITH database holds the same planned start, status Planned (behaviour ran) — [{"PlannedWorkStart":"Tue Oct 20 05:09:16 UTC 2026","Status":"Planned","SystemID":"J8-APPT-1"}]
+  PASS  [auth: machine role only on both monolith services] OData 200 machine / 401 none; REST 401 none — 200/401/401
+total 5.4 s
+exit=0

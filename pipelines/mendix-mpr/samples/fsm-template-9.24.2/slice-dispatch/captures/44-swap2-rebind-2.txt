@@ -1,0 +1,33 @@
+$ mxcli -p DispatchApp.mpr exec mdl/slice-seam-rebind-2.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Dropped microflow: Scheduler.AvailableTimeslot_CreateAppointment
+Created microflow: Scheduler.AvailableTimeslot_CreateAppointment
+Dropped microflow: Scheduler.AvailableTimeslot_CreateAppointment_ForWorkOrder
+Created microflow: Scheduler.AvailableTimeslot_CreateAppointment_ForWorkOrder
+Dropped microflow: Scheduler.AvailableTimeslot_CreateAppointment_GetMessage
+Created microflow: Scheduler.AvailableTimeslot_CreateAppointment_GetMessage
+Dropped microflow: Scheduler.PlannerContext_GetAppointmentList
+Created microflow: Scheduler.PlannerContext_GetAppointmentList
+Dropped microflow: Scheduler.PlannerContext_GetWorkOrders
+Created microflow: Scheduler.PlannerContext_GetWorkOrders
+Dropped microflow: Scheduler.SnapSetting_GetSnappedStart
+Created microflow: Scheduler.SnapSetting_GetSnappedStart
+Dropped microflow: Scheduler.TechnicianRoster_GetBusyTimeslots
+Created microflow: Scheduler.TechnicianRoster_GetBusyTimeslots
+Dropped microflow: Skill.Technician_CheckWorkOrderListOnSkills
+Created microflow: Skill.Technician_CheckWorkOrderListOnSkills
+Dropped microflow: Skill.WorkOrder_CheckTechnicianListOnSkills
+Created microflow: Skill.WorkOrder_CheckTechnicianListOnSkills
+Dropped microflow: Technician.Technician_Get_LastStartedAppointment
+Created microflow: Technician.Technician_Get_LastStartedAppointment
+Dropped microflow: Technician.Technician_Remove
+Created microflow: Technician.Technician_Remove
+Dropped microflow: Technician.Technician_Validate_ActiveWorkOrder
+Created microflow: Technician.Technician_Validate_ActiveWorkOrder
+Dropped microflow: Technician.Technician_Validate_Remove
+Created microflow: Technician.Technician_Validate_Remove
+Dropped microflow: Technician.TicketList_Get_NewByTechnicianAndSkill
+Created microflow: Technician.TicketList_Get_NewByTechnicianAndSkill
+Dropped microflow: Technician.Ticketlist_Get_PlannedPartiallyPlannedByTechnicianAndSkill
+Created microflow: Technician.Ticketlist_Get_PlannedPartiallyPlannedByTechnicianAndSkill
+exit=0 real 12.0 s

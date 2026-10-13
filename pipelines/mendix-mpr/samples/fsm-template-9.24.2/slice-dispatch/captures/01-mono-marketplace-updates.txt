@@ -1,0 +1,10 @@
+$ mxcli marketplace update 109515 --to 5.2.1 --force -p fsm.mpr
+
+  Then validate and review:
+      mxcli docker check -p <project.mpr>
+      mxcli diff-local -p <project.mpr>
+$ mxcli marketplace update 109513 --to 10.1.17 --force -p fsm.mpr
+
+  Then validate and review:
+      mxcli docker check -p <project.mpr>
+      mxcli diff-local -p <project.mpr>

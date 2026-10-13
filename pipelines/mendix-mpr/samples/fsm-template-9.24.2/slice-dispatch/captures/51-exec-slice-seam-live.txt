@@ -1,0 +1,54 @@
+$ mxcli -p DispatchApp.mpr exec mdl/slice-seam-live.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+(no module)
+-----------
+  ⚠ page DispatchSeam.Appointments_FromCore: DataView `dvRequest` contains input fields but is not inside a layout grid — label and input widths only render correctly inside a layoutgrid [MPR010]
+      at 
+      → Wrap dataview `dvRequest` in `layoutgrid { row { column (desktopwidth: autofill) { … } } }`
+
+  ⚠ line 128: `alter settings model …` (runtime) is deprecated; write `alter settings runtime …` — same meaning. Refused from `mdl 2`. (mxcli help MDL-DEPR555) [MDL-DEPR555]
+      at 
+      → Rewrite the section name: `model` becomes `runtime`. `runtime` is the App Settings tab that holds these values in Studio Pro (R10); `model` also collided with the agent-editor document type.
+
+4 issues: 0 errors, 2 warnings, 2 info (not shown)
+2 info notes not shown — run `mxcli check <repo>/pipelines/mendix-mpr/samples/fsm-template-9.24.2/slice-dispatch/mdl/slice-seam-live.mdl` to see them (or pass --verbose)
+Created constant: DispatchSeam.JourneyUserPassword
+Created module role: TicketManagement.CoreRead
+Granted access on TicketManagement.WorkOrder to TicketManagement.CoreRead
+  Result: read *
+Granted access on TicketManagement.Appointment to TicketManagement.CoreRead
+  Result: read *
+Granted access on TicketManagement.Ticket to TicketManagement.CoreRead
+  Result: read *
+Granted access on TicketManagement.Priority to TicketManagement.CoreRead
+  Result: read *
+Granted access on TicketManagement.WorkOrderAssignment to TicketManagement.CoreRead
+  Result: read *
+Granted access on TicketManagement.AppointmentAssignment to TicketManagement.CoreRead
+  Result: read *
+Granted access on TicketManagement.MonoTechnician to TicketManagement.CoreRead
+  Result: read *
+Granted access on TicketManagement.MonoTechnicianGroup to TicketManagement.CoreRead
+  Result: read *
+Granted access on TicketManagement.MonoSkill to TicketManagement.CoreRead
+  Result: read *
+Created entity: DispatchSeam.PlanRequest
+Granted access on DispatchSeam.PlanRequest to DispatchSeam.User
+  Result: create, read *, write *
+Created microflow: DispatchSeam.ACT_Appointment_Plan
+Granted execute access on DispatchSeam.ACT_Appointment_Plan to DispatchSeam.User
+Created microflow: DispatchSeam.DS_PlanRequest_New
+Granted execute access on DispatchSeam.DS_PlanRequest_New to DispatchSeam.User
+Created page DispatchSeam.Appointments_FromCore
+Granted view access on DispatchSeam.Appointments_FromCore to DispatchSeam.User
+Created microflow: DispatchSeam.EnsureAccount
+Created microflow: DispatchSeam.ASU_Dispatch
+Updated model settings
+Added module roles Administration.User, TicketManagement.CoreRead, RosterManagement.ViewAll, Skill.CallCenterEmployee, Technician.ViewAll, TimeRegistration.ViewAll to user role CallCenterEmployee
+Added module roles Administration.User, TicketManagement.CoreRead, RosterManagement.EditAll, Scheduler._AddOn_SetSnapSettings, Skill.FunctionalAdministrator, Technician.EditAll, TimeRegistration.EditRegistrationCode, TimeRegistration.ViewAll, TimeRegistration.ViewTimeRegistration to user role FunctionalAdministrator
+Added module roles Administration.User, TicketManagement.CoreRead, RosterManagement.ViewMy, Scheduler.EditMy, Scheduler._AddOn_ViewMyRegion, Skill.Mechanic, Technician.ViewAll, TimeRegistration.EditAll, TimeRegistration.EditMy, TimeRegistration.ViewAll to user role Mechanic
+Added module roles Administration.User, RosterManagement.EditAll, Scheduler.EditAll, Scheduler._AddOn_ExportScheduler, Skill.ServiceDeskEmployee, Technician.EditAll, TimeRegistration.ViewAll, TimeRegistration.ViewTimeRegistration, DispatchSeam.User, TicketManagement.CoreRead to user role ServiceDeskEmployee
+Added module roles Administration.User, RosterManagement.ViewAll, Scheduler.EditAll, Skill.ServiceRegionManager, Technician.ViewAll, TimeRegistration.ViewAll, TimeRegistration.ViewMyRegion, TimeRegistration.ViewTimeRegistration, DispatchSeam.User, TicketManagement.CoreRead to user role ServiceRegionManager
+Created user role: TechnicalAdministrator
+Set project security level to Production
+exit=0 real 5.5 s

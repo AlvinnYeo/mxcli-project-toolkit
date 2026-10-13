@@ -1,0 +1,160 @@
+mdl 1;
+-- Increment 8, slice side (DispatchApp 11.13): the seam lane ALONGSIDE the CUT STUBS. The recipe-A swap of the
+-- TicketManagement stubs (slice-seam-consume.mdl + slice-seam-rewire-asset.mdl + slice-seam-rebind.mdl) was run on
+-- a copy and left 45 mx check errors in 20 documents (FINDINGS "Recipe A on a chatty slice"); it is not applied here.
+-- External entities live in the seam's own consumer module (P6) so they do not collide with the stub names.
+create module DispatchSeam;
+create constant DispatchSeam.CoreODataUrl ( Type: String, DefaultValue: 'http://127.0.0.1:8680/odata/dispatchcore/v1/' );
+create constant DispatchSeam.CoreBaseUrl ( Type: String, DefaultValue: 'http://127.0.0.1:8680' );
+create constant DispatchSeam.CoreAPIUserName ( Type: String, DefaultValue: 'dispatch_slice' );
+create constant DispatchSeam.CoreAPIPassword ( Type: String, DefaultValue: '__SET_ME__' );
+create constant DispatchSeam.JourneyUserPassword ( Type: String, DefaultValue: '__SET_ME__' );
+create or modify module role DispatchSeam.User description 'reads the monolith dispatch core (external entities), plans appointments over REST';
+
+create or modify microflow DispatchSeam.GetAuthHeaders ()
+returns List of System.HttpHeader
+begin
+  $Token = call java action CommunityCommons.Base64Encode(value = @DispatchSeam.CoreAPIUserName + ':' + @DispatchSeam.CoreAPIPassword);
+  $Headers = create list of System.HttpHeader;
+  $Authorization = create System.HttpHeader (Key = 'Authorization', Value = 'Basic ' + $Token);
+  add $Authorization to $Headers;
+  return $Headers;
+end;
+
+create consumed odata service DispatchSeam.DispatchCore (
+  Version: '1.0.0',
+  ODataVersion: OData4,
+  MetadataUrl: 'dispatchcore-metadata.xml',
+  Timeout: 60,
+  ServiceUrl: DispatchSeam.CoreODataUrl,
+  HeadersMicroflow: microflow DispatchSeam.GetAuthHeaders
+);
+create external entities from DispatchSeam.DispatchCore into DispatchSeam entities (WorkOrder, Appointment, Ticket, MonoTechnician);
+grant read * on entity DispatchSeam.WorkOrder to DispatchSeam.User;
+grant read * on entity DispatchSeam.Appointment to DispatchSeam.User;
+grant read * on entity DispatchSeam.Ticket to DispatchSeam.User;
+grant read * on entity DispatchSeam.MonoTechnician to DispatchSeam.User;
+
+-- slice-side record of each planning request (local, persistent): the journey checks it in the slice database and
+-- the planned appointment in the monolith database
+create persistent entity DispatchSeam.PlanRequest (
+  RunID: String(100),
+  AppointmentPublicID: Long,
+  TechnicianSystemID: String(200),
+  PlannedWorkStart: DateTime,
+  Response: String(500)
+);
+grant create, read *, write * on entity DispatchSeam.PlanRequest to DispatchSeam.User;
+
+-- write with behaviour (P3): the monolith's own Appointment_PlanManual runs behind rest/dispatchcore/v1/appointments/plan.
+-- DateTime crosses as UTC ISO (P9). Every REST call has an error handler (P4).
+create or modify microflow DispatchSeam.ACT_Appointment_Plan (
+  $Appointment: DispatchSeam.Appointment,
+  $PlanRequest: DispatchSeam.PlanRequest
+)
+begin
+  retrieve $Technician from Technician.Technician where [IsActive = true()] first;
+  if $Technician = empty then
+    show message 'No active technician in DispatchApp' type Error;
+    return;
+  end if;
+  declare $Start DateTime = $PlanRequest/PlannedWorkStart;
+  if $Start = empty then
+    set $Start = addDays([%CurrentDateTime%], 7);  -- run-unique to the millisecond (journey idempotency)
+  end if;
+  $Response = call rest service post '{1}/rest/dispatchcore/v1/appointments/plan?AppointmentPublicID={2}&TechnicianSystemID={3}&PlannedTravelStart={4}&PlannedWorkStart={5}&PlannedWorkEnd={6}' with (
+    {1} = @DispatchSeam.CoreBaseUrl,
+    {2} = toString($Appointment/PublicID),
+    {3} = urlEncode($Technician/SystemID),
+    {4} = urlEncode(formatDateTimeUTC(addMinutes($Start, -30), 'yyyy-MM-dd''T''HH:mm:ss.SSS''Z''')),
+    {5} = urlEncode(formatDateTimeUTC($Start, 'yyyy-MM-dd''T''HH:mm:ss.SSS''Z''')),
+    {6} = urlEncode(formatDateTimeUTC(addMinutes($Start, 60), 'yyyy-MM-dd''T''HH:mm:ss.SSS''Z'''))
+  ) (
+    Authentication: basic (Username: @DispatchSeam.CoreAPIUserName, Password: @DispatchSeam.CoreAPIPassword),
+    Timeout: 30,
+  ) returns String on error without rollback begin
+    log error node 'DispatchSeam' 'monolith plan for appointment {1} failed: {2}' with ({1} = toString($Appointment/PublicID), {2} = $latestError/Message);
+    show message 'The monolith did not accept the planning request' type Error;
+    return;
+  end error;
+  change $PlanRequest (AppointmentPublicID = $Appointment/PublicID, TechnicianSystemID = $Technician/SystemID, PlannedWorkStart = $Start, Response = $Response);
+  commit $PlanRequest;
+  log info node 'DispatchSeam' 'monolith plan for appointment {1}: {2}' with ({1} = toString($Appointment/PublicID), {2} = $Response);
+  show message 'Planning request accepted by the monolith' type Information;
+end;
+grant execute on microflow DispatchSeam.ACT_Appointment_Plan to DispatchSeam.User;
+
+create or modify microflow DispatchSeam.DS_PlanRequest_New ()
+returns DispatchSeam.PlanRequest
+begin
+  $New = create DispatchSeam.PlanRequest (RunID = '');
+  return $New;
+end;
+grant execute on microflow DispatchSeam.DS_PlanRequest_New to DispatchSeam.User;
+
+create or modify page DispatchSeam.Appointments_FromCore (
+  Title: 'Appointments (monolith, OData)',
+  Layout: FSM_Specific.LeftMenuLayout,
+  Url: 'dispatch-seam'
+) {
+  dataview dvRequest (DataSource: microflow DispatchSeam.DS_PlanRequest_New) {
+    textbox tbRunID (Label: 'Run ID', Attribute: RunID)
+    datepicker dpStart (Label: 'Planned work start (UTC)', Attribute: PlannedWorkStart, DateFormat: DateTime)
+    datagrid gridAppointments (DataSource: DATABASE DispatchSeam.Appointment SORT BY PublicID ASC, Selection: None) {
+      column (Attribute: PublicID, Caption: 'Public ID')
+      column (Attribute: SystemID, Caption: 'System ID')
+      column (Attribute: Status, Caption: 'Status')
+      column (Attribute: PlannedWorkStart, Caption: 'Planned work start')
+      column (Caption: ' ') {
+        actionbutton btnPlan (Caption: 'Plan in monolith', Action: CALL MICROFLOW DispatchSeam.ACT_Appointment_Plan(Appointment = $currentObject, PlanRequest = $dvRequest))
+      }
+    }
+  }
+};
+grant view on page DispatchSeam.Appointments_FromCore to DispatchSeam.User;
+
+-- journey data on the slice (both databases start empty, data migration out of scope): one active technician with
+-- the same SystemID as the monolith's journey technician -> a DUAL OWNER of that row (P13 hand-off row).
+create or modify microflow DispatchSeam.EnsureAccount (
+  $Name: String,
+  $Password: String,
+  $RoleName: String
+)
+begin
+  if $Password = empty or $Password = '' or $Password = '__SET_ME__' then
+    log warning node 'DispatchSeam' 'password for {1} not set on this machine: account not created' with ({1} = $Name);
+    return;
+  end if;
+  retrieve $Role from System.UserRole where [Name = $RoleName] first;
+  retrieve $Existing from Administration.Account where [Name = $Name] first;
+  if $Existing = empty then
+    $Account = create Administration.Account (Name = $Name, FullName = $Name, Password = $Password, Active = true);
+    change $Account (System.UserRoles = $Role);
+    commit $Account;
+    log info node 'DispatchSeam' 'account {1} created with role {2}' with ({1} = $Name, {2} = $RoleName);
+  end if;
+end;
+create or modify microflow DispatchSeam.ASU_Dispatch ()
+returns Boolean
+begin
+  call microflow DispatchSeam.EnsureAccount(Name = 'journey_sde', Password = @DispatchSeam.JourneyUserPassword, RoleName = 'ServiceDeskEmployee');
+  if @DispatchSeam.JourneyUserPassword != '__SET_ME__' then
+    retrieve $Tech from Technician.Technician where [SystemID = 'J8-TECH-1'] first;
+    if $Tech = empty then
+      $NewTech = create Technician.Technician (TechnicianName = 'Journey Technician 8', EmployeeNumber = 'J8-T1', IsActive = true, SystemID = 'J8-TECH-1');
+      commit $NewTech without events;
+    end if;
+  end if;
+  return true;
+end;
+alter settings model ( AfterStartupMicroflow: 'DispatchSeam.ASU_Dispatch' );
+
+-- security (decompose-app Stage 5, security-is-not-a-later-script): Production; the FSM user roles get the slice
+-- module roles they hold in the monolith (describe user role on the 10.24 copy) plus the seam role.
+alter user role CallCenterEmployee add module roles (Administration.User, RosterManagement.ViewAll, Skill.CallCenterEmployee, Technician.ViewAll, TimeRegistration.ViewAll);
+alter user role FunctionalAdministrator add module roles (Administration.User, RosterManagement.EditAll, Scheduler._AddOn_SetSnapSettings, Skill.FunctionalAdministrator, Technician.EditAll, TimeRegistration.EditRegistrationCode, TimeRegistration.ViewAll, TimeRegistration.ViewTimeRegistration);
+alter user role Mechanic add module roles (Administration.User, RosterManagement.ViewMy, Scheduler.EditMy, Scheduler._AddOn_ViewMyRegion, Skill.Mechanic, Technician.ViewAll, TimeRegistration.EditAll, TimeRegistration.EditMy, TimeRegistration.ViewAll);
+alter user role ServiceDeskEmployee add module roles (Administration.User, RosterManagement.EditAll, Scheduler.EditAll, Scheduler._AddOn_ExportScheduler, Skill.ServiceDeskEmployee, Technician.EditAll, TimeRegistration.ViewAll, TimeRegistration.ViewTimeRegistration, DispatchSeam.User);
+alter user role ServiceRegionManager add module roles (Administration.User, RosterManagement.ViewAll, Scheduler.EditAll, Skill.ServiceRegionManager, Technician.ViewAll, TimeRegistration.ViewAll, TimeRegistration.ViewMyRegion, TimeRegistration.ViewTimeRegistration, DispatchSeam.User);
+create user role TechnicalAdministrator (ModuleRoles: (System.User, Administration.Administrator, RosterManagement.EditAll, RosterManagement.ViewAll, Skill.TechnicalAdministrator, Technician.EditAllAdmin, Technician.ViewAll, Technician._AddOn_UpdateAllNativeTechnicians, TimeRegistration.EditAllAdmin, TimeRegistration.EditRegistrationCode, TimeRegistration.ViewAll, TimeRegistration.ViewTimeRegistration, DispatchSeam.User), Description: 'FSM role (copied)');
+alter app security ( SecurityLevel: PRODUCTION );

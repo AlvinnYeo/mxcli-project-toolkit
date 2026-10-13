@@ -1,0 +1,32 @@
+$ mxcli marketplace install 170 -p DispatchApp.mpr
+WARNING: This is a vibe-coded PoC, alpha quality, use with caution.
+marketplace download (resolve): Get "https://marketplace.mendix.com/v1/versions/9dc402fd-e38d-420d-abbe-9fe0ecad6f82/download": net/http: TLS handshake timeout
+$ mxcli marketplace install --file <lab>/dispatch/mpk/Skill.mpk -p DispatchApp.mpr
+WARNING: This is a vibe-coded PoC, alpha quality, use with caution.
+Installed module "Skill" from Skill.mpk into DispatchApp.mpr
+  36 units copied, 7 bundled file(s) installed.
+real 12 s
+$ mxcli marketplace install --file <lab>/dispatch/mpk/Technician.mpk -p DispatchApp.mpr
+WARNING: This is a vibe-coded PoC, alpha quality, use with caution.
+Installed module "Technician" from Technician.mpk into DispatchApp.mpr
+  114 units copied, 7 bundled file(s) installed.
+real 9 s
+$ mxcli marketplace install --file <lab>/dispatch/mpk/RosterManagement.mpk -p DispatchApp.mpr
+WARNING: This is a vibe-coded PoC, alpha quality, use with caution.
+Installed module "RosterManagement" from RosterManagement.mpk into DispatchApp.mpr
+  55 units copied, 7 bundled file(s) installed.
+real 12 s
+$ mxcli marketplace install --file <lab>/dispatch/mpk/TimeRegistration.mpk -p DispatchApp.mpr
+WARNING: This is a vibe-coded PoC, alpha quality, use with caution.
+Installed module "TimeRegistration" from TimeRegistration.mpk into DispatchApp.mpr
+  66 units copied, 7 bundled file(s) installed.
+real 9 s
+$ mxcli marketplace install --file <lab>/dispatch/mpk/Scheduler.mpk -p DispatchApp.mpr
+WARNING: This is a vibe-coded PoC, alpha quality, use with caution.
+Installed module "Scheduler" from Scheduler.mpk into DispatchApp.mpr
+  123 units copied, 9 bundled file(s) installed.
+real 12 s
+$ mxcli marketplace install 170 (retry after TLS handshake timeout)
+WARNING: This is a vibe-coded PoC, alpha quality, use with caution.
+Installed module "CommunityCommons" version 11.5.1 into DispatchApp.mpr
+  128 units copied, 126 bundled file(s) installed.

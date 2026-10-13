@@ -1,0 +1,38 @@
+$ mxcli -p DispatchApp.mpr exec mdl/slice-seam-data.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Dropped OData client: DispatchSeam.DispatchCore
+Created OData client: DispatchSeam.DispatchCore
+  Cached $metadata: 13 entity types, 0 actions
+Reconciled 3 access rule(s) after dropping the association
+Dropped cross-module association: Technician.Technician_Warehouse
+Reconciled 2 access rule(s) after dropping the association
+Dropped cross-module association: RosterManagement.Roster_Asset
+Dropped entity: FeatureToggle.FeatureToggle
+Dropped entity: AppSettings.ApplicationSettings
+Dropped entity: WarehouseManagement.Warehouse
+Dropped entity: AssetManagement.Asset
+
+From DispatchSeam.DispatchCore into FeatureToggle: 1 created, 0 updated, 0 skipped, 0 failed
+
+From DispatchSeam.DispatchCore into AppSettings: 1 created, 0 updated, 0 skipped, 0 failed
+
+From DispatchSeam.DispatchCore into WarehouseManagement: 1 created, 0 updated, 0 skipped, 0 failed
+
+From DispatchSeam.DispatchCore into AssetManagement: 1 created, 0 updated, 0 skipped, 0 failed
+Reconciled 3 access rule(s) for new association
+Created association: Technician.Technician_Warehouse
+Reconciled 2 access rule(s) for new association
+Created association: RosterManagement.Roster_Asset
+Granted access on FeatureToggle.FeatureToggle to FeatureToggle.StubRead
+  Result: read *
+Granted access on AppSettings.ApplicationSettings to AppSettings.StubRead
+  Result: read *
+Granted access on WarehouseManagement.Warehouse to WarehouseManagement.StubRead
+  Result: read *
+Granted access on AssetManagement.Asset to AssetManagement.StubRead
+  Result: read *
+exit=0 real 2.2 s
+$ mxcli -p DispatchApp.mpr exec mdl/slice-seam-data-2.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Altered page Technician.Technician_SelectWarehouse
+exit=0 real 0.9 s

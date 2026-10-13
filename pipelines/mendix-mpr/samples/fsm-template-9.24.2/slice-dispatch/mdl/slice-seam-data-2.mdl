@@ -1,0 +1,20 @@
+mdl 1;
+-- XPath over the slice-owned Technician_Warehouse from the external Warehouse side (seam limits -> XPath, CE0161):
+-- the 'not yet assigned' filter is dropped (HAND-OFF: already-assigned warehouses are listed too)
+alter page Technician.Technician_SelectWarehouse {
+  replace grid1 with {
+    datagrid grid1 (
+      DataSource: database from WarehouseManagement.Warehouse sort by Description asc,
+      Selection: Multi
+    ) {
+      -- Context: $currentObject (WarehouseManagement.Warehouse), $grid1 (selection)
+      controlbar {
+        actionbutton actionButton1 (
+          Caption: 'Select',
+          Action: call microflow Technician.ACT_Technician_SelectWarehouse(WarehouseList = $grid1, Technician = $Technician)
+        )
+      }
+      column (Attribute: Description, Caption: 'Description')
+    }
+  };
+};

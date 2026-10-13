@@ -1,0 +1,23 @@
+mdl 1;
+-- FSM_Specific.LeftMenuLayout copied from describe (10.24 source), drift: brand image and
+-- Visualizations.Snippet_Alerts dropped (neither moves with the slice), SidebarToggleButton not authorable by mxcli
+create module FSM_Specific;
+create or modify layout FSM_Specific.LeftMenuLayout (
+  layouttype: 'Responsive',
+  class: 'layout-atlas layout-atlas-responsive-default'
+) {
+  scrollcontainer layoutContainer {
+    region left (Size: 256, SizeMode: 'Pixels', Class: 'region-sidebar') {
+      container container3 (Class: 'nav-header') {
+        container container2 (Class: 'nav-header__info') {
+          dynamictext text2 (Content: 'Mendix', Class: 'nav-header__head')
+          dynamictext text3 (Content: 'Dispatch & Workforce', Class: 'nav-header__subhead')
+        }
+      }
+      navigationtree navigationTree3 (Profile: 'Responsive')
+    }
+    region center (Class: 'region-content') {
+      placeholder Main
+    }
+  }
+};

@@ -1,0 +1,21 @@
+# XPath probes on external entities (scratch copy <lab>/dispatch/probe of the swap state; module ProbeX; one microflow per
+# bracket, one mx check -j, errors filtered on module ProbeX). Metadata at that point: Description NOT Filterable.
+T1 [$PageContext/Filter = empty or ($PageContext/Filter = 'All' and (Status = '_New'))]            pass
+T2 [contains(ShortDescription, $S)]                                                                 pass
+T3 [contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $S)]  pass
+T4 [TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $S)]]              pass
+T5 [$S = '' or true()]                                                                              pass
+T6 [true()]                                                                                         pass
+T7 [$S = '' or contains(WorkOrderID, $S)]                                                           pass
+T8 [TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID = $S]                        pass
+T9 [Status = '_New' or Status = 'Partially_planned']                                                pass
+U1 [Status = '_New'] limit 1 offset $Amount                                                         pass
+U2 sort by TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket.TicketID asc limit $Amount     pass
+U3 [$PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty or Status = '_New']            pass
+V0..V7 the 8 brackets of PlannerContext_GetWorkOrders' first retrieve, one each                     V1 (search bracket) CE0161
+Y0..Y7 V1 with one disjunct removed each                                                            all CE0161
+Z1 [contains(A/Ticket/TicketID, $S) or contains(A/Ticket/ShortDescription, $S)]                     pass
+Z2 [contains(_WorkOrder_Technician/../TechnicianName, $S) or contains(A/Ticket/TicketID, $S)]       pass
+Z3 [contains(ShortDescription, $S) or contains(Description, $S) or contains(WorkOrderID, $S)]       CE0161
+=> the common factor is contains(Description, …): Description was exposed without Filterable. All attributes re-published
+   Filterable + Sortable (mdl/mono-dispatch-publish-filterable.mdl): 21 CE0161 in that flow -> 0.

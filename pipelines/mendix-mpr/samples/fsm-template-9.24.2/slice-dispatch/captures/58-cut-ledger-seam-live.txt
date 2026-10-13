@@ -1,0 +1,4 @@
+cut-ledger: 1081 crossing refs -> 883 ledger rows (425 out, 446 in from the catalog; 4 check-only; 8 extra) -> cut-ledger.tsv
+  by resolution: handoff 477, platform 6, resolved 365, retire 31, stub 4
+  rules never used (lines): 38, 49, 50, 51, 52, 53, 54
+rc=0

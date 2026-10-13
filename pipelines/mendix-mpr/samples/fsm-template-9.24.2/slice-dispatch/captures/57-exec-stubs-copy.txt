@@ -1,0 +1,28 @@
+$ mxcli -p DispatchApp.mpr exec mdl/slice-seam-stubs-copy.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Dropped microflow: TicketManagement.CurrentUser_HasTechnicianInGroup
+  Removed its execute grants to TicketManagement.User. A create of TicketManagement.CurrentUser_HasTechnicianInGroup later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow TicketManagement.CurrentUser_HasTechnicianInGroup to TicketManagement.User;
+Created microflow: TicketManagement.CurrentUser_HasTechnicianInGroup
+Dropped microflow: TicketManagement.WorkOrder_GetMinutesToPlan
+  Removed its execute grants to TicketManagement.User. A create of TicketManagement.WorkOrder_GetMinutesToPlan later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow TicketManagement.WorkOrder_GetMinutesToPlan to TicketManagement.User;
+Created microflow: TicketManagement.WorkOrder_GetMinutesToPlan
+Dropped microflow: TicketManagement.WorkOrder_GetSelectableTechnicians
+  Removed its execute grants to TicketManagement.User. A create of TicketManagement.WorkOrder_GetSelectableTechnicians later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow TicketManagement.WorkOrder_GetSelectableTechnicians to TicketManagement.User;
+Created microflow: TicketManagement.WorkOrder_GetSelectableTechnicians
+Dropped microflow: TicketManagement.WorkOrder_GetTechnicianList_Preferred
+  Removed its execute grants to TicketManagement.User. A create of TicketManagement.WorkOrder_GetTechnicianList_Preferred later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow TicketManagement.WorkOrder_GetTechnicianList_Preferred to TicketManagement.User;
+Created microflow: TicketManagement.WorkOrder_GetTechnicianList_Preferred
+Dropped microflow: TicketManagement.WorkOrder_SetPlannerContext
+  Removed its execute grants to TicketManagement.User. A create of TicketManagement.WorkOrder_SetPlannerContext later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow TicketManagement.WorkOrder_SetPlannerContext to TicketManagement.User;
+Created microflow: TicketManagement.WorkOrder_SetPlannerContext
+Dropped microflow: TicketManagement.WorkOrder_SetPlannerContext_WithRefresh
+  Removed its execute grants to TicketManagement.User. A create of TicketManagement.WorkOrder_SetPlannerContext_WithRefresh later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow TicketManagement.WorkOrder_SetPlannerContext_WithRefresh to TicketManagement.User;
+Created microflow: TicketManagement.WorkOrder_SetPlannerContext_WithRefresh
+exit=0 real 3.4 s
+$ mxcli -p DispatchApp.mpr exec mdl/slice-seam-stubs-copy-2.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Dropped microflow: TicketManagement.WorkOrder_GetMinutesToPlan
+  Removed its execute grants to TicketManagement.User. A create of TicketManagement.WorkOrder_GetMinutesToPlan later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow TicketManagement.WorkOrder_GetMinutesToPlan to TicketManagement.User;
+Created microflow: TicketManagement.WorkOrder_GetMinutesToPlan
+All specified roles already have execute access on TicketManagement.WorkOrder_GetMinutesToPlan
+exit=0 real 1.2 s

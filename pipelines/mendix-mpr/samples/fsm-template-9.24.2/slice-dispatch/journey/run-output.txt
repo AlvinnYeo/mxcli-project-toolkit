@@ -1,0 +1,16 @@
+=== final state run 1 (all data stubs external; fresh starts of both apps)
+run J8-261013055352
+  PASS  [read: monolith appointment listed in the slice over OData (ledger: TicketManagement.Appointment out-rows)] row J8-APPT-1 visible in the slice grid, and present in the MONOLITH database — [{"PublicID":"3","SystemID":"J8-APPT-1"}]
+  PASS  [write: plan in monolith over REST (ledger: TicketManagement.Appointment_PlanManual out-row)] PlanRequest J8-261013055352 in the SLICE database with the monolith's answer — [{"AppointmentPublicID":"3","PlannedWorkStart":"Tue Oct 20 05:54:04 UTC 2026","Response":"planned 3","RunID":"J8-261013055352","TechnicianSystemID":"J8-TECH-1"}]
+  PASS  [write: plan in monolith over REST (ledger: TicketManagement.Appointment_PlanManual out-row)] the MONOLITH database holds the same planned start, status Planned (behaviour ran) — [{"PlannedWorkStart":"Tue Oct 20 05:54:04 UTC 2026","Status":"Planned","SystemID":"J8-APPT-1"}]
+  PASS  [auth: machine role only on both monolith services] OData 200 machine / 401 none; REST 401 none — 200/401/401
+total 14.6 s
+exit=0
+=== final state run 2 (all data stubs external; fresh starts of both apps)
+run J8-261013055408
+  PASS  [read: monolith appointment listed in the slice over OData (ledger: TicketManagement.Appointment out-rows)] row J8-APPT-1 visible in the slice grid, and present in the MONOLITH database — [{"PublicID":"3","SystemID":"J8-APPT-1"}]
+  PASS  [write: plan in monolith over REST (ledger: TicketManagement.Appointment_PlanManual out-row)] PlanRequest J8-261013055408 in the SLICE database with the monolith's answer — [{"AppointmentPublicID":"3","PlannedWorkStart":"Tue Oct 20 05:54:13 UTC 2026","Response":"planned 3","RunID":"J8-261013055408","TechnicianSystemID":"J8-TECH-1"}]
+  PASS  [write: plan in monolith over REST (ledger: TicketManagement.Appointment_PlanManual out-row)] the MONOLITH database holds the same planned start, status Planned (behaviour ran) — [{"PlannedWorkStart":"Tue Oct 20 05:54:13 UTC 2026","Status":"Planned","SystemID":"J8-APPT-1"}]
+  PASS  [auth: machine role only on both monolith services] OData 200 machine / 401 none; REST 401 none — 200/401/401
+total 7.1 s
+exit=0

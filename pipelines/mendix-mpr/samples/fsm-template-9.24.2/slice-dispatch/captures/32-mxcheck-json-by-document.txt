@@ -1,0 +1,24 @@
+22 Scheduler / Microflow 'PlannerContext_GetWorkOrders' {'CE0117': 1, 'CE0161': 21}
+8 Scheduler / Snippet 'Snippet_Appointment_Scheduling' {'CE7247': 3, 'CE0117': 3, 'CE0161': 2}
+8 Scheduler / Page 'PageContext_View' {'CE0749': 3, 'CE8812': 3, 'CE2421': 1, 'CE1365': 1}
+3 Scheduler / Microflow 'AvailableTimeslot_CreateAppointment_GetMessage' {'CE0161': 2, 'CE0117': 1}
+3 Scheduler / Microflow 'AvailableTimeslot_CreateAppointment_ForWorkOrder' {'CE0852': 3}
+3 Scheduler / Microflow 'PlannerContext_GetAppointmentList' {'CE0161': 3}
+2 Scheduler / Microflow 'TechnicianRoster_GetBusyTimeslots' {'CE0161': 1, 'CE7247': 1}
+2 Technician / Page 'Technician_ConfirmRemove' {'CE0161': 2}
+2 Scheduler / Microflow 'PlannerContext_RefreshIfNeeded' {'CE0161': 1, 'CE0117': 1}
+2 Technician / Microflow 'Technician_Get_LastStartedAppointment' {'CE0161': 1, 'CE7247': 1}
+2 Technician / Microflow 'Technician_Validate_Remove' {'CE0161': 2}
+1 Technician / Microflow 'Technician_Remove' {'CE0161': 1}
+1 Technician / Microflow 'DS_SkillRemoverHelper_WorkOrders_RetrieveWithPlanned' {'CE7247': 1}
+1 Technician / Microflow 'TicketList_Get_NewByTechnicianAndSkill' {'CE0161': 1}
+1 Technician / Microflow 'Ticketlist_Get_PlannedPartiallyPlannedByTechnicianAndSkill' {'CE0161': 1}
+1 Scheduler / Rule 'User_CanChangeAppointment' {'CE0161': 1}
+1 Skill / Microflow 'WorkOrder_CheckTechnicianListOnSkills' {'CE0117': 1}
+1 Technician / Microflow 'DS_SkillRemoverHelper_Tickets_RetrieveWithoutPlannend' {'CE7247': 1}
+1 Scheduler / Microflow 'AvailableTimeslot_CreateAppointment' {'CE0117': 1}
+1 Technician / Snippet 'Snippet_Technician_DataTabs' {'CE0161': 1}
+1 Technician / Microflow 'TechnicianList_Commit_GetImpactedWorkOrders' {'CE0161': 1}
+1 Skill / Microflow 'Technician_CheckWorkOrderListOnSkills' {'CE0024': 1}
+1 Technician / Microflow 'Technician_Validate_ActiveWorkOrder' {'CE0161': 1}
+1 Scheduler / Microflow 'SnapSetting_GetSnappedStart' {'CE0161': 1}

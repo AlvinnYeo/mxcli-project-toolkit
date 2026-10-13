@@ -1,0 +1,32 @@
+mdl 1;
+-- Increment 8 seam-live: the last data stubs (FeatureToggle, ApplicationSettings, Warehouse, Asset) become external
+-- entities. The consumed service is dropped and re-created on the new $metadata (re-running `create external entities`
+-- on the cached document answered "0 created, 0 updated, 9 skipped"); the 9 TicketManagement external entities survive.
+-- Recipe A: the stubs' slice-owned associations are recorded here, dropped silently by drop entity, re-created after.
+--   Technician.Technician_Warehouse  Technician -> Warehouse, ReferenceSet (owner Technician)
+--   RosterManagement.Roster_Asset    Roster -> Asset, Reference, on delete cascade (owner Roster; no cascade toward an external entity)
+drop consumed odata service DispatchSeam.DispatchCore;
+create consumed odata service DispatchSeam.DispatchCore (
+  Version: '1.0.0',
+  ODataVersion: OData4,
+  MetadataUrl: 'dispatchcore-metadata.xml',
+  Timeout: 60,
+  ServiceUrl: DispatchSeam.CoreODataUrl,
+  HeadersMicroflow: microflow DispatchSeam.GetAuthHeaders
+);
+drop association Technician.Technician_Warehouse;
+drop association RosterManagement.Roster_Asset;
+drop entity FeatureToggle.FeatureToggle;
+drop entity AppSettings.ApplicationSettings;
+drop entity WarehouseManagement.Warehouse;
+drop entity AssetManagement.Asset;
+create external entities from DispatchSeam.DispatchCore into FeatureToggle entities (FeatureToggle);
+create external entities from DispatchSeam.DispatchCore into AppSettings entities (ApplicationSettings);
+create external entities from DispatchSeam.DispatchCore into WarehouseManagement entities (Warehouse);
+create external entities from DispatchSeam.DispatchCore into AssetManagement entities (Asset);
+create or modify association Technician.Technician_Warehouse from Technician.Technician to WarehouseManagement.Warehouse type ReferenceSet storage table;
+create or modify association RosterManagement.Roster_Asset from RosterManagement.Roster to AssetManagement.Asset storage table;
+grant read * on entity FeatureToggle.FeatureToggle to FeatureToggle.StubRead;
+grant read * on entity AppSettings.ApplicationSettings to AppSettings.StubRead;
+grant read * on entity WarehouseManagement.Warehouse to WarehouseManagement.StubRead;
+grant read * on entity AssetManagement.Asset to AssetManagement.StubRead;

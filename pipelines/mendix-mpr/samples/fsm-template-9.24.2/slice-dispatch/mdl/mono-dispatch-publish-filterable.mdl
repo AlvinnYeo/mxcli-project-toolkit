@@ -1,0 +1,32 @@
+mdl 1;
+-- every exposed attribute Filterable + Sortable (v1 still unconsumed): an XPath on an external attribute that is not
+-- Filterable fails as a bare `CE0161 "Error(s) in XPath constraint."` (probe: captures/45). Same statement as mono-dispatch-publish.mdl.
+create or modify published odata service DispatchSeam.DispatchCore (
+  path: 'odata/dispatchcore/v1/',
+  version: '1.0.0',
+  ODataVersion: OData4,
+  namespace: 'FSM.DispatchCore',
+  ServiceName: 'DispatchCore',
+  PublishAssociations: Yes,
+  Authentication: (basic)
+)
+{
+  publish entity TicketManagement.WorkOrder as 'WorkOrder' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), WorkOrderID (Filterable, Sortable), SystemID (Filterable, Sortable), Status (Filterable, Sortable), ShortDescription (Filterable, Sortable), Description (Filterable, Sortable), PercentagePlanned (Filterable, Sortable), PlannedTravelStart (Filterable, Sortable), PlannedWorkStart (Filterable, Sortable), PlannedWorkEnd (Filterable, Sortable), ActualStart (Filterable, Sortable), DisplayStart (Filterable, Sortable), DisplayEnd (Filterable, Sortable), SetOnSpecificTime (Filterable, Sortable), SetOnSpecificTechnician (Filterable, Sortable), ExpectedDuration (Filterable, Sortable), DueDate (Filterable, Sortable), WorkOrder_Ticket as 'WorkOrder_Ticket', WorkOrder_Skill as 'WorkOrder_Skill', WorkOrder_TechnicianGroup as 'WorkOrder_TechnicianGroup', _WorkOrder_Technician as '_WorkOrder_Technician');
+  publish entity TicketManagement.Appointment as 'Appointment' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), SystemID (Filterable, Sortable), Status (Filterable, Sortable), PlannedTravelStart (Filterable, Sortable), PlannedWorkStart (Filterable, Sortable), PlannedWorkEnd (Filterable, Sortable), ActualStart (Filterable, Sortable), DisplayTravelStart (Filterable, Sortable), DisplayStart (Filterable, Sortable), DisplayEnd (Filterable, Sortable), Appointment_WorkOrder as 'Appointment_WorkOrder', _Appointment_Technician as '_Appointment_Technician');
+  publish entity TicketManagement.Ticket as 'Ticket' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), TicketID (Filterable, Sortable), SystemID (Filterable, Sortable), Status (Filterable, Sortable), ShortDescription (Filterable, Sortable), Description (Filterable, Sortable), CreationTime (Filterable, Sortable), SLAStatus (Filterable, Sortable), DueDate (Filterable, Sortable), PlannedWorkStart (Filterable, Sortable), PlannedWorkEnd (Filterable, Sortable), DisplayStart (Filterable, Sortable), DisplayEnd (Filterable, Sortable), Ticket_Priority as 'Ticket_Priority');
+  publish entity TicketManagement.Priority as 'Priority' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported)
+  expose (PublicID (KEY, Filterable, Sortable), Description (Filterable, Sortable), PriorityLevel (Filterable, Sortable));
+  publish entity TicketManagement.WorkOrderAssignment as 'WorkOrderAssignment' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), SystemID (Filterable, Sortable), Status (Filterable, Sortable), WorkOrderAssignment_WorkOrder as 'WorkOrderAssignment_WorkOrder', WorkOrderAssignment_Technician as 'WorkOrderAssignment_Technician');
+  publish entity TicketManagement.AppointmentAssignment as 'AppointmentAssignment' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), SystemID (Filterable, Sortable), AppointmentAssignment_Appointment as 'AppointmentAssignment_Appointment', AppointmentAssignment_Technician as 'AppointmentAssignment_Technician');
+  publish entity Technician.Technician as 'MonoTechnician' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (TechnicianID (KEY, Filterable, Sortable), SystemID (Filterable, Sortable), TechnicianName (Filterable, Sortable));
+  publish entity Technician.TechnicianGroup as 'MonoTechnicianGroup' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported)
+  expose (PublicID (KEY, Filterable, Sortable), Name (Filterable, Sortable));
+  publish entity Skill.Skill as 'MonoSkill' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported)
+  expose (PublicID (KEY, Filterable, Sortable), SkillName (Filterable, Sortable));
+};

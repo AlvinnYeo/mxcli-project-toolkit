@@ -1,0 +1,37 @@
+$ mxcli -p DispatchApp.mpr exec mdl/slice-seam-consume.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Created module: DispatchSeam
+Created constant: DispatchSeam.CoreODataUrl
+Created constant: DispatchSeam.CoreBaseUrl
+Created constant: DispatchSeam.CoreAPIUserName
+Created constant: DispatchSeam.CoreAPIPassword
+Created module role: DispatchSeam.User
+Created microflow: DispatchSeam.GetAuthHeaders
+Granted execute access on DispatchSeam.GetAuthHeaders to DispatchSeam.User
+Created OData client: DispatchSeam.DispatchCore
+  Cached $metadata: 9 entity types, 0 actions
+Dropped association: TicketManagement.Appointment_WorkOrder
+Dropped association: TicketManagement.AppointmentAssignment_Appointment
+Dropped cross-module association: TicketManagement.AppointmentAssignment_Technician
+Dropped cross-module association: TicketManagement.Ticket_Asset
+Dropped association: TicketManagement.Ticket_Priority
+Dropped cross-module association: TicketManagement.WorkOrder_Skill
+Dropped cross-module association: TicketManagement.WorkOrder_TechnicianGroup
+Dropped association: TicketManagement.WorkOrder_Ticket
+Dropped cross-module association: TicketManagement.WorkOrderAssignment_Technician
+Dropped association: TicketManagement.WorkOrderAssignment_WorkOrder
+Dropped cross-module association: TicketManagement._Appointment_Technician
+Dropped cross-module association: TicketManagement._WorkOrder_Technician
+Dropped entity: TicketManagement.WorkOrderAssignment
+Dropped entity: TicketManagement.AppointmentAssignment
+Dropped entity: TicketManagement.Appointment
+Dropped entity: TicketManagement.WorkOrder
+Dropped entity: TicketManagement.Ticket
+Dropped entity: TicketManagement.Priority
+Created 11 navigation associations
+
+From DispatchSeam.DispatchCore into TicketManagement: 9 created, 0 updated, 0 skipped, 0 failed
+Created association: RosterManagement.Roster_Ticket_PreferredStartWindow
+Created association: Scheduler.PlannerContext_WorkOrder_Selected
+Created association: TimeRegistration.TimeRegistration_Appointment
+exit=0 real 5.7 s

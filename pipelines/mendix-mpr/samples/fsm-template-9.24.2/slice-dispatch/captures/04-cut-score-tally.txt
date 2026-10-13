@@ -1,0 +1,19 @@
+verdict blocked
+OUT {'none': 74, 'odata-external-entity': 184, 'deep-link': 6, 'odata-external-entity (write)': 1, 'copy': 16} 281
+IN {'odata-external-entity': 260, 'none': 52, 'deep-link': 7, 'odata-external-entity (write)': 12, 'odata-action-or-rest': 9} 340
+top no-lane / blocking pairs:
+  ('OUT', 'Scheduler', 'TicketManagement', 'none') 17
+  ('OUT', 'Scheduler', 'ModuleIntegration_Administration_Impl', 'none') 15
+  ('OUT', 'TimeRegistration', 'NativeMobileTimeRegistration', 'none') 12
+  ('IN', 'Synchronization', 'TimeRegistration', 'none') 8
+  ('IN', 'Synchronization', 'Technician', 'none') 8
+  ('IN', 'TicketManagement', 'Technician', 'none') 7
+  ('IN', 'TicketManagement', 'Skill', 'none') 7
+  ('OUT', 'Scheduler', 'Utils', 'none') 7
+  ('IN', 'TicketManagement', 'Scheduler', 'none') 6
+  ('OUT', 'Technician', 'FSM_Specific', 'copy') 6
+  ('IN', 'MasterData', 'TimeRegistration', 'none') 5
+  ('IN', 'NativeModelCheck', 'TimeRegistration', 'odata-action-or-rest') 5
+  ('OUT', 'Scheduler', 'TicketManagement', 'deep-link') 4
+  ('OUT', 'Technician', 'Utils', 'none') 4
+  ('OUT', 'Technician', 'Synchronization', 'none') 4

@@ -1,0 +1,75 @@
+$ mxcli -p DispatchApp.mpr exec mdl/edges-C-widgets.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Reference error: snippet Scheduler.Snippet_Technician_Tooltip: datagrid "grid1": the constraint on Skill.Skill names "None", which is neither an attribute nor an association of it — mxbuild reports this as CE1613 "The selected attribute 'None' no longer exists"
+Reference error: snippet Technician.Snippet_Technician_DataTabs: datagrid "grid2": the constraint on RosterManagement.TechnicianRoster names "None", which is neither an attribute nor an association of it — mxbuild reports this as CE1613 "The selected attribute 'None' no longer exists"
+Reference error: snippet Technician.Snippet_Technician_DataTabs: datagrid "grid3": the constraint on Technician.TechnicianGroup names "None", which is neither an attribute nor an association of it — mxbuild reports this as CE1613 "The selected attribute 'None' no longer exists"
+Reference error: alter snippet TimeRegistration.Snippet_RegistrationCode_Details: the insertion point (`dropDown1`) is in no data container, so no entity is in scope and these bindings cannot be qualified: combobox `dropDown1` (Attribute: CodeType). Written without an entity, a template parameter is stored bare (Mendix can no longer load the project) and an attribute binding is dropped (CE7005). Qualify them (Module.Entity.Attribute), or insert into a data container whose entity is known.
+Reference error: alter snippet TimeRegistration.Snippet_RegistrationCode_Details: the insertion point (`dropDown2`) is in no data container, so no entity is in scope and these bindings cannot be qualified: combobox `dropDown2` (Attribute: RegistrationType). Written without an entity, a template parameter is stored bare (Mendix can no longer load the project) and an attribute binding is dropped (CE7005). Qualify them (Module.Entity.Attribute), or insert into a data container whose entity is known.
+
+Refusing to execute: 5 unresolved reference(s) above. Nothing was written.
+  A name that resolves to nothing is written into the model as it stands and
+  is not reported until mxbuild rejects it (CE1613) — and a misspelled MODULE
+  is created rather than refused.
+  Fix them, or re-run with --no-check to apply the script anyway.
+exit=1 real 1.5 s
+$ mxcli -p DispatchApp.mpr exec mdl/edges-C-widgets.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Altered page Scheduler.PageContext_View
+Altered snippet Scheduler.Snippet_Appointment_Scheduling
+Altered snippet Scheduler.Snippet_Technician_Tooltip
+Altered page Skill.Skill_Overview
+Altered page Skill.Skill_Select
+Altered page Technician.Account_Select_ServiceRegionManager
+Altered page Technician.Account_Select_Technician
+Altered snippet Technician.Snippet_TechnicianGroup_Details
+Error: failed to resolve snippet target: widget "referenceSetSelector1" not found
+exit=1 real 5.4 s
+$ mxcli -p DispatchApp.mpr exec mdl/edges-C-widgets.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Altered page Scheduler.PageContext_View
+Altered snippet Scheduler.Snippet_Appointment_Scheduling
+Altered snippet Scheduler.Snippet_Technician_Tooltip
+Altered page Skill.Skill_Overview
+Altered page Skill.Skill_Select
+Altered page Technician.Account_Select_ServiceRegionManager
+Altered page Technician.Account_Select_Technician
+Altered snippet Technician.Snippet_TechnicianGroup_Details
+Altered snippet Technician.Snippet_Technician_DataTabs
+Altered snippet Technician.Snippet_Technician_Details
+Altered page Technician.TechnicianGroup_Overview
+Altered page Technician.TechnicianGroup_SelectTechnician
+Altered page Technician.TechnicianGroup_View
+Altered page Technician.Technician_ConfirmRemove
+Altered page Technician.Technician_Overview
+Altered page Technician.Technician_Select
+Altered page Technician.Technician_SelectSkill
+Altered page Technician.Technician_SelectWarehouse
+Altered page Technician.Technician_Skill_Remove
+Altered page TimeRegistration.RegistrationCode_Overview
+Altered snippet TimeRegistration.Snippet_RegistrationCode_Details
+exit=0 real 9.1 s
+$ mxcli -p DispatchApp.mpr exec mdl/edges-C-widgets.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Altered page Scheduler.PageContext_View
+Altered snippet Scheduler.Snippet_Appointment_Scheduling
+Altered snippet Scheduler.Snippet_Technician_Tooltip
+Altered page Skill.Skill_Overview
+Altered page Skill.Skill_Select
+Altered page Technician.Account_Select_ServiceRegionManager
+Altered page Technician.Account_Select_Technician
+Altered snippet Technician.Snippet_TechnicianGroup_Details
+Altered snippet Technician.Snippet_Technician_DataTabs
+Altered snippet Technician.Snippet_Technician_Details
+Altered page Technician.TechnicianGroup_Overview
+Altered page Technician.TechnicianGroup_SelectTechnician
+Altered page Technician.TechnicianGroup_View
+Altered page Technician.Technician_ConfirmRemove
+Altered page Technician.Technician_Overview
+Altered page Technician.Technician_Select
+Altered page Technician.Technician_SelectSkill
+Altered page Technician.Technician_SelectWarehouse
+Altered page Technician.Technician_Skill_Remove
+Altered page TimeRegistration.RegistrationCode_Overview
+Altered snippet TimeRegistration.Snippet_RegistrationCode_Details
+Altered page Scheduler.WorkOrder_ShowPage_ViaURLRedirect
+exit=0 real 9.3 s

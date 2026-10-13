@@ -1,0 +1,3 @@
+$ mx(11.13) check
+Checking app for errors...
+The app contains: 0 errors.

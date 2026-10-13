@@ -1,0 +1,36 @@
+{
+  "module": "Skill",
+  "product_version": "10.24.0.73019",
+  "units_module_subtree": 36,
+  "units_shell": 6,
+  "project_docs_scrubbed": [
+    "Settings$ProjectSettings",
+    "Navigation$NavigationDocument",
+    "Security$ProjectSecurity"
+  ],
+  "unit_types": {
+    "DomainModels$DomainModel": 1,
+    "Forms$Page": 4,
+    "Forms$Snippet": 1,
+    "Microflows$Microflow": 20,
+    "Projects$Folder": 7,
+    "Projects$ModuleImpl": 1,
+    "Projects$ModuleSettings": 1,
+    "Security$ModuleSecurity": 1
+  },
+  "from_app_store": null,
+  "files": 7,
+  "java_files": 0,
+  "js_files": 0,
+  "widgets_referenced": [],
+  "widgets_shipped": [],
+  "widgets_unresolved": [],
+  "crossing_refs_by_module": {
+    "Atlas_Core": 1,
+    "CommunityCommons": 1,
+    "FSM_Specific": 3,
+    "Technician": 8,
+    "TicketManagement": 5
+  },
+  "out": "<lab>/dispatch/mpk/Skill.mpk"
+}

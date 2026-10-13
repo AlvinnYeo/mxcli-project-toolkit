@@ -1,0 +1,60 @@
+$ mxcli -p DispatchApp.mpr exec mdl/slice-seam-rebind.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Reference error: statement 6: microflow 'Scheduler.AvailableTimeslot_CreateAppointment_GetMessage' has reference errors:
+  - retrieve from Technician.Technician: the constraint names "TicketManagement.AppointmentAssignment_Technician", which is neither an attribute nor an association of it — mxbuild rejects the constraint (CE0161 "Error(s) in XPath constraint")
+Reference error: statement 18: rule 'Scheduler.User_CanChangeAppointment' has reference errors:
+  - retrieve from Technician.Technician: the constraint names "TicketManagement.AppointmentAssignment_Technician", which is neither an attribute nor an association of it — mxbuild rejects the constraint (CE0161 "Error(s) in XPath constraint")
+
+Refusing to execute: 2 unresolved reference(s) above. Nothing was written.
+  A name that resolves to nothing is written into the model as it stands and
+  is not reported until mxbuild rejects it (CE1613) — and a misspelled MODULE
+  is created rather than refused.
+  Fix them, or re-run with --no-check to apply the script anyway.
+exit=1 real 10.6 s
+$ mxcli -p DispatchApp.mpr exec mdl/slice-seam-rebind.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Dropped microflow: Scheduler.AvailableTimeslot_CreateAppointment
+Created microflow: Scheduler.AvailableTimeslot_CreateAppointment
+Dropped microflow: Scheduler.AvailableTimeslot_CreateAppointment_ForWorkOrder
+Created microflow: Scheduler.AvailableTimeslot_CreateAppointment_ForWorkOrder
+Dropped microflow: Scheduler.AvailableTimeslot_CreateAppointment_GetMessage
+Created microflow: Scheduler.AvailableTimeslot_CreateAppointment_GetMessage
+Dropped microflow: Scheduler.PlannerContext_GetAppointmentList
+Created microflow: Scheduler.PlannerContext_GetAppointmentList
+Dropped microflow: Scheduler.PlannerContext_GetWorkOrders
+Created microflow: Scheduler.PlannerContext_GetWorkOrders
+Dropped microflow: Scheduler.PlannerContext_RefreshIfNeeded
+Created microflow: Scheduler.PlannerContext_RefreshIfNeeded
+Dropped microflow: Scheduler.SnapSetting_GetSnappedStart
+Created microflow: Scheduler.SnapSetting_GetSnappedStart
+Dropped microflow: Scheduler.TechnicianRoster_GetBusyTimeslots
+Created microflow: Scheduler.TechnicianRoster_GetBusyTimeslots
+Dropped rule: Scheduler.User_CanChangeAppointment
+Created rule: Scheduler.User_CanChangeAppointment
+Dropped microflow: Skill.Technician_CheckWorkOrderListOnSkills
+Created microflow: Skill.Technician_CheckWorkOrderListOnSkills
+Dropped microflow: Skill.WorkOrder_CheckTechnicianListOnSkills
+Created microflow: Skill.WorkOrder_CheckTechnicianListOnSkills
+Dropped microflow: Technician.DS_SkillRemoverHelper_Tickets_RetrieveWithoutPlannend
+  Removed its execute grants to Technician.EditAll. A create of Technician.DS_SkillRemoverHelper_Tickets_RetrieveWithoutPlannend later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow Technician.DS_SkillRemoverHelper_Tickets_RetrieveWithoutPlannend to Technician.EditAll;
+Created microflow: Technician.DS_SkillRemoverHelper_Tickets_RetrieveWithoutPlannend
+All specified roles already have execute access on Technician.DS_SkillRemoverHelper_Tickets_RetrieveWithoutPlannend
+Dropped microflow: Technician.DS_SkillRemoverHelper_WorkOrders_RetrieveWithPlanned
+  Removed its execute grants to Technician.EditAll. A create of Technician.DS_SkillRemoverHelper_WorkOrders_RetrieveWithPlanned later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow Technician.DS_SkillRemoverHelper_WorkOrders_RetrieveWithPlanned to Technician.EditAll;
+Created microflow: Technician.DS_SkillRemoverHelper_WorkOrders_RetrieveWithPlanned
+All specified roles already have execute access on Technician.DS_SkillRemoverHelper_WorkOrders_RetrieveWithPlanned
+Dropped microflow: Technician.TechnicianList_Commit_GetImpactedWorkOrders
+Created microflow: Technician.TechnicianList_Commit_GetImpactedWorkOrders
+Dropped microflow: Technician.Technician_Get_LastStartedAppointment
+Created microflow: Technician.Technician_Get_LastStartedAppointment
+Dropped microflow: Technician.Technician_Remove
+Created microflow: Technician.Technician_Remove
+Dropped microflow: Technician.Technician_Validate_ActiveWorkOrder
+Created microflow: Technician.Technician_Validate_ActiveWorkOrder
+Dropped microflow: Technician.Technician_Validate_Remove
+Created microflow: Technician.Technician_Validate_Remove
+Dropped microflow: Technician.TicketList_Get_NewByTechnicianAndSkill
+Created microflow: Technician.TicketList_Get_NewByTechnicianAndSkill
+Dropped microflow: Technician.Ticketlist_Get_PlannedPartiallyPlannedByTechnicianAndSkill
+Created microflow: Technician.Ticketlist_Get_PlannedPartiallyPlannedByTechnicianAndSkill
+exit=0 real 14.2 s

@@ -1,0 +1,9 @@
+10 change(s): mprcontents/83/6f/836ffae2-1fd6-4009-9673-d7873bf9f92e.mxunit
+4 change(s): mprcontents/cc/fb/ccfb2a48-ca34-4ff9-ae49-cd78cbe540ff.mxunit
+2 change(s): mprcontents/a5/aa/a5aa0079-2c63-4ec5-8e30-31a6cb4e7975.mxunit
+1 change(s): mprcontents/7a/39/7a39fd94-f453-4a03-91b7-7b3d91537f06.mxunit
+3 hand-off brackets
+  mprcontents/a5/aa/a5aa0079-2c63-4ec5-8e30-31a6cb4e7975.mxunit: REVERSE [TicketManagement.Appointment_WorkOrder/TicketManagement.Appointment/TicketManagement.AppointmentAssignment_Appointment/TicketManagement.AppointmentAs
+  mprcontents/a5/aa/a5aa0079-2c63-4ec5-8e30-31a6cb4e7975.mxunit: REVERSE [TicketManagement.Appointment_WorkOrder/TicketManagement.Appointment/TicketManagement.AppointmentAssignment_Appointment/TicketManagement.AppointmentAs
+  mprcontents/7a/39/7a39fd94-f453-4a03-91b7-7b3d91537f06.mxunit: REVERSE [TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Auto_accepted' or Status = 'Accepted' or Status = 'Pend
++ literal: $currentObject/AppointmentID -> $currentObject/SystemID in the planner event text (AppointmentID not published; expression refs are not in the catalog)

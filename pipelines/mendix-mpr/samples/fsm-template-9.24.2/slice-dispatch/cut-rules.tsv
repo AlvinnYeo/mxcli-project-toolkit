@@ -1,0 +1,37 @@
+# cut-rules.tsv — Dispatch & Workforce slice (increment 8, web). direction<TAB>pattern<TAB>resolution<TAB>evidence
+# First match wins. Scripts: mdl/edges-*.mdl (build-green), mdl/seam-*.mdl (seam). Level-1 version; seam rows are prepended in cut-rules-seam.tsv.
+# ---- OUT: the slice uses something that stays in the monolith
+out	Atlas_Core.*	resolved:starter	Atlas_Core ships in the `mxcli new` 11.13.0 app (captures/07); mx check 0 (captures/20)
+out	NanoflowCommons.*	resolved:starter	NanoflowCommons ships in the `mxcli new` 11.13.0 app (captures/07)
+out	GALLERY*	resolved:starter	Gallery widget ships with DataWidgets in the starter; CE0463 cleared by mxcli fix widgets (captures/18)
+out	CommunityCommons.*	resolved:marketplace	marketplace install 170 -> CommunityCommons 11.5.1 (captures/09, retried after a TLS handshake timeout)
+out	Administration.Account	resolved:starter	Administration ships in the `mxcli new` app; DispatchApp has its own user store (target-architecture.md, ASSUMED)
+out	Administration.Account.*	resolved:starter	Administration.Account members (FullName, Email) exist in the starter's Account
+out	Administration.Account_Technician	resolved:local-owner	association re-created in the starter's Administration module against local Technician (edges-B-stubs.mdl, describe-verbatim); each app links its own accounts — ASSUMED in target-architecture.md
+out	FSM_Specific.LeftMenuLayout	resolved:copy-drift	layout copied from describe (edges-A-layout.mdl): brand image, Visualizations.Snippet_Alerts, SidebarToggleButton dropped
+out	ModuleIntegration_Administration_Impl.*	resolved:copied	the three Rule_User_HasUserRole_* rules copied verbatim (edges-A2-copied.mdl) with the FSM user roles they name
+out	ObjectHandling.getGUID*	resolved:copy-drift	Java action copied; item typed TicketManagement.WorkOrder (describe gives a bare TypeParameter -> CE1613 '.TypeParameter'); body rewritten without ORM, Mendix 11 API (captures/14, 21)
+out	Visualizations.JA_CanWriteAttribute_User*	resolved:copied	Java action copied (edges-A3-java.mdl + .java file, getContext() for Mendix 11, captures/21)
+out	ValidationFeedback.*	resolved:copied	Java action copied (edges-A3-java.mdl + .java file, Mendix 11 API edits, captures/21)
+out	BizzomateScheduler.*	resolved:copied	the 2 BizzomateScheduler enums copied (edges-A4-bizzomate.mdl): planner event-style expressions -> CE0117 otherwise
+out	BIZZOMATESCHEDULER*	resolved:copied	bizzomate scheduler widget shipped inside Scheduler.mpk (exporter: widgets_shipped 3)
+out	URLREDIRECTOR*	handoff	URLRedirector is not supported on the React client (CE0572): replaced by a text on 2 pages (edges-C-widgets.mdl, edges-C2-urlredirector.mdl); the planner's open-in-new-tab deep link does not work
+out	Technician_Impl.*	retire	target page does not exist in the source either (`show pages in Technician_Impl`: 0 pages); ACT_NextDay/PreviousDay are dead in the source
+out	Utils.*	stub	CUT STUB microflows/entity (signature only, edges-B-stubs.mdl): language texts return empty, validation feedback is not shown, Account_GetCurrent returns empty
+out	TicketManagement.*	stub	CUT STUB entities WorkOrder/Appointment/Ticket/Priority/WorkOrderAssignment/AppointmentAssignment + associations + microflows + 5 pages + 1 snippet (edges-B-stubs.mdl): empty tables, flows do nothing — the planner board has no work orders
+out	AssetManagement.*	stub	CUT STUB entity Asset (attributes verbatim, empty table, edges-B-stubs.mdl): planner shows no asset of a ticket
+out	WarehouseManagement.*	stub	CUT STUB entity Warehouse (edges-B-stubs.mdl): technician ↔ warehouse assignment has no warehouses
+out	FeatureToggle.*	stub	CUT STUB entity FeatureToggle (edges-B-stubs.mdl): planner feature toggle reads an empty table (feature off)
+out	AppSettings.*	stub	CUT STUB entity ApplicationSettings / microflow (edges-B-stubs.mdl): available-timeslot calculation and native keep-until dates get no settings
+out	Visualizations.User_Refresh	stub	CUT STUB microflow (signature only): work-break recalculation no longer refreshes the user's visualisation
+out	DeepLink.*	stub	CUT STUB microflow DeepLink.DeepLinkHome (signature only): technician home navigation does not run the deep-link handler
+out	NativeMobile*.*	handoff	Mobile partition out of scope (CONFIRMED): device-copy pushes (NativeTimeRegistration/NativeWorkBreak/NativeRegistrationCode) are CUT STUBS that do nothing — rewire with the Mobile partition (REST-fed local copies)
+out	Synchronization.*	handoff	Mobile partition out of scope (CONFIRMED): web-sync helper updates are CUT STUBS that do nothing
+# ---- IN: something that stays in the monolith uses the slice. At levels 1-2 the monolith keeps its own copy of the 5 modules, so these edges still resolve inside the monolith; at level 3 they are the strangle work.
+in	NativeModelCheck.*	retire	NativeModelCheck is a model-check helper module (cut-score: retire)
+in	LoadTest.*	retire	LoadTest helper module (cut-score: retire)
+in	NativeMobile*.*	handoff	device-side consumers of slice entities — Mobile partition, out of scope (CONFIRMED)
+in	NativeRestAPI.*	handoff	native REST API over slice entities — Mobile partition, out of scope (CONFIRMED)
+in	Synchronization.*	handoff	native sync of technician/time-registration/work-break copies — Mobile partition, out of scope (CONFIRMED)
+in	Navigation.*	handoff	monolith menu items to slice pages: DispatchApp has its own navigation; at strangle the items go or deep-link
+in	*	handoff	monolith still owns its own copy of the 5 slice modules at levels 1-2 (no change); at strangle: OData read from DispatchApp's Workforce v1 + key copy for monolith-owned associations (target-architecture.md §3-4)

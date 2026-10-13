@@ -1,0 +1,33 @@
+mdl 1;
+-- Increment 8, monolith: third behaviour-carrying write (P3) — remove a technician from a work order through the
+-- monolith's own WorkOrder_RemoveTechnician (reset + save). One work order per call (primitive query params only).
+create or modify microflow DispatchSeam.API_WorkOrder_RemoveTechnician (
+  $WorkOrderPublicID: Long,
+  $TechnicianSystemID: String
+) returns String
+begin
+  retrieve $WorkOrders from TicketManagement.WorkOrder where [PublicID = $WorkOrderPublicID];
+  retrieve $Technician from Technician.Technician where [SystemID = $TechnicianSystemID] first;
+  if $Technician = empty then
+    return 'error: absent technician ' + $TechnicianSystemID;
+  end if;
+  call microflow TicketManagement.WorkOrder_RemoveTechnician(WorkOrderList = $WorkOrders, Technician = $Technician);
+  return 'removed ' + toString($WorkOrderPublicID);
+end;
+grant execute on microflow DispatchSeam.API_WorkOrder_RemoveTechnician to DispatchSeam.APIClient;
+create or modify published rest service DispatchSeam.DispatchActions (
+  Path: 'rest/dispatchcore/v1',
+  Version: '1.0.0',
+  ServiceName: 'FSM dispatch seam (writes)',
+  Authentication: (basic)
+)
+{
+  resource 'appointments' {
+    post 'plan' microflow DispatchSeam.API_Appointment_PlanManual;
+  }
+  resource 'workorders' {
+    post 'plan-for-technician' microflow DispatchSeam.API_WorkOrder_PlanForTechnician;
+    post 'remove-technician' microflow DispatchSeam.API_WorkOrder_RemoveTechnician;
+  }
+};
+grant access on published rest service DispatchSeam.DispatchActions to DispatchSeam.APIClient;

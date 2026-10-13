@@ -1,0 +1,15 @@
+mdl 1;
+-- P1: read on PublicID for every rule role of the 4 newly published entities
+grant read (PublicID) on entity FeatureToggle.FeatureToggle to FeatureToggle.EditFeatureToggle;
+grant read (PublicID) on entity FeatureToggle.FeatureToggle to FeatureToggle.ViewFeatureToggle;
+grant read (PublicID) on entity AppSettings.ApplicationSettings to AppSettings.EditAll;
+grant read (PublicID) on entity AppSettings.ApplicationSettings to AppSettings.ReadAll;
+grant read (PublicID) on entity WarehouseManagement.Warehouse to WarehouseManagement.ViewAll;
+grant read (PublicID) on entity WarehouseManagement.Warehouse to WarehouseManagement.ViewMy;
+grant read (PublicID) on entity WarehouseManagement.Warehouse to WarehouseManagement.EditAll;
+grant read (PublicID) on entity WarehouseManagement.Warehouse to WarehouseManagement.EditAllAdmin;
+grant read (PublicID) on entity AssetManagement.Asset to AssetManagement.ViewAll;
+grant read (PublicID) on entity AssetManagement.Asset to AssetManagement.EditAsset;
+grant read (PublicID) on entity AssetManagement.Asset to AssetManagement._AddOn_CreateAssetRosters;
+grant read (PublicID) on entity AssetManagement.Asset to AssetManagement._AddOn_EditNotes;
+grant read (PublicID) on entity AssetManagement.Asset to AssetManagement.EditAssetAdmin;

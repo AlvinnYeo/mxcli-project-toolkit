@@ -1,0 +1,28 @@
+mdl 1;
+-- seam P1: read on PublicID for every module role that has an access rule on a published entity (25 rules, from
+-- 'show access on <Entity>'); grant merges into the existing rule (verified: Rule 1 of WorkOrder kept its 24 members).
+grant read (PublicID) on entity TicketManagement.WorkOrder to TicketManagement.WorkorderEditAll;
+grant read (PublicID) on entity TicketManagement.WorkOrder to TicketManagement.WorkorderViewAll;
+grant read (PublicID) on entity TicketManagement.WorkOrder to TicketManagement.WorkorderEditAllAdmin;
+grant read (PublicID) on entity TicketManagement.Appointment to TicketManagement.AppointmentEditAllAdmin;
+grant read (PublicID) on entity TicketManagement.Appointment to TicketManagement.AppointmentViewAll;
+grant read (PublicID) on entity TicketManagement.Appointment to TicketManagement._AddOn_AppointmentNewEdit;
+grant read (PublicID) on entity TicketManagement.Ticket to TicketManagement.TicketEditAll;
+grant read (PublicID) on entity TicketManagement.Ticket to TicketManagement.TicketEditAllAdmin;
+grant read (PublicID) on entity TicketManagement.Ticket to TicketManagement.TicketViewAll;
+grant read (PublicID) on entity TicketManagement.Priority to TicketManagement.PriorityEditAll;
+grant read (PublicID) on entity TicketManagement.Priority to TicketManagement.PriorityViewAll;
+grant read (PublicID) on entity TicketManagement.WorkOrderAssignment to TicketManagement.WorkOrderAssignmentViewAll;
+grant read (PublicID) on entity TicketManagement.WorkOrderAssignment to TicketManagement.WorkOrderAssignmentEditAll;
+grant read (PublicID) on entity TicketManagement.WorkOrderAssignment to TicketManagement.WorkOrderAssignmentEditAllAdmin;
+grant read (PublicID) on entity TicketManagement.AppointmentAssignment to TicketManagement.AppointmentViewAll;
+grant read (PublicID) on entity TicketManagement.AppointmentAssignment to TicketManagement.AppointmentEditAllAdmin;
+grant read (PublicID) on entity Skill.Skill to Skill.FunctionalAdministrator;
+grant read (PublicID) on entity Skill.Skill to Skill.ServiceDeskEmployee;
+grant read (PublicID) on entity Skill.Skill to Skill.Mechanic;
+grant read (PublicID) on entity Skill.Skill to Skill.ServiceRegionManager;
+grant read (PublicID) on entity Skill.Skill to Skill.CallCenterEmployee;
+grant read (PublicID) on entity Skill.Skill to Skill.TechnicalAdministrator;
+grant read (PublicID) on entity Technician.TechnicianGroup to Technician.ViewAll;
+grant read (PublicID) on entity Technician.TechnicianGroup to Technician.EditAll;
+grant read (PublicID) on entity Technician.TechnicianGroup to Technician.EditAllAdmin;

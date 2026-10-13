@@ -1,0 +1,11 @@
+$ mxcli fix widgets
+  Storage: 1027 .mxunit file(s), unchanged from 1027 before (MPR v2 preserved).
+$ mxcli fix design-properties
+Updating design properties in DispatchApp.mpr (Mendix 11.13.0)...
+Renamed 40 Design Properties across 7 documents.
+
+$ mx check
+Checking app for errors...
+[error] [CE0117] "Error(s) in expression." at List of Data sources (1/2) of bizzomate Ultimate Scheduler 'bizzomateUltimateScheduler1'
+[error] [CE0572] "Widget uRLRedirector is not supported in React client." at URLRedirector 'uRLRedirector1'
+The app contains: 2 errors.

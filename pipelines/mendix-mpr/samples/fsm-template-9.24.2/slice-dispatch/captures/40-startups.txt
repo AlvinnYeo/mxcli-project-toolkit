@@ -1,0 +1,28 @@
+# startup / restart lines (both apps, mxcli run builds with mxbuild first)
+## mono-start.txt
+running: http://127.0.0.1:8680/ (pid 7518, no watch, log .mxcli/run.log)
+exit=0 real 123 s
+## mono-restart1.txt
+stopped: pid 7518 in 500ms
+running: http://127.0.0.1:8680/ (pid 8695, no watch, log .mxcli/run.log)
+exit=0 real 87 s
+## mono-restart2.txt
+stopped: pid 8695 in 600ms
+running: http://127.0.0.1:8680/ (pid 9723, no watch, log .mxcli/run.log)
+exit=0 real 86 s
+## mono-restart3.txt
+    2026-10-13 05:03:39.453 INFO - M2EE: Runtime shutdown requested.
+    2026-10-13 05:03:39.456 INFO - Core: Mendix Runtime is shutting down now...
+    2026-10-13 05:03:39.673 INFO - Core: Mendix Runtime is now shut down.
+exit=1 real 84 s
+## mono-restart4.txt
+stopped (was not running)
+running: http://127.0.0.1:8680/ (pid 11349, no watch, log .mxcli/run.log)
+exit=0 real 88 s
+## slice-start.txt
+running: http://127.0.0.1:8780/ (pid 10570, no watch, log .mxcli/run.log)
+exit=0 real 103 s
+## slice-restart1.txt
+stopped: pid 10570 in 400ms
+running: http://127.0.0.1:8780/ (pid 11739, no watch, log .mxcli/run.log)
+exit=0 real 72 s

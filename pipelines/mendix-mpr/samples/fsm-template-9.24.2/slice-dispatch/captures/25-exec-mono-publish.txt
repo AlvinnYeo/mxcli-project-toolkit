@@ -1,0 +1,127 @@
+$ mxcli -p fsm.mpr exec mdl/mono-dispatch-publish.mdl
+Connected to: fsm.mpr (Mendix 10.24.0.73019)
+Parse error: line 88: a reassignment says `set` under mdl 1: write `set $Travel = parseDateTimeUTC($PlannedTravelStart, 'yyyy-MM-dd''T''HH:mm:ss.SSS''Z''');`. A List operation or Aggregate list activity is written without it, as its own statement (`$Travel = filter $List where …;`)
+Parse error: line 89: a reassignment says `set` under mdl 1: write `set $Start = parseDateTimeUTC($PlannedWorkStart, 'yyyy-MM-dd''T''HH:mm:ss.SSS''Z''');`. A List operation or Aggregate list activity is written without it, as its own statement (`$Start = filter $List where …;`)
+Parse error: line 90: a reassignment says `set` under mdl 1: write `set $End = parseDateTimeUTC($PlannedWorkEnd, 'yyyy-MM-dd''T''HH:mm:ss.SSS''Z''');`. A List operation or Aggregate list activity is written without it, as its own statement (`$End = filter $List where …;`)
+exit=1 real 1 s
+$ mxcli -p fsm.mpr exec mdl/mono-dispatch-publish.mdl  (2nd run, restored copy)
+Connected to: fsm.mpr (Mendix 10.24.0.73019)
+2026/10/13 04:38:56 info: user definition "barcodescanner.def.json" overrides built-in barcodescanner (widgetId: com.mendix.widget.web.barcodescanner.BarcodeScanner → com.mendix.widget.native.barcodescanner.BarcodeScanner)
+2026/10/13 04:38:56 info: user definition "gallery.def.json" overrides built-in gallery (widgetId: com.mendix.widget.web.gallery.Gallery → com.mendix.widget.native.gallery.Gallery)
+2026/10/13 04:38:56 info: user definition "image.def.json" overrides built-in image (widgetId: com.mendix.widget.web.image.Image → com.mendix.widget.native.image.Image)
+1 info note not shown — run `mxcli check <repo>/pipelines/mendix-mpr/samples/fsm-template-9.24.2/slice-dispatch/mdl/mono-dispatch-publish.mdl` to see them (or pass --verbose)
+Reference error: statement 25: microflow 'DispatchSeam.API_Appointment_PlanManual' has reference errors:
+  - retrieve from TicketManagement.Appointment: the constraint names "PublicID", which is neither an attribute nor an association of it — mxbuild rejects the constraint (CE0161 "Error(s) in XPath constraint")
+
+Refusing to execute: 1 unresolved reference(s) above. Nothing was written.
+  A name that resolves to nothing is written into the model as it stands and
+  is not reported until mxbuild rejects it (CE1613) — and a misspelled MODULE
+  is created rather than refused.
+  Fix them, or re-run with --no-check to apply the script anyway.
+exit=1 real 10 s
+$ mxcli -p fsm.mpr exec --no-check mdl/mono-dispatch-publish.mdl  (3rd run, restored copy: the pre-check does not see PublicID added by statement 3 of the same script)
+Connected to: fsm.mpr (Mendix 10.24.0.73019)
+Created module: DispatchSeam
+Added attribute 'PublicID' to entity TicketManagement.WorkOrder
+Warning: TicketManagement.WorkOrder.PublicID is not readable by TicketManagement.WorkorderEditAll, TicketManagement.WorkorderEditAllAdmin, TicketManagement.WorkorderViewAll
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (PublicID) on entity TicketManagement.WorkOrder to TicketManagement.WorkorderEditAll;
+    grant read (PublicID) on entity TicketManagement.WorkOrder to TicketManagement.WorkorderEditAllAdmin;
+    grant read (PublicID) on entity TicketManagement.WorkOrder to TicketManagement.WorkorderViewAll;
+Added attribute 'PublicID' to entity TicketManagement.Appointment
+Warning: TicketManagement.Appointment.PublicID is not readable by TicketManagement.AppointmentEditAllAdmin, TicketManagement.AppointmentViewAll, TicketManagement._AddOn_AppointmentNewEdit
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (PublicID) on entity TicketManagement.Appointment to TicketManagement.AppointmentEditAllAdmin;
+    grant read (PublicID) on entity TicketManagement.Appointment to TicketManagement.AppointmentViewAll;
+    grant read (PublicID) on entity TicketManagement.Appointment to TicketManagement._AddOn_AppointmentNewEdit;
+Added attribute 'PublicID' to entity TicketManagement.Ticket
+Warning: TicketManagement.Ticket.PublicID is not readable by TicketManagement.TicketEditAll, TicketManagement.TicketEditAllAdmin, TicketManagement.TicketViewAll
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (PublicID) on entity TicketManagement.Ticket to TicketManagement.TicketEditAll;
+    grant read (PublicID) on entity TicketManagement.Ticket to TicketManagement.TicketEditAllAdmin;
+    grant read (PublicID) on entity TicketManagement.Ticket to TicketManagement.TicketViewAll;
+Added attribute 'PublicID' to entity TicketManagement.Priority
+Warning: TicketManagement.Priority.PublicID is not readable by TicketManagement.PriorityEditAll, TicketManagement.PriorityViewAll
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (PublicID) on entity TicketManagement.Priority to TicketManagement.PriorityEditAll;
+    grant read (PublicID) on entity TicketManagement.Priority to TicketManagement.PriorityViewAll;
+Added attribute 'PublicID' to entity TicketManagement.WorkOrderAssignment
+Warning: TicketManagement.WorkOrderAssignment.PublicID is not readable by TicketManagement.WorkOrderAssignmentEditAll, TicketManagement.WorkOrderAssignmentEditAllAdmin, TicketManagement.WorkOrderAssignmentViewAll
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (PublicID) on entity TicketManagement.WorkOrderAssignment to TicketManagement.WorkOrderAssignmentEditAll;
+    grant read (PublicID) on entity TicketManagement.WorkOrderAssignment to TicketManagement.WorkOrderAssignmentEditAllAdmin;
+    grant read (PublicID) on entity TicketManagement.WorkOrderAssignment to TicketManagement.WorkOrderAssignmentViewAll;
+Added attribute 'PublicID' to entity TicketManagement.AppointmentAssignment
+Warning: TicketManagement.AppointmentAssignment.PublicID is not readable by TicketManagement.AppointmentEditAllAdmin, TicketManagement.AppointmentViewAll
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (PublicID) on entity TicketManagement.AppointmentAssignment to TicketManagement.AppointmentEditAllAdmin;
+    grant read (PublicID) on entity TicketManagement.AppointmentAssignment to TicketManagement.AppointmentViewAll;
+Added attribute 'PublicID' to entity Skill.Skill
+Warning: Skill.Skill.PublicID is not readable by Skill.CallCenterEmployee, Skill.FunctionalAdministrator, Skill.Mechanic, Skill.ServiceDeskEmployee, Skill.ServiceRegionManager, Skill.TechnicalAdministrator
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (PublicID) on entity Skill.Skill to Skill.CallCenterEmployee;
+    grant read (PublicID) on entity Skill.Skill to Skill.FunctionalAdministrator;
+    grant read (PublicID) on entity Skill.Skill to Skill.Mechanic;
+    grant read (PublicID) on entity Skill.Skill to Skill.ServiceDeskEmployee;
+    grant read (PublicID) on entity Skill.Skill to Skill.ServiceRegionManager;
+    grant read (PublicID) on entity Skill.Skill to Skill.TechnicalAdministrator;
+Added attribute 'PublicID' to entity Technician.TechnicianGroup
+Warning: Technician.TechnicianGroup.PublicID is not readable by Technician.EditAll, Technician.EditAllAdmin, Technician.ViewAll
+  Those access rules grant rights per member, so a member added later joins them
+  with no access — the model is valid and builds clean, but the attribute renders
+  blank for those roles. Widen a rule with:
+    grant read (PublicID) on entity Technician.TechnicianGroup to Technician.EditAll;
+    grant read (PublicID) on entity Technician.TechnicianGroup to Technician.EditAllAdmin;
+    grant read (PublicID) on entity Technician.TechnicianGroup to Technician.ViewAll;
+Created module role: DispatchSeam.APIClient
+Created module role: TicketManagement.DispatchAPI
+Created module role: Technician.DispatchAPI
+Created module role: Skill.DispatchAPI
+Granted access on TicketManagement.WorkOrder to TicketManagement.DispatchAPI
+  Result: read (WorkOrderID, SystemID, "Status", ShortDescription, PercentagePlanned, PlannedTravelStart, PlannedWorkStart, PlannedWorkEnd, ActualStart, DisplayStart, DisplayEnd, "Description", SetOnSpecificTime, SetOnSpecificTechnician, ExpectedDuration, DueDate, PublicID, WorkOrder_Ticket, WorkOrder_Skill, _WorkOrder_Technician, WorkOrder_TechnicianGroup)
+Granted access on TicketManagement.Appointment to TicketManagement.DispatchAPI
+  Result: read (SystemID, "Status", PlannedTravelStart, PlannedWorkStart, PlannedWorkEnd, ActualStart, DisplayTravelStart, DisplayStart, DisplayEnd, PublicID, Appointment_WorkOrder, _Appointment_Technician)
+Granted access on TicketManagement.Ticket to TicketManagement.DispatchAPI
+  Result: read (TicketID, SystemID, "Status", ShortDescription, "Description", CreationTime, SLAStatus, DueDate, PlannedWorkStart, PlannedWorkEnd, DisplayStart, DisplayEnd, PublicID, Ticket_Priority)
+Granted access on TicketManagement.Priority to TicketManagement.DispatchAPI
+  Result: read ("Description", PriorityLevel, PublicID)
+Granted access on TicketManagement.WorkOrderAssignment to TicketManagement.DispatchAPI
+  Result: read (SystemID, "Status", PublicID, WorkOrderAssignment_WorkOrder, WorkOrderAssignment_Technician)
+Granted access on TicketManagement.AppointmentAssignment to TicketManagement.DispatchAPI
+  Result: read (SystemID, PublicID, AppointmentAssignment_Appointment, AppointmentAssignment_Technician)
+Granted access on Technician.Technician to Technician.DispatchAPI
+  Result: read (TechnicianID, SystemID, TechnicianName)
+Granted access on Technician.TechnicianGroup to Technician.DispatchAPI
+  Result: read (Name, PublicID)
+Granted access on Skill.Skill to Skill.DispatchAPI
+  Result: read (SkillName, PublicID)
+Created OData service: DispatchSeam.DispatchCore
+Granted access on OData service DispatchSeam.DispatchCore to DispatchSeam.APIClient
+Created microflow: DispatchSeam.API_Appointment_PlanManual
+Granted execute access on DispatchSeam.API_Appointment_PlanManual to DispatchSeam.APIClient
+Created published rest service DispatchSeam.DispatchActions
+Granted access on published rest service DispatchSeam.DispatchActions to DispatchSeam.APIClient
+Created user role: DispatchCoreClient
+Created constant: DispatchSeam.SliceAPIUserName
+Created constant: DispatchSeam.SliceAPIUserPassword
+Created constant: DispatchSeam.JourneyUserPassword
+Created microflow: DispatchSeam.EnsureAccount
+Created microflow: DispatchSeam.ASU_EnsureAccounts
+Altered microflow General.ASU_General
+exit=0 real 22 s
+$ mxcli -p fsm.mpr exec mdl/mono-dispatch-publicid-grants.mdl
+25

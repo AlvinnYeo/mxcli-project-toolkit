@@ -1,0 +1,152 @@
+mdl 1;
+-- Increment 8, monolith side (FSM 10.24 copy): the monolith PUBLISHES the core the Dispatch & Workforce slice reads
+-- (decompose-app.md Stage 2, "monolith publishes first"; target-architecture.md §4, §6).
+-- Reads: OData DispatchSeam.DispatchCore (odata/dispatchcore/v1). Writes with behaviour: REST DispatchSeam.DispatchActions.
+--
+-- KEYS (seam P1): PublicID AutoNumber default 1 on every published entity that has no unique key every create path
+-- fills; Technician keeps TechnicianID (AutoNumber). Read on PublicID is granted to every module role that has an
+-- access rule on the entity (P1: page-created objects fail on commit otherwise) — see the grants at the end.
+--
+-- JOIN (seam recipe B): the slice owns Technician / Skill / TechnicianGroup, but six monolith-owned associations point
+-- at them (WorkOrder_Skill, WorkOrder_TechnicianGroup, _WorkOrder_Technician, _Appointment_Technician,
+-- AppointmentAssignment_Technician, WorkOrderAssignment_Technician). An external entity cannot own an association to a
+-- local entity, so the monolith publishes its own Technician/Skill/TechnicianGroup rows as MIRRORS (MonoTechnician,
+-- MonoSkill, MonoTechnicianGroup) keyed for the join on the consumer's key (SystemID / SkillName / Name). Temporary:
+-- the mirror lives in modules that leave the monolith at strangle (removal = breaking change, P10).
+create module DispatchSeam;
+
+alter entity TicketManagement.WorkOrder add attribute if not exists PublicID: AutoNumber default 1;
+alter entity TicketManagement.Appointment add attribute if not exists PublicID: AutoNumber default 1;
+alter entity TicketManagement.Ticket add attribute if not exists PublicID: AutoNumber default 1;
+alter entity TicketManagement.Priority add attribute if not exists PublicID: AutoNumber default 1;
+alter entity TicketManagement.WorkOrderAssignment add attribute if not exists PublicID: AutoNumber default 1;
+alter entity TicketManagement.AppointmentAssignment add attribute if not exists PublicID: AutoNumber default 1;
+alter entity Skill.Skill add attribute if not exists PublicID: AutoNumber default 1;
+alter entity Technician.TechnicianGroup add attribute if not exists PublicID: AutoNumber default 1;
+
+create or modify module role DispatchSeam.APIClient description 'Machine role: the Dispatch & Workforce slice calling the monolith';
+create or modify module role TicketManagement.DispatchAPI description 'Slice reads work orders, appointments, tickets, assignments over OData';
+create or modify module role Technician.DispatchAPI description 'Slice reads the monolith technician mirror (join key)';
+create or modify module role Skill.DispatchAPI description 'Slice reads the monolith skill mirror (join key)';
+
+grant read (PublicID, WorkOrderID, SystemID, "Status", ShortDescription, "Description", PercentagePlanned, PlannedTravelStart, PlannedWorkStart, PlannedWorkEnd, ActualStart, DisplayStart, DisplayEnd, SetOnSpecificTime, SetOnSpecificTechnician, ExpectedDuration, DueDate, WorkOrder_Ticket, WorkOrder_Skill, WorkOrder_TechnicianGroup, _WorkOrder_Technician) on entity TicketManagement.WorkOrder to TicketManagement.DispatchAPI;
+grant read (PublicID, SystemID, "Status", PlannedTravelStart, PlannedWorkStart, PlannedWorkEnd, ActualStart, DisplayTravelStart, DisplayStart, DisplayEnd, Appointment_WorkOrder, _Appointment_Technician) on entity TicketManagement.Appointment to TicketManagement.DispatchAPI;
+grant read (PublicID, TicketID, SystemID, "Status", ShortDescription, "Description", CreationTime, SLAStatus, DueDate, PlannedWorkStart, PlannedWorkEnd, DisplayStart, DisplayEnd, Ticket_Priority) on entity TicketManagement.Ticket to TicketManagement.DispatchAPI;
+grant read (PublicID, "Description", PriorityLevel) on entity TicketManagement.Priority to TicketManagement.DispatchAPI;
+grant read (PublicID, SystemID, "Status", WorkOrderAssignment_WorkOrder, WorkOrderAssignment_Technician) on entity TicketManagement.WorkOrderAssignment to TicketManagement.DispatchAPI;
+grant read (PublicID, SystemID, AppointmentAssignment_Appointment, AppointmentAssignment_Technician) on entity TicketManagement.AppointmentAssignment to TicketManagement.DispatchAPI;
+grant read (TechnicianID, SystemID, TechnicianName) on entity Technician.Technician to Technician.DispatchAPI;
+grant read (PublicID, Name) on entity Technician.TechnicianGroup to Technician.DispatchAPI;
+grant read (PublicID, SkillName) on entity Skill.Skill to Skill.DispatchAPI;
+
+create or modify published odata service DispatchSeam.DispatchCore (
+  path: 'odata/dispatchcore/v1/',
+  version: '1.0.0',
+  ODataVersion: OData4,
+  namespace: 'FSM.DispatchCore',
+  ServiceName: 'DispatchCore',
+  PublishAssociations: Yes,
+  Authentication: (basic)
+)
+{
+  publish entity TicketManagement.WorkOrder as 'WorkOrder' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), WorkOrderID (Filterable, Sortable), SystemID (Filterable, Sortable), Status (Filterable, Sortable), ShortDescription (Filterable, Sortable), Description (Filterable, Sortable), PercentagePlanned (Filterable, Sortable), PlannedTravelStart (Filterable, Sortable), PlannedWorkStart (Filterable, Sortable), PlannedWorkEnd (Filterable, Sortable), ActualStart (Filterable, Sortable), DisplayStart (Filterable, Sortable), DisplayEnd (Filterable, Sortable), SetOnSpecificTime (Filterable, Sortable), SetOnSpecificTechnician (Filterable, Sortable), ExpectedDuration (Filterable, Sortable), DueDate (Filterable, Sortable), WorkOrder_Ticket as 'WorkOrder_Ticket', WorkOrder_Skill as 'WorkOrder_Skill', WorkOrder_TechnicianGroup as 'WorkOrder_TechnicianGroup', _WorkOrder_Technician as '_WorkOrder_Technician');
+  publish entity TicketManagement.Appointment as 'Appointment' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), SystemID (Filterable, Sortable), Status (Filterable, Sortable), PlannedTravelStart (Filterable, Sortable), PlannedWorkStart (Filterable, Sortable), PlannedWorkEnd (Filterable, Sortable), ActualStart (Filterable, Sortable), DisplayTravelStart (Filterable, Sortable), DisplayStart (Filterable, Sortable), DisplayEnd (Filterable, Sortable), Appointment_WorkOrder as 'Appointment_WorkOrder', _Appointment_Technician as '_Appointment_Technician');
+  publish entity TicketManagement.Ticket as 'Ticket' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), TicketID (Filterable, Sortable), SystemID (Filterable, Sortable), Status (Filterable, Sortable), ShortDescription (Filterable, Sortable), Description (Filterable, Sortable), CreationTime (Filterable, Sortable), SLAStatus (Filterable, Sortable), DueDate (Filterable, Sortable), PlannedWorkStart (Filterable, Sortable), PlannedWorkEnd (Filterable, Sortable), DisplayStart (Filterable, Sortable), DisplayEnd (Filterable, Sortable), Ticket_Priority as 'Ticket_Priority');
+  publish entity TicketManagement.Priority as 'Priority' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported)
+  expose (PublicID (KEY, Filterable, Sortable), Description (Filterable, Sortable), PriorityLevel (Filterable, Sortable));
+  publish entity TicketManagement.WorkOrderAssignment as 'WorkOrderAssignment' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), SystemID (Filterable, Sortable), Status (Filterable, Sortable), WorkOrderAssignment_WorkOrder as 'WorkOrderAssignment_WorkOrder', WorkOrderAssignment_Technician as 'WorkOrderAssignment_Technician');
+  publish entity TicketManagement.AppointmentAssignment as 'AppointmentAssignment' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), SystemID (Filterable, Sortable), AppointmentAssignment_Appointment as 'AppointmentAssignment_Appointment', AppointmentAssignment_Technician as 'AppointmentAssignment_Technician');
+  publish entity Technician.Technician as 'MonoTechnician' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (TechnicianID (KEY, Filterable, Sortable), SystemID (Filterable, Sortable), TechnicianName (Filterable, Sortable));
+  publish entity Technician.TechnicianGroup as 'MonoTechnicianGroup' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported)
+  expose (PublicID (KEY, Filterable, Sortable), Name (Filterable, Sortable));
+  publish entity Skill.Skill as 'MonoSkill' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported)
+  expose (PublicID (KEY, Filterable, Sortable), SkillName (Filterable, Sortable));
+  publish entity FeatureToggle.FeatureToggle as 'FeatureToggle' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported)
+  expose (PublicID (KEY, Filterable, Sortable), FeatureType (Filterable, Sortable), IsEnabled (Filterable, Sortable));
+  publish entity AppSettings.ApplicationSettings as 'ApplicationSettings' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported)
+  expose (PublicID (KEY, Filterable, Sortable), MinimumDurationManualPlanning (Filterable, Sortable), MalfunctionDelta (Filterable, Sortable), AutoConfirmAsset (Filterable, Sortable), RoundingTimeRegistration (Filterable, Sortable), NrOfDaysNativeDataIsRetained (Filterable, Sortable), DaysBeforeTrueDeletingData (Filterable, Sortable));
+  publish entity WarehouseManagement.Warehouse as 'Warehouse' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), WarehouseID (Filterable, Sortable), SystemID (Filterable, Sortable), Description (Filterable, Sortable));
+  publish entity AssetManagement.Asset as 'Asset' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), AssetID (Filterable, Sortable), SystemID (Filterable, Sortable), Description (Filterable, Sortable), FullAddress (Filterable, Sortable));
+};
+grant access on published odata service DispatchSeam.DispatchCore to DispatchSeam.APIClient;
+
+-- Write with behaviour (seam P3): manual planning runs the monolith's own Appointment_PlanManual (validation, save,
+-- assignment side effects). Primitive query parameters, String result, DateTime as UTC ISO (P9).
+create or modify microflow DispatchSeam.API_Appointment_PlanManual (
+  $AppointmentPublicID: Long,
+  $TechnicianSystemID: String,
+  $PlannedTravelStart: String,
+  $PlannedWorkStart: String,
+  $PlannedWorkEnd: String
+) returns String
+begin
+  retrieve $Appointment from TicketManagement.Appointment where [PublicID = $AppointmentPublicID] first;
+  if $Appointment = empty then
+    return 'absent ' + toString($AppointmentPublicID);
+  end if;
+  retrieve $Technician from Technician.Technician where [SystemID = $TechnicianSystemID] first;
+  declare $Travel DateTime = parseDateTimeUTC($PlannedTravelStart, 'yyyy-MM-dd''T''HH:mm:ss.SSS''Z''');
+  declare $Start DateTime = parseDateTimeUTC($PlannedWorkStart, 'yyyy-MM-dd''T''HH:mm:ss.SSS''Z''');
+  declare $End DateTime = parseDateTimeUTC($PlannedWorkEnd, 'yyyy-MM-dd''T''HH:mm:ss.SSS''Z''');
+  call microflow TicketManagement.Appointment_PlanManual(Appointment = $Appointment, PlannedTravelStart = $Travel, PlannedWorkEnd = $End, PlannedWorkStart = $Start, Technician_New = $Technician);
+  return 'planned ' + toString($AppointmentPublicID);
+end;
+grant execute on microflow DispatchSeam.API_Appointment_PlanManual to DispatchSeam.APIClient;
+
+create or modify published rest service DispatchSeam.DispatchActions (
+  Path: 'rest/dispatchcore/v1',
+  Version: '1.0.0',
+  ServiceName: 'FSM dispatch seam (writes)',
+  Authentication: (basic)
+)
+{
+  resource 'appointments' {
+    post 'plan' microflow DispatchSeam.API_Appointment_PlanManual;
+  }
+};
+grant access on published rest service DispatchSeam.DispatchActions to DispatchSeam.APIClient;
+
+-- machine user role: the only role granted on both services (P2)
+create user role DispatchCoreClient (ModuleRoles: (System.User, DispatchSeam.APIClient, TicketManagement.DispatchAPI, Technician.DispatchAPI, Skill.DispatchAPI), Description: 'Machine role: the Dispatch & Workforce slice (OData read, REST write)', CheckSecurity: true);
+
+-- the slice's API account, created after startup; password is a machine-local constant with a sentinel (P11)
+create constant DispatchSeam.SliceAPIUserName ( Type: String, DefaultValue: 'dispatch_slice' );
+create constant DispatchSeam.SliceAPIUserPassword ( Type: String, DefaultValue: '__SET_ME__' );
+create constant DispatchSeam.JourneyUserPassword ( Type: String, DefaultValue: '__SET_ME__' );
+create or modify microflow DispatchSeam.EnsureAccount (
+  $Name: String,
+  $Password: String,
+  $RoleName: String
+)
+begin
+  if $Password = empty or $Password = '' or $Password = '__SET_ME__' then
+    log warning node 'DispatchSeam' 'password for {1} not set on this machine: account not created' with ({1} = $Name);
+    return;
+  end if;
+  retrieve $Role from System.UserRole where [Name = $RoleName] first;
+  retrieve $Existing from Administration.Account where [Name = $Name] first;
+  if $Existing = empty then
+    $Account = create Administration.Account (Name = $Name, FullName = $Name, Password = $Password, Active = true);
+    change $Account (System.UserRoles = $Role);
+    commit $Account;
+    log info node 'DispatchSeam' 'account {1} created with role {2}' with ({1} = $Name, {2} = $RoleName);
+  end if;
+end;
+create or modify microflow DispatchSeam.ASU_EnsureAccounts ()
+begin
+  call microflow DispatchSeam.EnsureAccount(Name = @DispatchSeam.SliceAPIUserName, Password = @DispatchSeam.SliceAPIUserPassword, RoleName = 'DispatchCoreClient');
+  call microflow DispatchSeam.EnsureAccount(Name = 'journey_sde', Password = @DispatchSeam.JourneyUserPassword, RoleName = 'ServiceDeskEmployee');
+end;
+alter microflow General.ASU_General {
+  insert before return true begin
+    call microflow DispatchSeam.ASU_EnsureAccounts();
+  end;
+};

@@ -1,0 +1,6 @@
+$ mxcli -p DispatchApp.mpr exec mdl/edges-A4-bizzomate.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Created module: BizzomateScheduler
+Created enumeration: BizzomateScheduler.ENUM_Color
+Created enumeration: BizzomateScheduler.ENUM_EventStyle
+exit=0 real 0.7 s

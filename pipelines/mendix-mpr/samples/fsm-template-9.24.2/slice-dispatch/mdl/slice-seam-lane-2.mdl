@@ -1,0 +1,55 @@
+mdl 1;
+-- delta of slice-seam-lane.mdl after the first start: run-unique default start; page URL for the journey
+create or modify microflow DispatchSeam.ACT_Appointment_Plan (
+  $Appointment: DispatchSeam.Appointment,
+  $PlanRequest: DispatchSeam.PlanRequest
+)
+begin
+  retrieve $Technician from Technician.Technician where [IsActive = true()] first;
+  if $Technician = empty then
+    show message 'No active technician in DispatchApp' type Error;
+    return;
+  end if;
+  declare $Start DateTime = $PlanRequest/PlannedWorkStart;
+  if $Start = empty then
+    set $Start = addDays([%CurrentDateTime%], 7);  -- run-unique to the millisecond (journey idempotency)
+  end if;
+  $Response = call rest service post '{1}/rest/dispatchcore/v1/appointments/plan?AppointmentPublicID={2}&TechnicianSystemID={3}&PlannedTravelStart={4}&PlannedWorkStart={5}&PlannedWorkEnd={6}' with (
+    {1} = @DispatchSeam.CoreBaseUrl,
+    {2} = toString($Appointment/PublicID),
+    {3} = urlEncode($Technician/SystemID),
+    {4} = urlEncode(formatDateTimeUTC(addMinutes($Start, -30), 'yyyy-MM-dd''T''HH:mm:ss.SSS''Z''')),
+    {5} = urlEncode(formatDateTimeUTC($Start, 'yyyy-MM-dd''T''HH:mm:ss.SSS''Z''')),
+    {6} = urlEncode(formatDateTimeUTC(addMinutes($Start, 60), 'yyyy-MM-dd''T''HH:mm:ss.SSS''Z'''))
+  ) (
+    Authentication: basic (Username: @DispatchSeam.CoreAPIUserName, Password: @DispatchSeam.CoreAPIPassword),
+    Timeout: 30,
+  ) returns String on error without rollback begin
+    log error node 'DispatchSeam' 'monolith plan for appointment {1} failed: {2}' with ({1} = toString($Appointment/PublicID), {2} = $latestError/Message);
+    show message 'The monolith did not accept the planning request' type Error;
+    return;
+  end error;
+  change $PlanRequest (AppointmentPublicID = $Appointment/PublicID, TechnicianSystemID = $Technician/SystemID, PlannedWorkStart = $Start, Response = $Response);
+  commit $PlanRequest;
+  log info node 'DispatchSeam' 'monolith plan for appointment {1}: {2}' with ({1} = toString($Appointment/PublicID), {2} = $Response);
+  show message 'Planning request accepted by the monolith' type Information;
+end;
+create or modify page DispatchSeam.Appointments_FromCore (
+  Title: 'Appointments (monolith, OData)',
+  Layout: FSM_Specific.LeftMenuLayout,
+  Url: 'dispatch-seam'
+) {
+  dataview dvRequest (DataSource: microflow DispatchSeam.DS_PlanRequest_New) {
+    textbox tbRunID (Label: 'Run ID', Attribute: RunID)
+    datepicker dpStart (Label: 'Planned work start (UTC)', Attribute: PlannedWorkStart, DateFormat: DateTime)
+    datagrid gridAppointments (DataSource: DATABASE DispatchSeam.Appointment SORT BY PublicID ASC, Selection: None) {
+      column (Attribute: PublicID, Caption: 'Public ID')
+      column (Attribute: SystemID, Caption: 'System ID')
+      column (Attribute: Status, Caption: 'Status')
+      column (Attribute: PlannedWorkStart, Caption: 'Planned work start')
+      column (Caption: ' ') {
+        actionbutton btnPlan (Caption: 'Plan in monolith', Action: CALL MICROFLOW DispatchSeam.ACT_Appointment_Plan(Appointment = $currentObject, PlanRequest = $dvRequest))
+      }
+    }
+  }
+};

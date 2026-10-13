@@ -1,0 +1,54 @@
+mdl 1;
+-- Increment 8, monolith: the remaining data stubs of the slice (planner feature toggle, application settings, the
+-- technician's warehouses, the roster's asset) published in DispatchCore v1 (no consumer in production yet: ASSUMED
+-- additive change kept on v1, P10 says v2 once a consumer is live). Keys per P1, read on PublicID for every rule role.
+alter entity FeatureToggle.FeatureToggle add attribute if not exists PublicID: AutoNumber default 1;
+alter entity AppSettings.ApplicationSettings add attribute if not exists PublicID: AutoNumber default 1;
+alter entity WarehouseManagement.Warehouse add attribute if not exists PublicID: AutoNumber default 1;
+alter entity AssetManagement.Asset add attribute if not exists PublicID: AutoNumber default 1;
+create or modify module role FeatureToggle.DispatchAPI description 'Slice reads feature toggles over OData';
+create or modify module role AppSettings.DispatchAPI description 'Slice reads application settings over OData';
+create or modify module role WarehouseManagement.DispatchAPI description 'Slice reads warehouses over OData';
+create or modify module role AssetManagement.DispatchAPI description 'Slice reads assets over OData';
+grant read (PublicID, FeatureType, IsEnabled) on entity FeatureToggle.FeatureToggle to FeatureToggle.DispatchAPI;
+grant read (PublicID, MinimumDurationManualPlanning, MalfunctionDelta, AutoConfirmAsset, RoundingTimeRegistration, NrOfDaysNativeDataIsRetained, DaysBeforeTrueDeletingData) on entity AppSettings.ApplicationSettings to AppSettings.DispatchAPI;
+grant read (PublicID, WarehouseID, SystemID, "Description") on entity WarehouseManagement.Warehouse to WarehouseManagement.DispatchAPI;
+grant read (PublicID, AssetID, SystemID, "Description", FullAddress) on entity AssetManagement.Asset to AssetManagement.DispatchAPI;
+alter user role DispatchCoreClient add module roles (FeatureToggle.DispatchAPI, AppSettings.DispatchAPI, WarehouseManagement.DispatchAPI, AssetManagement.DispatchAPI);
+create or modify published odata service DispatchSeam.DispatchCore (
+  path: 'odata/dispatchcore/v1/',
+  version: '1.0.0',
+  ODataVersion: OData4,
+  namespace: 'FSM.DispatchCore',
+  ServiceName: 'DispatchCore',
+  PublishAssociations: Yes,
+  Authentication: (basic)
+)
+{
+  publish entity TicketManagement.WorkOrder as 'WorkOrder' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), WorkOrderID (Filterable, Sortable), SystemID (Filterable, Sortable), Status (Filterable, Sortable), ShortDescription (Filterable, Sortable), Description (Filterable, Sortable), PercentagePlanned (Filterable, Sortable), PlannedTravelStart (Filterable, Sortable), PlannedWorkStart (Filterable, Sortable), PlannedWorkEnd (Filterable, Sortable), ActualStart (Filterable, Sortable), DisplayStart (Filterable, Sortable), DisplayEnd (Filterable, Sortable), SetOnSpecificTime (Filterable, Sortable), SetOnSpecificTechnician (Filterable, Sortable), ExpectedDuration (Filterable, Sortable), DueDate (Filterable, Sortable), WorkOrder_Ticket as 'WorkOrder_Ticket', WorkOrder_Skill as 'WorkOrder_Skill', WorkOrder_TechnicianGroup as 'WorkOrder_TechnicianGroup', _WorkOrder_Technician as '_WorkOrder_Technician');
+  publish entity TicketManagement.Appointment as 'Appointment' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), SystemID (Filterable, Sortable), Status (Filterable, Sortable), PlannedTravelStart (Filterable, Sortable), PlannedWorkStart (Filterable, Sortable), PlannedWorkEnd (Filterable, Sortable), ActualStart (Filterable, Sortable), DisplayTravelStart (Filterable, Sortable), DisplayStart (Filterable, Sortable), DisplayEnd (Filterable, Sortable), Appointment_WorkOrder as 'Appointment_WorkOrder', _Appointment_Technician as '_Appointment_Technician');
+  publish entity TicketManagement.Ticket as 'Ticket' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), TicketID (Filterable, Sortable), SystemID (Filterable, Sortable), Status (Filterable, Sortable), ShortDescription (Filterable, Sortable), Description (Filterable, Sortable), CreationTime (Filterable, Sortable), SLAStatus (Filterable, Sortable), DueDate (Filterable, Sortable), PlannedWorkStart (Filterable, Sortable), PlannedWorkEnd (Filterable, Sortable), DisplayStart (Filterable, Sortable), DisplayEnd (Filterable, Sortable), Ticket_Priority as 'Ticket_Priority');
+  publish entity TicketManagement.Priority as 'Priority' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported)
+  expose (PublicID (KEY, Filterable, Sortable), Description (Filterable, Sortable), PriorityLevel (Filterable, Sortable));
+  publish entity TicketManagement.WorkOrderAssignment as 'WorkOrderAssignment' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), SystemID (Filterable, Sortable), Status (Filterable, Sortable), WorkOrderAssignment_WorkOrder as 'WorkOrderAssignment_WorkOrder', WorkOrderAssignment_Technician as 'WorkOrderAssignment_Technician');
+  publish entity TicketManagement.AppointmentAssignment as 'AppointmentAssignment' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), SystemID (Filterable, Sortable), AppointmentAssignment_Appointment as 'AppointmentAssignment_Appointment', AppointmentAssignment_Technician as 'AppointmentAssignment_Technician');
+  publish entity Technician.Technician as 'MonoTechnician' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (TechnicianID (KEY, Filterable, Sortable), SystemID (Filterable, Sortable), TechnicianName (Filterable, Sortable));
+  publish entity Technician.TechnicianGroup as 'MonoTechnicianGroup' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported)
+  expose (PublicID (KEY, Filterable, Sortable), Name (Filterable, Sortable));
+  publish entity Skill.Skill as 'MonoSkill' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported)
+  expose (PublicID (KEY, Filterable, Sortable), SkillName (Filterable, Sortable));
+  publish entity FeatureToggle.FeatureToggle as 'FeatureToggle' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported)
+  expose (PublicID (KEY, Filterable, Sortable), FeatureType (Filterable, Sortable), IsEnabled (Filterable, Sortable));
+  publish entity AppSettings.ApplicationSettings as 'ApplicationSettings' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported)
+  expose (PublicID (KEY, Filterable, Sortable), MinimumDurationManualPlanning (Filterable, Sortable), MalfunctionDelta (Filterable, Sortable), AutoConfirmAsset (Filterable, Sortable), RoundingTimeRegistration (Filterable, Sortable), NrOfDaysNativeDataIsRetained (Filterable, Sortable), DaysBeforeTrueDeletingData (Filterable, Sortable));
+  publish entity WarehouseManagement.Warehouse as 'Warehouse' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), WarehouseID (Filterable, Sortable), SystemID (Filterable, Sortable), Description (Filterable, Sortable));
+  publish entity AssetManagement.Asset as 'Asset' (ReadMode: source, InsertMode: not_supported, UpdateMode: not_supported, DeleteMode: not_supported, UsePaging: Yes, PageSize: 200)
+  expose (PublicID (KEY, Filterable, Sortable), AssetID (Filterable, Sortable), SystemID (Filterable, Sortable), Description (Filterable, Sortable), FullAddress (Filterable, Sortable));
+};

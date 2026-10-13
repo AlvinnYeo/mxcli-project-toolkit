@@ -1,0 +1,97 @@
+# swap v3: Filterable+Sortable metadata; consume, asset, rebind (R1-R8) from the build-green copy
+$ mxcli -p DispatchApp.mpr exec mdl/slice-seam-consume.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Created module: DispatchSeam
+Created constant: DispatchSeam.CoreODataUrl
+Created constant: DispatchSeam.CoreBaseUrl
+Created constant: DispatchSeam.CoreAPIUserName
+Created constant: DispatchSeam.CoreAPIPassword
+Created module role: DispatchSeam.User
+Created microflow: DispatchSeam.GetAuthHeaders
+Granted execute access on DispatchSeam.GetAuthHeaders to DispatchSeam.User
+Created OData client: DispatchSeam.DispatchCore
+  Cached $metadata: 9 entity types, 0 actions
+Dropped association: TicketManagement.Appointment_WorkOrder
+Dropped association: TicketManagement.AppointmentAssignment_Appointment
+Dropped cross-module association: TicketManagement.AppointmentAssignment_Technician
+Dropped cross-module association: TicketManagement.Ticket_Asset
+Dropped association: TicketManagement.Ticket_Priority
+Dropped cross-module association: TicketManagement.WorkOrder_Skill
+Dropped cross-module association: TicketManagement.WorkOrder_TechnicianGroup
+Dropped association: TicketManagement.WorkOrder_Ticket
+Dropped cross-module association: TicketManagement.WorkOrderAssignment_Technician
+Dropped association: TicketManagement.WorkOrderAssignment_WorkOrder
+Dropped cross-module association: TicketManagement._Appointment_Technician
+Dropped cross-module association: TicketManagement._WorkOrder_Technician
+Dropped entity: TicketManagement.WorkOrderAssignment
+Dropped entity: TicketManagement.AppointmentAssignment
+Dropped entity: TicketManagement.Appointment
+Dropped entity: TicketManagement.WorkOrder
+Dropped entity: TicketManagement.Ticket
+Dropped entity: TicketManagement.Priority
+Created 11 navigation associations
+
+From DispatchSeam.DispatchCore into TicketManagement: 9 created, 0 updated, 0 skipped, 0 failed
+Created association: RosterManagement.Roster_Ticket_PreferredStartWindow
+Created association: Scheduler.PlannerContext_WorkOrder_Selected
+Created association: TimeRegistration.TimeRegistration_Appointment
+exit=0 real 5.1 s
+$ mxcli -p DispatchApp.mpr exec mdl/slice-seam-rewire-asset.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Dropped microflow: Scheduler.PlannerContext_GetWorkOrders
+Created microflow: Scheduler.PlannerContext_GetWorkOrders
+Altered page Scheduler.PageContext_View
+Altered snippet Scheduler.Snippet_Technician_Tooltip
+Altered page Technician.Technician_ConfirmRemove
+Altered snippet Technician.Snippet_Technician_DataTabs
+Revoked access on RosterManagement.Roster from RosterManagement.ViewMy
+  Result: (no access)
+exit=0 real 15.0 s
+-- 33 hand-off brackets
+$ mxcli -p DispatchApp.mpr exec mdl/slice-seam-rebind.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Dropped microflow: Scheduler.AvailableTimeslot_CreateAppointment
+Created microflow: Scheduler.AvailableTimeslot_CreateAppointment
+Dropped microflow: Scheduler.AvailableTimeslot_CreateAppointment_ForWorkOrder
+Created microflow: Scheduler.AvailableTimeslot_CreateAppointment_ForWorkOrder
+Dropped microflow: Scheduler.AvailableTimeslot_CreateAppointment_GetMessage
+Created microflow: Scheduler.AvailableTimeslot_CreateAppointment_GetMessage
+Dropped microflow: Scheduler.PlannerContext_GetAppointmentList
+Created microflow: Scheduler.PlannerContext_GetAppointmentList
+Dropped microflow: Scheduler.PlannerContext_GetWorkOrders
+Created microflow: Scheduler.PlannerContext_GetWorkOrders
+Dropped microflow: Scheduler.PlannerContext_RefreshIfNeeded
+Created microflow: Scheduler.PlannerContext_RefreshIfNeeded
+Dropped microflow: Scheduler.SnapSetting_GetSnappedStart
+Created microflow: Scheduler.SnapSetting_GetSnappedStart
+Dropped microflow: Scheduler.TechnicianRoster_GetBusyTimeslots
+Created microflow: Scheduler.TechnicianRoster_GetBusyTimeslots
+Dropped rule: Scheduler.User_CanChangeAppointment
+Created rule: Scheduler.User_CanChangeAppointment
+Dropped microflow: Skill.Technician_CheckWorkOrderListOnSkills
+Created microflow: Skill.Technician_CheckWorkOrderListOnSkills
+Dropped microflow: Skill.WorkOrder_CheckTechnicianListOnSkills
+Created microflow: Skill.WorkOrder_CheckTechnicianListOnSkills
+Dropped microflow: Technician.DS_SkillRemoverHelper_Tickets_RetrieveWithoutPlannend
+  Removed its execute grants to Technician.EditAll. A create of Technician.DS_SkillRemoverHelper_Tickets_RetrieveWithoutPlannend later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow Technician.DS_SkillRemoverHelper_Tickets_RetrieveWithoutPlannend to Technician.EditAll;
+Created microflow: Technician.DS_SkillRemoverHelper_Tickets_RetrieveWithoutPlannend
+All specified roles already have execute access on Technician.DS_SkillRemoverHelper_Tickets_RetrieveWithoutPlannend
+Dropped microflow: Technician.DS_SkillRemoverHelper_WorkOrders_RetrieveWithPlanned
+  Removed its execute grants to Technician.EditAll. A create of Technician.DS_SkillRemoverHelper_WorkOrders_RetrieveWithPlanned later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow Technician.DS_SkillRemoverHelper_WorkOrders_RetrieveWithPlanned to Technician.EditAll;
+Created microflow: Technician.DS_SkillRemoverHelper_WorkOrders_RetrieveWithPlanned
+All specified roles already have execute access on Technician.DS_SkillRemoverHelper_WorkOrders_RetrieveWithPlanned
+Dropped microflow: Technician.TechnicianList_Commit_GetImpactedWorkOrders
+Created microflow: Technician.TechnicianList_Commit_GetImpactedWorkOrders
+Dropped microflow: Technician.Technician_Get_LastStartedAppointment
+Created microflow: Technician.Technician_Get_LastStartedAppointment
+Dropped microflow: Technician.Technician_Remove
+Created microflow: Technician.Technician_Remove
+Dropped microflow: Technician.Technician_Validate_ActiveWorkOrder
+Created microflow: Technician.Technician_Validate_ActiveWorkOrder
+Dropped microflow: Technician.Technician_Validate_Remove
+Created microflow: Technician.Technician_Validate_Remove
+Dropped microflow: Technician.TicketList_Get_NewByTechnicianAndSkill
+Created microflow: Technician.TicketList_Get_NewByTechnicianAndSkill
+Dropped microflow: Technician.Ticketlist_Get_PlannedPartiallyPlannedByTechnicianAndSkill
+Created microflow: Technician.Ticketlist_Get_PlannedPartiallyPlannedByTechnicianAndSkill
+exit=0 real 14.8 s

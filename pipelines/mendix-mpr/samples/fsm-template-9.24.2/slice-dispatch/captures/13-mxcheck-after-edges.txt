@@ -1,0 +1,16 @@
+Checking your app for issues...
+Checking the version of the mpr file.
+The mpr file version is '11.13.0'.
+Loading the mpr file.
+The mpr file version is '11.13.0'.
+Checking app for errors...
+[error] [CE1613] "The selected Java action 'ObjectHandling.getGUID' no longer exists." at Call Java action activity 'getGUID'
+[error] [CE1613] "The selected Java action parameter 'ObjectHandling.getGUID.item' no longer exists." at Call Java action activity 'getGUID'
+[error] [CE1613] "The selected Java action 'Visualizations.JA_CanWriteAttribute_User' no longer exists." at Call Java action activity 'JA_CanWriteAttribute_User'
+[error] [CE1613] "The selected Java action parameter 'Visualizations.JA_CanWriteAttribute_User.entity' no longer exists." at Call Java action activity 'JA_CanWriteAttribute_User'
+[error] [CE1613] "The selected Java action parameter 'Visualizations.JA_CanWriteAttribute_User.attribute' no longer exists." at Call Java action activity 'JA_CanWriteAttribute_User'
+[error] [CE1613] "The selected Java action parameter 'Visualizations.JA_CanWriteAttribute_User.user' no longer exists." at Call Java action activity 'JA_CanWriteAttribute_User'
+[error] [CE1613] "The selected Java action 'ValidationFeedback.JA_RetrieveObjectByGUID' no longer exists." at Call Java action activity 'JA_RetrieveObjectByGUID'
+[error] [CE1613] "The selected Java action parameter 'ValidationFeedback.JA_RetrieveObjectByGUID.ObjectGUID' no longer exists." at Call Java action activity 'JA_RetrieveObjectByGUID'
+[error] [CE1613] "The selected Java action parameter 'ValidationFeedback.JA_RetrieveObjectByGUID.ExpectedEntity' no longer exists." at Call Java action activity 'JA_RetrieveObjectByGUID'
+The app contains: 9 errors.

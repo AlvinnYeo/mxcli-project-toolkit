@@ -1,0 +1,6 @@
+$ mx(10.24) update-widgets <lab>/dispatch/mono/fsm.mpr
+$ mxcli -c "alter settings runtime ( JavaVersion: '21' )"
+WARNING: This is a vibe-coded PoC, alpha quality, use with caution.
+Updated model settings
+$ rm theme/web/index.html
+$ sed rollbackTransAction -> rollbackTransaction (3 files)

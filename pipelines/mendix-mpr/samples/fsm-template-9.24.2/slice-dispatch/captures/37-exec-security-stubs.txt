@@ -1,0 +1,50 @@
+$ mxcli -p DispatchApp.mpr exec mdl/slice-seam-security-stubs.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Created module role: TicketManagement.StubRead
+Granted access on TicketManagement.Appointment to TicketManagement.StubRead
+  Result: read *
+Granted access on TicketManagement.AppointmentAssignment to TicketManagement.StubRead
+  Result: read *
+Granted access on TicketManagement.Priority to TicketManagement.StubRead
+  Result: read *
+Granted access on TicketManagement.Ticket to TicketManagement.StubRead
+  Result: read *
+Granted access on TicketManagement.WorkOrder to TicketManagement.StubRead
+  Result: read *
+Granted access on TicketManagement.WorkOrderAssignment to TicketManagement.StubRead
+  Result: read *
+Created module role: AssetManagement.StubRead
+Granted access on AssetManagement.Asset to AssetManagement.StubRead
+  Result: read *
+Created module role: WarehouseManagement.StubRead
+Granted access on WarehouseManagement.Warehouse to WarehouseManagement.StubRead
+  Result: read *
+Created module role: FeatureToggle.StubRead
+Granted access on FeatureToggle.FeatureToggle to FeatureToggle.StubRead
+  Result: read *
+Created module role: AppSettings.StubRead
+Granted access on AppSettings.ApplicationSettings to AppSettings.StubRead
+  Result: read *
+Created module role: NativeMobile.StubRead
+Granted access on NativeMobile.NativeAppointment to NativeMobile.StubRead
+  Result: read *
+Created module role: NativeMobileTimeRegistration.StubRead
+Granted access on NativeMobileTimeRegistration.NativeRegistrationCode to NativeMobileTimeRegistration.StubRead
+  Result: read *
+Granted access on NativeMobileTimeRegistration.NativeTimeRegistration to NativeMobileTimeRegistration.StubRead
+  Result: read *
+Granted access on NativeMobileTimeRegistration.NativeWorkBreak to NativeMobileTimeRegistration.StubRead
+  Result: read *
+Created module role: Synchronization.StubRead
+Granted access on Synchronization.WebSyncHelper to Synchronization.StubRead
+  Result: read *
+Created module role: Utils.StubRead
+Granted access on Utils.ValidationFeedback to Utils.StubRead
+  Result: read *
+Added module roles TicketManagement.StubRead, AssetManagement.StubRead, WarehouseManagement.StubRead, FeatureToggle.StubRead, AppSettings.StubRead, NativeMobile.StubRead, NativeMobileTimeRegistration.StubRead, Synchronization.StubRead, Utils.StubRead to user role CallCenterEmployee
+Added module roles TicketManagement.StubRead, AssetManagement.StubRead, WarehouseManagement.StubRead, FeatureToggle.StubRead, AppSettings.StubRead, NativeMobile.StubRead, NativeMobileTimeRegistration.StubRead, Synchronization.StubRead, Utils.StubRead to user role FunctionalAdministrator
+Added module roles TicketManagement.StubRead, AssetManagement.StubRead, WarehouseManagement.StubRead, FeatureToggle.StubRead, AppSettings.StubRead, NativeMobile.StubRead, NativeMobileTimeRegistration.StubRead, Synchronization.StubRead, Utils.StubRead to user role Mechanic
+Added module roles TicketManagement.StubRead, AssetManagement.StubRead, WarehouseManagement.StubRead, FeatureToggle.StubRead, AppSettings.StubRead, NativeMobile.StubRead, NativeMobileTimeRegistration.StubRead, Synchronization.StubRead, Utils.StubRead to user role ServiceDeskEmployee
+Added module roles TicketManagement.StubRead, AssetManagement.StubRead, WarehouseManagement.StubRead, FeatureToggle.StubRead, AppSettings.StubRead, NativeMobile.StubRead, NativeMobileTimeRegistration.StubRead, Synchronization.StubRead, Utils.StubRead to user role ServiceRegionManager
+Added module roles TicketManagement.StubRead, AssetManagement.StubRead, WarehouseManagement.StubRead, FeatureToggle.StubRead, AppSettings.StubRead, NativeMobile.StubRead, NativeMobileTimeRegistration.StubRead, Synchronization.StubRead, Utils.StubRead to user role TechnicalAdministrator
+exit=0 real 2.9 s

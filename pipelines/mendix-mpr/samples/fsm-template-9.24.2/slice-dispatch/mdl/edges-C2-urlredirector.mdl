@@ -1,0 +1,6 @@
+mdl 1;
+alter page Scheduler.PageContext_View {
+  replace uRLRedirector1 with {
+    dynamictext uRLRedirector1 (Content: 'HAND-OFF: URLRedirector not supported on the React client')
+  };
+};

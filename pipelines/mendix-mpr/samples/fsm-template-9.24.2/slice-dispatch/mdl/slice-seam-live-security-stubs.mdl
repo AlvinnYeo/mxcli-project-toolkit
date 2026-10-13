@@ -1,0 +1,26 @@
+mdl 1;
+-- seam-live state: CUT STUB entities that remain (not TicketManagement, now external) need module roles too (CE2729).
+create or modify module role AssetManagement.StubRead description 'CUT STUB read access (increment 8)';
+grant read * on entity AssetManagement.Asset to AssetManagement.StubRead;
+create or modify module role WarehouseManagement.StubRead description 'CUT STUB read access (increment 8)';
+grant read * on entity WarehouseManagement.Warehouse to WarehouseManagement.StubRead;
+create or modify module role FeatureToggle.StubRead description 'CUT STUB read access (increment 8)';
+grant read * on entity FeatureToggle.FeatureToggle to FeatureToggle.StubRead;
+create or modify module role AppSettings.StubRead description 'CUT STUB read access (increment 8)';
+grant read * on entity AppSettings.ApplicationSettings to AppSettings.StubRead;
+create or modify module role NativeMobile.StubRead description 'CUT STUB read access (increment 8)';
+grant read * on entity NativeMobile.NativeAppointment to NativeMobile.StubRead;
+create or modify module role NativeMobileTimeRegistration.StubRead description 'CUT STUB read access (increment 8)';
+grant read * on entity NativeMobileTimeRegistration.NativeRegistrationCode to NativeMobileTimeRegistration.StubRead;
+grant read * on entity NativeMobileTimeRegistration.NativeTimeRegistration to NativeMobileTimeRegistration.StubRead;
+grant read * on entity NativeMobileTimeRegistration.NativeWorkBreak to NativeMobileTimeRegistration.StubRead;
+create or modify module role Synchronization.StubRead description 'CUT STUB read access (increment 8)';
+grant read * on entity Synchronization.WebSyncHelper to Synchronization.StubRead;
+create or modify module role Utils.StubRead description 'CUT STUB read access (increment 8)';
+grant read * on entity Utils.ValidationFeedback to Utils.StubRead;
+alter user role CallCenterEmployee add module roles (AssetManagement.StubRead, WarehouseManagement.StubRead, FeatureToggle.StubRead, AppSettings.StubRead, NativeMobile.StubRead, NativeMobileTimeRegistration.StubRead, Synchronization.StubRead, Utils.StubRead);
+alter user role FunctionalAdministrator add module roles (AssetManagement.StubRead, WarehouseManagement.StubRead, FeatureToggle.StubRead, AppSettings.StubRead, NativeMobile.StubRead, NativeMobileTimeRegistration.StubRead, Synchronization.StubRead, Utils.StubRead);
+alter user role Mechanic add module roles (AssetManagement.StubRead, WarehouseManagement.StubRead, FeatureToggle.StubRead, AppSettings.StubRead, NativeMobile.StubRead, NativeMobileTimeRegistration.StubRead, Synchronization.StubRead, Utils.StubRead);
+alter user role ServiceDeskEmployee add module roles (AssetManagement.StubRead, WarehouseManagement.StubRead, FeatureToggle.StubRead, AppSettings.StubRead, NativeMobile.StubRead, NativeMobileTimeRegistration.StubRead, Synchronization.StubRead, Utils.StubRead);
+alter user role ServiceRegionManager add module roles (AssetManagement.StubRead, WarehouseManagement.StubRead, FeatureToggle.StubRead, AppSettings.StubRead, NativeMobile.StubRead, NativeMobileTimeRegistration.StubRead, Synchronization.StubRead, Utils.StubRead);
+alter user role TechnicalAdministrator add module roles (AssetManagement.StubRead, WarehouseManagement.StubRead, FeatureToggle.StubRead, AppSettings.StubRead, NativeMobile.StubRead, NativeMobileTimeRegistration.StubRead, Synchronization.StubRead, Utils.StubRead);

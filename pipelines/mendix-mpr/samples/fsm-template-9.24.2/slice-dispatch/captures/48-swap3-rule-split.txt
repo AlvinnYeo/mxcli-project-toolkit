@@ -1,0 +1,14 @@
+$ mxcli -p DispatchApp.mpr exec mdl/slice-seam-rebind-3.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Dropped microflow: Scheduler.PlannerContext_GetWorkOrders
+Created microflow: Scheduler.PlannerContext_GetWorkOrders
+Dropped microflow: Scheduler.PlannerContext_GetAppointmentList
+Created microflow: Scheduler.PlannerContext_GetAppointmentList
+exit=0 real 7.4 s
+$ mxcli -p DispatchApp.mpr exec mdl/slice-seam-rebind-3.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Dropped microflow: Scheduler.PlannerContext_GetWorkOrders
+Created microflow: Scheduler.PlannerContext_GetWorkOrders
+Dropped microflow: Scheduler.PlannerContext_GetAppointmentList
+Created microflow: Scheduler.PlannerContext_GetAppointmentList
+exit=0 real 8.2 s

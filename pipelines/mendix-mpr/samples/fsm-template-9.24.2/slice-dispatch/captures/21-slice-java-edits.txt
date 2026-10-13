@@ -1,0 +1,43 @@
+# Java hand-edits in DispatchApp: Mendix 11 API (10.24 source compiled; 11.13 mxbuild refused)
+--- <scratch>/getGUID.orig	2026-10-13 04:31:52.026445443 +0000
++++ objecthandling/actions/getGUID.java	2026-10-13 04:31:52.029452740 +0000
+@@ -38,7 +38,7 @@
+ 	{
+ 		// BEGIN USER CODE
+ 
+-		return item.getId().toLong();
++		return item.getMendixObject().getId().toLong();
+ 
+ 		// END USER CODE
+ 	}
+--- <scratch>/JA_R.orig	2026-10-13 04:31:52.020596970 +0000
++++ validationfeedback/actions/JA_RetrieveObjectByGUID.java	2026-10-13 04:31:52.033984346 +0000
+@@ -38,7 +38,7 @@
+ 		
+ 		this.assertParameters();
+ 		
+-		IMendixObject object = Core.retrieveId(this.context(), Core.createMendixIdentifier(this.ObjectGUID));
++		IMendixObject object = Core.retrieveId(this.getContext(), Core.createMendixIdentifier(this.ObjectGUID));
+ 		
+ 		this.assertCorrectEntity(object);
+ 		
+@@ -77,7 +77,7 @@
+ 	}
+ 	
+ 	private void assertCorrectEntity(IMendixObject object) {
+-		if (object != null && !Core.isSubClassOf(object.getType(), this.ExpectedEntity)) {
++		if (object != null && !Core.getMetaObject(object.getType()).isSubClassOf(this.ExpectedEntity)) {
+ 			throw new IllegalArgumentException("Object with GUID " + this.ObjectGUID + " should be of entity " + this.ExpectedEntity + ", but is of entity: " + object.getType());
+ 		}
+ 	}
+--- <scratch>/JA_C.orig	2026-10-13 04:31:52.023357752 +0000
++++ visualizations/actions/JA_CanWriteAttribute_User.java	2026-10-13 04:31:52.037677842 +0000
+@@ -51,7 +51,7 @@
+         requireNonNull(attribute, "Please provide an attribute name");
+         requireNonNull(user, "Please provide a user");
+ 
+-        final Set<String> roles = user.getUserRoles(context()).stream()
++        final Set<String> roles = user.getUserRoles(getContext()).stream()
+                 .map(UserRole::getName)
+                 .collect(Collectors.toSet());
+ 

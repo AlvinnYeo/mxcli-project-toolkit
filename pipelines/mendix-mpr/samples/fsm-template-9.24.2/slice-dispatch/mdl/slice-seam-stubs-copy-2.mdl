@@ -1,0 +1,15 @@
+mdl 1;
+-- WorkOrder.MinutesPlanned is not in DispatchCore v1 (expression references are not in the catalog, so the attribute
+-- list missed it): derived from the published PercentagePlanned (drift: rounding)
+drop microflow TicketManagement.WorkOrder_GetMinutesToPlan;
+create or modify microflow TicketManagement.WorkOrder_GetMinutesToPlan (
+  $AvailableTimeslot: Scheduler.AvailableTimeslot,
+  $WorkOrder: TicketManagement.WorkOrder
+)
+returns Integer
+begin
+  declare $TimeLeftToPlan Integer = $WorkOrder/ExpectedDuration - round($WorkOrder/ExpectedDuration * $WorkOrder/PercentagePlanned div 100);
+  declare $TimeInAvailableTimeslot Integer = round(minutesBetween($AvailableTimeslot/MainStartDate,$AvailableTimeslot/MainEndDate));
+  return min($TimeLeftToPlan,$TimeInAvailableTimeslot);
+end;
+grant execute on microflow TicketManagement.WorkOrder_GetMinutesToPlan to TicketManagement.User;

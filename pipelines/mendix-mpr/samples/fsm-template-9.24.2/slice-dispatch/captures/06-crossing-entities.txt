@@ -1,0 +1,136 @@
+OUT targets (monolith docs the slice uses) by type/kind: {('ASSOCIATION', 'xpath'): 58, ('LAYOUT', 'layout'): 28, ('ENTITY', 'associate'): 11, ('JAVA_ACTION', 'call'): 23, ('ENTITY', 'parameter'): 27, ('ASSOCIATION', 'member'): 43, ('ASSOCIATION', 'retrieve'): 8, ('JAVASCRIPT_ACTION', 'call'): 7, ('ENTITY', 'return'): 22, ('MICROFLOW', 'call'): 54, ('PAGE', 'show_page'): 8, ('ATTRIBUTE', 'member'): 93, ('ENTITY', 'retrieve'): 41, ('RULE', 'call'): 18, ('ENUMERATION_VALUE', 'xpath'): 23, ('ATTRIBUTE', 'xpath'): 32, ('ENUMERATION_VALUE', 'value'): 12, ('WIDGET', 'widget'): 5, ('MICROFLOW', 'action'): 1, ('ENTITY', 'generalize'): 1, ('ENTITY', 'datasource'): 6, ('ENTITY', 'change'): 1}
+ out 44 ('ENTITY', 'TicketManagement.WorkOrder')
+ out 23 ('ENTITY', 'TicketManagement.Appointment')
+ out 16 ('ASSOCIATION', 'Administration.Account_Technician')
+ out 16 ('LAYOUT', 'FSM_Specific.LeftMenuLayout')
+ out 14 ('ASSOCIATION', 'TicketManagement.Appointment_WorkOrder')
+ out 12 ('LAYOUT', 'Atlas_Core.PopupLayout')
+ out 12 ('ASSOCIATION', 'TicketManagement.WorkOrder_Skill')
+ out 11 ('ASSOCIATION', 'TicketManagement.WorkOrder_Ticket')
+ out 11 ('ENTITY', 'Administration.Account')
+ out 9 ('ENTITY', 'TicketManagement.Ticket')
+ out 9 ('ASSOCIATION', 'TicketManagement.AppointmentAssignment_Appointment')
+ out 8 ('ASSOCIATION', 'TicketManagement.WorkOrderAssignment_Technician')
+ out 8 ('ASSOCIATION', 'TicketManagement.WorkOrderAssignment_WorkOrder')
+ out 7 ('ATTRIBUTE', 'TicketManagement.WorkOrder.Status')
+ out 7 ('ATTRIBUTE', 'TicketManagement.WorkOrderAssignment.Status')
+ out 7 ('ASSOCIATION', 'TicketManagement.AppointmentAssignment_Technician')
+ out 7 ('ENTITY', 'WarehouseManagement.Warehouse')
+ out 6 ('ASSOCIATION', 'TicketManagement.Ticket_Asset')
+ out 6 ('RULE', 'ModuleIntegration_Administration_Impl.Rule_User_HasUserRole_SDE')
+ out 6 ('RULE', 'ModuleIntegration_Administration_Impl.Rule_User_HasUserRole_SRM')
+ out 6 ('RULE', 'ModuleIntegration_Administration_Impl.Rule_User_HasUserRole_Technician')
+ out 6 ('ENUMERATION_VALUE', 'CommunityCommons.LogLevel.Debug')
+ out 6 ('JAVA_ACTION', 'CommunityCommons.TimeMeasureEnd')
+ out 6 ('JAVA_ACTION', 'CommunityCommons.TimeMeasureStart')
+ out 6 ('ATTRIBUTE', 'TicketManagement.Appointment.DisplayEnd')
+ out 6 ('ATTRIBUTE', 'TicketManagement.Ticket.TicketID')
+ out 6 ('ATTRIBUTE', 'Administration.Account.FullName')
+ out 5 ('JAVASCRIPT_ACTION', 'NanoflowCommons.HideProgress')
+ out 5 ('ATTRIBUTE', 'TicketManagement.Appointment.DisplayStart')
+ out 5 ('ATTRIBUTE', 'AssetManagement.Asset.Description')
+ out 5 ('ASSOCIATION', 'TicketManagement._Appointment_Technician')
+ out 4 ('JAVA_ACTION', 'CommunityCommons.RandomHash')
+ out 4 ('MICROFLOW', 'Utils.Language_TextInUserLanguage')
+ out 4 ('ASSOCIATION', 'TicketManagement.Ticket_Priority')
+ out 4 ('ATTRIBUTE', 'TicketManagement.WorkOrder.Description')
+ out 4 ('ATTRIBUTE', 'TicketManagement.Ticket.Description')
+ out 4 ('ENUMERATION_VALUE', 'TicketManagement.ENUM_AssignmentStatus.Cancelled')
+ out 4 ('ENTITY', 'NativeMobileTimeRegistration.NativeRegistrationCode')
+ out 3 ('MICROFLOW', 'Utils.Language_GetCurrent')
+ out 3 ('ENUMERATION_VALUE', 'TicketManagement.ENUM_AssignmentStatus.Accepted')
+IN targets (slice docs the monolith uses) by type/kind: {('ENTITY', 'associate'): 16, ('ENTITY', 'delete'): 4, ('ENTITY', 'retrieve'): 65, ('ASSOCIATION', 'xpath'): 26, ('PAGE', 'show_page'): 7, ('MICROFLOW', 'call'): 57, ('ASSOCIATION', 'member'): 36, ('ASSOCIATION', 'retrieve'): 4, ('ENTITY', 'create'): 2, ('ENTITY', 'return'): 22, ('ATTRIBUTE', 'member'): 171, ('ENUMERATION_VALUE', 'xpath'): 7, ('ATTRIBUTE', 'xpath'): 21, ('ENTITY', 'datasource'): 14, ('MICROFLOW', 'action'): 2, ('ENUMERATION_VALUE', 'value'): 11, ('ENTITY', 'change'): 6, ('ENTITY', 'parameter'): 71, ('ENUMERATION', 'type'): 8, ('RULE', 'call'): 2, ('MICROFLOW', 'menu_item'): 3, ('MICROFLOW', 'home_page'): 1, ('PAGE', 'menu_item'): 3}
+ in 107 ('ENTITY', 'Technician.Technician')
+ in 28 ('ATTRIBUTE', 'Technician.Technician.TechnicianName')
+ in 18 ('ENTITY', 'Skill.Skill')
+ in 16 ('ENTITY', 'TimeRegistration.TimeRegistration')
+ in 15 ('ENTITY', 'TimeRegistration.WorkBreak')
+ in 13 ('ATTRIBUTE', 'Skill.Skill.SkillName')
+ in 13 ('ATTRIBUTE', 'Technician.Technician.IsActive')
+ in 11 ('ASSOCIATION', 'TimeRegistration.TimeRegistration_Appointment')
+ in 11 ('ENTITY', 'TimeRegistration.RegistrationCode')
+ in 11 ('ENTITY', 'Technician.TechnicianGroup')
+ in 10 ('ATTRIBUTE', 'Technician.Technician.TechnicianID')
+ in 10 ('ASSOCIATION', 'Technician.Technician_Warehouse')
+ in 9 ('ENTITY', 'RosterManagement.Roster')
+ in 8 ('ATTRIBUTE', 'Technician.Technician.SystemID')
+ in 8 ('MICROFLOW', 'Technician.TechnicianList_UpdateWebSyncHelpers')
+ in 8 ('ATTRIBUTE', 'Technician.TechnicianGroup.Name')
+ in 7 ('ASSOCIATION', 'Technician.Technician_Skill')
+ in 6 ('ENUMERATION_VALUE', 'TimeRegistration.ENUM_RegistrationType.Work')
+ in 6 ('ATTRIBUTE', 'TimeRegistration.RegistrationCode.RegistrationType')
+ in 6 ('ASSOCIATION', 'TimeRegistration.TimeRegistration_RegistrationCode')
+ in 6 ('ENTITY', 'RosterManagement.TechnicianRoster')
+ in 6 ('ASSOCIATION', 'Technician.TechnicianGroup_Technician')
+ in 6 ('MICROFLOW', 'Technician.Technician_Get_ForCurrentUser')
+ in 5 ('ASSOCIATION', 'RosterManagement.Roster_Asset')
+ in 5 ('ATTRIBUTE', 'TimeRegistration.TimeRegistration.ActualEnd')
+ in 5 ('ATTRIBUTE', 'TimeRegistration.TimeRegistration.ActualStart')
+ in 5 ('ATTRIBUTE', 'TimeRegistration.TimeRegistration.End')
+ in 5 ('ATTRIBUTE', 'TimeRegistration.TimeRegistration.Start')
+ in 4 ('ATTRIBUTE', 'TimeRegistration.RegistrationCode.Description')
+ in 4 ('ATTRIBUTE', 'TimeRegistration.TimeRegistration.SystemID')
+ in 4 ('ATTRIBUTE', 'Technician.Technician.TelephoneNumber')
+ in 4 ('ATTRIBUTE', 'TimeRegistration.WorkBreak.CorrectedEndDate')
+ in 4 ('ASSOCIATION', 'TimeRegistration.WorkBreak_Technician')
+ in 4 ('ENUMERATION', 'TimeRegistration.ENUM_WorkBreakStatus')
+ in 4 ('MICROFLOW', 'Skill.WorkOrder_CheckTechnicianListOnSkills')
+ in 4 ('ENTITY', 'Scheduler.PlannerContext')
+ in 3 ('ENUMERATION_VALUE', 'TimeRegistration.ENUM_RegistrationType.Travel')
+ in 3 ('ENUMERATION_VALUE', 'TimeRegistration.ENUM_RegistrationType._Break')
+ in 3 ('ATTRIBUTE', 'TimeRegistration.RegistrationCode.IsDefault')
+ in 3 ('MICROFLOW', 'TimeRegistration.RegistrationCode_CreateAndSaveDefault')
+ in 3 ('ATTRIBUTE', 'RosterManagement.TechnicianRoster.StartDate')
+ in 3 ('ATTRIBUTE', 'Technician.Technician.AllowedOvertime')
+ in 3 ('ATTRIBUTE', 'Technician.Technician.CompanyName')
+ in 3 ('ATTRIBUTE', 'Technician.Technician.EmailAddress')
+ in 3 ('ATTRIBUTE', 'Technician.Technician.EmployeeNumber')
+-- OUT microflow/rule/java calls by target
+  6 ModuleIntegration_Administration_Impl.Rule_User_HasUserRole_SDE
+  6 ModuleIntegration_Administration_Impl.Rule_User_HasUserRole_SRM
+  6 ModuleIntegration_Administration_Impl.Rule_User_HasUserRole_Technician
+  4 Utils.Language_TextInUserLanguage
+  3 Utils.Language_GetCurrent
+  2 TicketManagement.Appointment_Create
+  2 TicketManagement.WorkOrder_SetPlannerContext
+  2 TicketManagement.WorkOrderList_Get_NewByTechnicianAndSkill
+  2 TicketManagement.WorkOrderList_Get_PlannedPartiallyPlannedByTechnicianAndSkill
+  2 TicketManagement.WorkOrder_RemoveTechnician
+  2 Utils.ValidationFeedback_SetNotValid
+  2 NativeMobileTimeRegistration.NativeRegistrationCode_Get_BySystemID
+  2 NativeMobileTimeRegistration.NativeTimeRegistration_GetCreate_BySystemID
+  1 TicketManagement.Appointment_SetPlannedDateTimes
+  1 TicketManagement.WorkOrder_GetMinutesToPlan
+  1 TicketManagement.Appointment_Save
+  1 TicketManagement.WorkOrderAssignment_RemoveCancelledDate
+  1 TicketManagement.WorkOrderAssignment_SetAutoAcceptedDate
+  1 TicketManagement.WorkOrder_GetCreate_WorkorderAssignmentForTechnician
+  1 TicketManagement.CurrentUser_HasTechnicianInGroup
+  1 TicketManagement.Appointment_PlanManual
+  1 TicketManagement.Appointment_Validate_ManualPlanning
+  1 TicketManagement.ACT_TicketNP_Malfunction_CreateNew
+  1 TicketManagement.WorkOrder_GetTechnicianList_Preferred
+  1 TicketManagement.WorkOrder_GetSelectableTechnicians
+  1 TicketManagement.WorkOrder_SetPlannerContext_WithRefresh
+  1 DeepLink.DeepLinkHome
+  1 Synchronization.TechnicianList_UpdateNativeTechnicians
+  1 Synchronization.WebSyncHelperList_Save
+  1 Synchronization.WebSyncHelper_GetOrCreateForAccount
+  1 Synchronization.WebSyncHelper_Set_LastDataChangedDate
+  1 Utils.Account_GetCurrent
+  1 Utils.ValidationFeedback_Create
+  1 Synchronization.WorkBreakList_UpdateNativeWorkBreaks
+  1 NativeMobileTimeRegistration.NativeRegistrationCodeList_Delete
+  1 NativeMobileTimeRegistration.NativeRegistrationCodeList_Save
+  1 NativeMobileTimeRegistration.NativeRegistrationCode_GetCreate_BySystemID
+  1 NativeMobileTimeRegistration.NativeTimeRegistrationList_Delete
+  1 NativeMobileTimeRegistration.NativeTimeRegistration_Get_BySystemID
+  1 AppSettings.ApplicationSettings_CalculateNativeKeepUntilDate
+  1 NativeMobileTimeRegistration.NativeTimeRegistrationList_Save
+  1 NativeMobile.NativeAppointment_Get_BySystemID
+  1 NativeMobileTimeRegistration.NativeWorkBreakList_Delete
+  1 NativeMobileTimeRegistration.NativeWorkBreak_Get_BySystemID
+  1 Visualizations.User_Refresh
+-- crossing refs by far side: {'web': 935, 'mobile': 146}
+OUT [('TicketManagement', 307), ('NativeMobileTimeRegistration', 37), ('Administration', 35), ('CommunityCommons', 25), ('ModuleIntegration_Administration_Impl', 18), ('FSM_Specific', 16), ('Atlas_Core', 12), ('Utils', 12), ('AssetManagement', 10), ('WarehouseManagement', 9), ('NanoflowCommons', 7), ('System', 6), ('FeatureToggle', 5), ('Synchronization', 5), ('Visualizations', 3), ('URLREDIRECTOR', 2), ('AppSettings', 2), ('BIZZOMATESCHEDULER', 2), ('Technician_Impl', 2), ('NativeMobile', 2), ('ObjectHandling', 1), ('ValidationFeedback', 1), ('GALLERY', 1), ('BizzomateScheduler', 1), ('DeepLink', 1)]
+IN [('TicketManagement', 223), ('MasterData', 127), ('Synchronization', 55), ('General', 22), ('AssetManagement', 21), ('NativeModelCheck', 20), ('Dashboard', 18), ('NativeMobileTimeRegistration', 10), ('WarehouseManagement', 10), ('LoadTest', 9), ('NativeMobile', 8), ('Navigation', 7), ('NativeMobileRelated', 6), ('AppSettings', 5), ('FSMPublishedAPI', 5), ('Note', 4), ('NativeMobilePart', 2), ('Part', 2), ('Reason', 2), ('Administration', 1), ('NativeRestAPI', 1), ('Visualizations', 1)]

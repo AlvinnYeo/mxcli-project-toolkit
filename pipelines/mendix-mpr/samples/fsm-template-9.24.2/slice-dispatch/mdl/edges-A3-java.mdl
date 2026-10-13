@@ -1,0 +1,49 @@
+mdl 1;
+-- increment 8: Java actions the slice calls (ASSUMED copied); bodies verbatim, .java files then copied from the 10.24 source
+-- (helper methods live outside the user-code block). ObjectHandling.getGUID body rewritten without the ORM helper class.
+create module ObjectHandling; create module Visualizations; create module ValidationFeedback;
+/**
+ * returns the Global Unique Identifier (GUID, or id) of an object.
+ */
+-- getGUID: describe gives "item: TypeParameter" with no declaring entity-type parameter (CE1613 ".TypeParameter"); typed to the one caller's entity
+create or modify java action ObjectHandling.getGUID (item: TicketManagement.WorkOrder not null) returns Integer
+-- return NAME: 'ReturnValueName'
+exposed as 'Get object GUID' in 'Object activities (Advanced)'
+-- icon: 955 bytes (not re-emitted; an omitted ICON/IMAGE clause preserves it)
+as $$
+return item.getId().toLong();
+$$;
+create or modify java action Visualizations.JA_CanWriteAttribute_User (
+    entity: entity <EntityType> not null,  -- describe emitted "entity <>" (refused by the parser); type parameter named here
+    attribute: String not null,
+    user: System.User not null  -- User to validate
+) returns Boolean
+-- return NAME: 'ReturnValueName'
+exposed as 'Can user write attribute' in 'Permission Checker'
+as $$
+requireNonNull(entity, "Please provide an entity");
+requireNonNull(attribute, "Please provide an attribute name");
+requireNonNull(user, "Please provide a user");
+
+final Set<String> roles = user.getUserRoles(context()).stream()
+        .map(UserRole::getName)
+        .collect(Collectors.toSet());
+
+return Core.getMetaObject(entity).getMetaObjectAccesses().stream()
+        .filter(rule -> applicableUserRole(rule, roles))
+        .anyMatch(rule -> rule.providesWriteAccess(attribute));
+$$;
+-- export level: API
+create or modify java action ValidationFeedback.JA_RetrieveObjectByGUID(ObjectGUID: Integer not null, ExpectedEntity: entity <TypeParameter> not null) returns TypeParameter
+-- return NAME: 'ReturnValueName'
+exposed as 'Retrieve Object by GUID' in 'Validation Feedback'
+-- icon: 656 bytes (not re-emitted; an omitted ICON/IMAGE clause preserves it)
+as $$
+this.assertParameters();
+
+IMendixObject object = Core.retrieveId(this.context(), Core.createMendixIdentifier(this.ObjectGUID));
+
+this.assertCorrectEntity(object);
+
+return object;
+$$;

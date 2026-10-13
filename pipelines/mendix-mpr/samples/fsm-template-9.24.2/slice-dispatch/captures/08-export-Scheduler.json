@@ -1,0 +1,61 @@
+{
+  "module": "Scheduler",
+  "product_version": "10.24.0.73019",
+  "units_module_subtree": 123,
+  "units_shell": 6,
+  "project_docs_scrubbed": [
+    "Settings$ProjectSettings",
+    "Navigation$NavigationDocument",
+    "Security$ProjectSecurity"
+  ],
+  "unit_types": {
+    "Constants$Constant": 3,
+    "DomainModels$DomainModel": 1,
+    "Enumerations$Enumeration": 2,
+    "Forms$Page": 4,
+    "Forms$Snippet": 4,
+    "Microflows$Microflow": 72,
+    "Microflows$Nanoflow": 11,
+    "Microflows$Rule": 3,
+    "Projects$Folder": 20,
+    "Projects$ModuleImpl": 1,
+    "Projects$ModuleSettings": 1,
+    "Security$ModuleSecurity": 1
+  },
+  "from_app_store": null,
+  "files": 10,
+  "java_files": 0,
+  "js_files": 0,
+  "widgets_referenced": [
+    "URLRedirector.widget.URLRedirector",
+    "bizzomate.bizzomatescheduler.BizzomateScheduler",
+    "com.mendix.widget.web.gallery.Gallery"
+  ],
+  "widgets_shipped": [
+    "widgets/URLRedirector.mpk",
+    "widgets/bizzomate.BizzomateScheduler.mpk",
+    "widgets/com.mendix.widget.web.Gallery.mpk"
+  ],
+  "widgets_unresolved": [],
+  "crossing_refs_by_module": {
+    "Administration": 5,
+    "AppSettings": 1,
+    "AssetManagement": 3,
+    "Atlas_Core": 1,
+    "BizzomateScheduler": 1,
+    "CommunityCommons": 9,
+    "FSM_Specific": 3,
+    "FeatureToggle": 2,
+    "ModuleIntegration_Administration_Impl": 5,
+    "NanoflowCommons": 2,
+    "ObjectHandling": 1,
+    "RosterManagement": 6,
+    "Skill": 4,
+    "Technician": 30,
+    "TicketManagement": 31,
+    "Utils": 3,
+    "ValidationFeedback": 1,
+    "Visualizations": 2
+  },
+  "out": "<lab>/dispatch/mpk/Scheduler.mpk"
+}

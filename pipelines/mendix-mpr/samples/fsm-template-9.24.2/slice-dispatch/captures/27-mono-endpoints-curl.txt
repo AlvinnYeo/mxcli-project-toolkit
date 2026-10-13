@@ -1,0 +1,8 @@
+GET odata/dispatchcore/v1/$metadata (machine role)      HTTP 200 27073 bytes
+GET odata/dispatchcore/v1/WorkOrder (machine role)     HTTP 200
+GET odata/dispatchcore/v1/WorkOrder (no credentials)   HTTP 401
+GET odata/dispatchcore/v1/WorkOrder (wrong password)   HTTP 401
+GET odata/dispatchcore/v1/WorkOrder (human role SDE)   HTTP 404
+POST rest/dispatchcore/v1/appointments/plan (machine)  HTTP (200, b'absent 0')
+POST rest/dispatchcore/v1/appointments/plan (no creds) HTTP 401
+POST rest/dispatchcore/v1/appointments/plan (human SDE) HTTP 404

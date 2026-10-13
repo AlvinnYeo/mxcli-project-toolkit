@@ -1,0 +1,48 @@
+mdl 1;
+-- Increment 8 journey data on the monolith (data migration is out of scope, both databases start empty): one technician,
+-- ticket, work order and appointment the slice reads over OData and plans over REST. Created after startup only when the
+-- journey password is set on this machine (the sentinel guard of P11). Remove before any real use (hand-off row).
+-- drop first: create or modify refused to splice the restructured flow
+drop microflow DispatchSeam.ASU_EnsureJourneyData;
+create or modify microflow DispatchSeam.ASU_EnsureJourneyData ()
+begin
+  if @DispatchSeam.JourneyUserPassword = '__SET_ME__' then
+    return;
+  end if;
+  retrieve $Tech from Technician.Technician where [SystemID = 'J8-TECH-1'] first;
+  if $Tech = empty then
+    $NewTech = create Technician.Technician (TechnicianName = 'Journey Technician 8', EmployeeNumber = 'J8-T1', CompanyName = 'FSM monolith', IsActive = true, SystemID = 'J8-TECH-1');
+    commit $NewTech without events;
+  end if;
+  retrieve $Ticket from TicketManagement.Ticket where [SystemID = 'J8-TICKET-1'] first;
+  if $Ticket = empty then
+    $NewTicket = create TicketManagement.Ticket (TicketID = 'J8-TICKET-1', SystemID = 'J8-TICKET-1', ShortDescription = 'Journey 8 ticket', CreationTime = [%CurrentDateTime%]);
+    commit $NewTicket without events;
+    $NewWO = create TicketManagement.WorkOrder (WorkOrderID = 'J8-WO-1', SystemID = 'J8-WO-1', ShortDescription = 'Journey 8 work order', ExpectedDuration = 60, WorkOrder_Ticket = $NewTicket);
+    commit $NewWO without events;
+    log info node 'DispatchSeam' 'journey data created';
+  end if;
+  -- the appointment is ensured on its own: the remove-technician probe (WorkOrder_RemoveTechnician -> ResetAll) deletes
+  -- the work order's appointments, which made the next journey run fail on an empty grid
+  retrieve $WO from TicketManagement.WorkOrder where [SystemID = 'J8-WO-1'] first;
+  retrieve $ApptExisting from TicketManagement.Appointment where [SystemID = 'J8-APPT-1'] first;
+  if $ApptExisting = empty and $WO != empty then
+      -- planned times filled: an FSM after-startup flow compares the oldest appointment's PlannedWorkStart with now and
+      -- kills the boot on an empty value ("Failed to evaluate expression ... $Appointment_Oldest/PlannedWorkStart < [%CurrentDateTime%]")
+      $NewAppt = create TicketManagement.Appointment (SystemID = 'J8-APPT-1', Appointment_WorkOrder = $WO, PlannedTravelStart = addDays([%BeginOfCurrentDayUTC%], 30), PlannedWorkStart = addDays([%BeginOfCurrentDayUTC%], 30), PlannedWorkEnd = addDays([%BeginOfCurrentDayUTC%], 31), DisplayStart = addDays([%BeginOfCurrentDayUTC%], 30), DisplayEnd = addDays([%BeginOfCurrentDayUTC%], 31));
+      commit $NewAppt without events;
+  end if;
+  -- Appointment_PlanManual changes the appointment's AppointmentAssignment (500 "Change object 'Some(AppointmentAssignment)'
+  -- should not be null" without it), so the journey appointment carries one, for the journey technician
+  retrieve $AA from TicketManagement.AppointmentAssignment where [SystemID = 'J8-AA-1'][TicketManagement.AppointmentAssignment_Appointment/TicketManagement.Appointment/SystemID = 'J8-APPT-1'] first;
+  if $AA = empty then
+    retrieve $Appt from TicketManagement.Appointment where [SystemID = 'J8-APPT-1'] first;
+    retrieve $T from Technician.Technician where [SystemID = 'J8-TECH-1'] first;
+    $NewAA = create TicketManagement.AppointmentAssignment (SystemID = 'J8-AA-1', AppointmentAssignment_Appointment = $Appt, AppointmentAssignment_Technician = $T);
+    commit $NewAA without events;
+  end if;
+end;
+-- The hook into General.ASU_General was an `alter microflow ... insert before return true` here. It is NOT idempotent:
+-- each re-run of this script inserted the call again (3 calls after 3 runs; harmless only because the flow is
+-- idempotent). Run it once: alter microflow General.ASU_General { insert before return true begin
+--   call microflow DispatchSeam.ASU_EnsureJourneyData(); end; };

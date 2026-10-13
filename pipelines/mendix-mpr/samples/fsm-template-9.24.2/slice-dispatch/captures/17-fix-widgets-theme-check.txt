@@ -1,0 +1,13 @@
+$ mxcli fix widgets -p DispatchApp.mpr
+  Storage: 1027 .mxunit file(s), unchanged from 1027 before (MPR v2 preserved).
+
+  Next: 'mxcli docker check -p <project.mpr>'
+$ mkdir -p themesource/fsm_specific && cp -r <lab>/dispatch/mono/themesource/fsm_specific/web themesource/fsm_specific/
+$ mx(11.13) check
+Checking app for errors...
+[error] [CE0117] "Error(s) in expression." at List of Data sources (1/2) of bizzomate Ultimate Scheduler 'bizzomateUltimateScheduler1'
+[error] [CE0117] "Error(s) in expression." at Action button 'actionButton6'
+[error] [CE0117] "Error(s) in expression." at Action button 'deleteButton2'
+[error] [CE0572] "Widget uRLRedirector is not supported in React client." at URLRedirector 'uRLRedirector1'
+[error] [CE6087] "Design properties have been renamed in your theme and need to be updated. Right-click to see more options." at 
+The app contains: 5 errors.

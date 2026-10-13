@@ -1,0 +1,96 @@
+mdl 1;
+-- increment 8: copied (ASSUMED in target-architecture.md): FSM user roles the slice names, and the three
+-- ModuleIntegration_Administration_Impl user-role rules, verbatim from the 10.24 source. Module roles are mapped in seam-security.
+create user role Mechanic (ModuleRoles: (System.User), Description: 'FSM role (copied name)');
+create user role ServiceRegionManager (ModuleRoles: (System.User), Description: 'FSM role (copied name)');
+create user role ServiceDeskEmployee (ModuleRoles: (System.User), Description: 'FSM role (copied name)');
+create user role FunctionalAdministrator (ModuleRoles: (System.User), Description: 'FSM role (copied name)');
+create user role CallCenterEmployee (ModuleRoles: (System.User), Description: 'FSM role (copied name)');
+create module ModuleIntegration_Administration_Impl;
+create or modify rule ModuleIntegration_Administration_Impl.Rule_User_HasUserRole_SDE (
+  @position(360, 75)
+  $User: System.User
+)
+returns Boolean
+begin
+  @start(360, 200)
+  @position(500, 200)
+  @curve(from: (30, 0), to: (-15, 0))
+  retrieve $UserRole_SDE from System.UserRole
+    where [id = '[%UserRole_ServiceDeskEmployee%]']
+    [System.UserRoles = $User]
+    first;
+  @position(665, 200)
+  @curve(from: (15, 0), to: (-15, 0))
+  @caption 'SDE user role?'
+  if $UserRole_SDE != empty then
+    @position(805, 200)
+    return true;
+  else
+    @position(665, 310)
+    @anchor(to: top)
+    return false;
+  end if;
+end;
+create or modify rule ModuleIntegration_Administration_Impl.Rule_User_HasUserRole_SRM (
+  @position(60, 75)
+  $User: System.User
+)
+returns Boolean
+begin
+  @start(60, 200)
+  @position(185, 200)
+  @curve(from: (30, 0), to: (-30, 0))
+  @annotation(text: 'Deliberate retrieve over association (and thus from memory if possible) because this is used to dynamically update AccountHelper on page Account_Edit.', position: (255, 75), size: (230, 80))
+  retrieve $User_UserRoleList from $User/System.UserRoles;
+  @position(350, 200)
+  @curve(from: (30, 0), to: (-30, 0))
+  retrieve $UserRole_SRM from System.UserRole
+    where id = '[%UserRole_ServiceRegionManager%]'
+    first;
+  @position(510, 200)
+  @curve(from: (30, 0), to: (-15, 0))
+  $User_SRMUserRole = find $User_UserRoleList by ModelGUID = $UserRole_SRM/ModelGUID;
+  @position(665, 200)
+  @curve(from: (15, 0), to: (-15, 0))
+  @caption 'SRM user role?'
+  if $User_SRMUserRole != empty then
+    @position(805, 200)
+    return true;
+  else
+    @position(665, 310)
+    @anchor(to: top)
+    return false;
+  end if;
+end;
+create or modify rule ModuleIntegration_Administration_Impl.Rule_User_HasUserRole_Technician (
+  @position(60, 75)
+  $User: System.User
+)
+returns Boolean
+begin
+  @start(60, 200)
+  @position(185, 200)
+  @curve(from: (30, 0), to: (-30, 0))
+  @annotation(text: 'Deliberate retrieve over association (and thus from memory if possible) because this is used to dynamically update AccountHelper on page Account_Edit.', position: (285, 75), size: (230, 80))
+  retrieve $User_UserRoleList from $User/System.UserRoles;
+  @position(350, 200)
+  @curve(from: (30, 0), to: (-30, 0))
+  retrieve $UserRole_Mechanic from System.UserRole
+    where id = '[%UserRole_Mechanic%]'
+    first;
+  @position(505, 200)
+  @curve(from: (30, 0), to: (-15, 0))
+  $User_MechanicUserRole = find $User_UserRoleList by ModelGUID = $UserRole_Mechanic/ModelGUID;
+  @position(665, 200)
+  @curve(from: (15, 0), to: (-15, 0))
+  @caption 'Mechanic user role?'
+  if $User_MechanicUserRole != empty then
+    @position(805, 200)
+    return true;
+  else
+    @position(665, 310)
+    @anchor(to: top)
+    return false;
+  end if;
+end;

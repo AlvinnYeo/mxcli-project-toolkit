@@ -1,0 +1,66 @@
+# cut-rules-seam.tsv — Dispatch & Workforce slice at the end of increment 8: the seam overrides below, then cut-rules.tsv
+# (build-green rules, unchanged). First match wins. Scripts: mdl/slice-seam-*.mdl, mdl/mono-dispatch-*.mdl, tools/seam-rebind.py, tools/bson-rebind-v2.py
+out	TicketManagement.Ticket_Asset	handoff	Asset is not in DispatchCore v1 and would arrive as TicketManagement.Asset, not AssetManagement.Asset (P6): widgets show HAND-OFF texts, planner asset filters ignored (slice-seam-rewire-asset.mdl)
+out	TicketManagement.ENUM_*	resolved:copy	enumerations kept for local use; the external attributes are Strings (P8): comparisons in the 20 rebound flows are string literals (seam-rebind.py R3/R11), 3 page visibility rules are expressions (slice-seam-pages.mdl)
+out	TicketManagement.Appointment_PlanManual	resolved:rest	stub body replaced: POST rest/dispatchcore/v1/appointments/plan runs the monolith's Appointment_PlanManual (status Planned in the monolith DB, journey step 2 x2), on error without rollback
+out	TicketManagement.WorkOrder_RemoveTechnician	resolved:rest	stub body replaced: one POST rest/dispatchcore/v1/workorders/remove-technician per work order (sub-microflow: CE0644 forbids without-rollback in a loop); probe 200 'removed 1' (captures/54)
+out	TicketManagement.Appointment_Validate_ManualPlanning	stub	CUT STUB returns empty: its monolith body calls two more validators (second order) — planner drag/drop is not validated
+out	TicketManagement.Appointment_Create	handoff	the planner's 'Schedule appointment' builds an uncommitted appointment and opens the monolith page Appointment_NewEdit: a consumer cannot create an external object (seam limits -> Writes) — deep link into the monolith
+out	TicketManagement.Appointment_SetPlannedDateTimes	handoff	part of the same create-draft flow as Appointment_Create (deep link into the monolith)
+out	TicketManagement.WorkOrderList_Get_*	handoff	the monolith body filters work orders through their assignments (reverse navigation): OData publishes navigations on the owner only — stub kept; skill/technician removal does not see work orders
+out	TicketManagement.CurrentUser_HasTechnicianInGroup	resolved:copied	monolith body copied (slice-side data only) through seam-rebind.py (slice-seam-stubs-copy.mdl)
+out	TicketManagement.WorkOrder_GetMinutesToPlan	resolved:copy-drift	monolith body copied; MinutesPlanned is not published -> derived from PercentagePlanned (slice-seam-stubs-copy-2.mdl)
+out	TicketManagement.WorkOrder_GetSelectableTechnicians	resolved:copy-drift	monolith body copied through seam-rebind.py; HAND-OFF bracket: the skill filter (local Technician_Skill joined to the remote WorkOrder_Skill) is dropped -> every technician selectable
+out	TicketManagement.WorkOrder_GetTechnicianList_Preferred	resolved:copy-drift	monolith body copied; HAND-OFF bracket (reverse navigation through WorkOrderAssignment) -> [false()]: no preferred technicians
+out	TicketManagement.WorkOrder_SetPlannerContext*	resolved:copied	monolith body copied (sets the slice-owned PlannerContext_WorkOrder_Selected local -> external)
+out	TicketManagement.ACT_Appointment_Edit	handoff	opens the monolith's appointment edit page — deep link into the monolith
+out	TicketManagement.ACT_TicketNP_Malfunction_CreateNew	handoff	creates a ticket in the monolith UI — deep link into the monolith
+out	TicketManagement.*_View	handoff	monolith page (CUT STUB page in the slice) — deep link into the monolith
+out	TicketManagement.Appointment_NewEdit	handoff	monolith page — see Appointment_Create
+out	TicketManagement.Appointment_ConfirmDelete	handoff	monolith page — deep link into the monolith
+out	TicketManagement.Ticket_Overview_Technician	handoff	monolith page — deep link into the monolith
+out	TicketManagement.Snippet_ExpectedDurationHelper_Display	handoff	monolith snippet (CUT STUB text in the slice)
+out	TicketManagement.*	resolved:odata	CUT STUB entity/association replaced by the external entity of the same name from odata/dispatchcore/v1 (recipe A, slice-seam-consume.mdl); technician/skill/group navigations end at the MONO mirrors and compare by key (recipe B, seam-rebind.py R1/R2/R12); HAND-OFF brackets: 24 planner group filters [true()], 12 reverse traversals [false()] (mdl/slice-seam-rebind*.mdl headers, captures/49)
+out	FeatureToggle.ENUM_*	resolved:copy	enumeration kept (stub copy); the external FeatureType is a String (P8), the planner's XPath already compares a literal
+out	FeatureToggle.*	resolved:odata	CUT STUB replaced by the external entity FeatureToggle.FeatureToggle from odata/dispatchcore/v1 (slice-seam-data.mdl)
+out	AppSettings.ApplicationSettings_CalculateNativeKeepUntilDate	handoff	keep-until date of the device copies of time registrations: Mobile partition (CONFIRMED out of scope)
+out	AppSettings.*	resolved:odata	CUT STUB replaced by the external entity AppSettings.ApplicationSettings (slice-seam-data.mdl)
+out	WarehouseManagement.*	resolved:odata	CUT STUB replaced by the external entity WarehouseManagement.Warehouse; Technician_Warehouse re-created local -> external (ReferenceSet, owner Technician); the select page's 'not yet assigned' filter is a HAND-OFF (slice-seam-data-2.mdl)
+out	AssetManagement.*	resolved:odata	CUT STUB replaced by the external entity AssetManagement.Asset; Roster_Asset re-created local -> external without the cascade (orphan rows if the monolith deletes an asset: P13 hand-off in cut-extra.tsv)
+out	Utils.*	resolved:copied	the 5 called Utils microflows copied verbatim from the 10.24 source (slice-seam-stubs-replace.mdl); ValidationFeedback entity verbatim (edges-B-stubs.mdl)
+# ---- build-green rules (cut-rules.tsv)
+# ---- OUT: the slice uses something that stays in the monolith
+out	Atlas_Core.*	resolved:starter	Atlas_Core ships in the `mxcli new` 11.13.0 app (captures/07); mx check 0 (captures/20)
+out	NanoflowCommons.*	resolved:starter	NanoflowCommons ships in the `mxcli new` 11.13.0 app (captures/07)
+out	GALLERY*	resolved:starter	Gallery widget ships with DataWidgets in the starter; CE0463 cleared by mxcli fix widgets (captures/18)
+out	CommunityCommons.*	resolved:marketplace	marketplace install 170 -> CommunityCommons 11.5.1 (captures/09, retried after a TLS handshake timeout)
+out	Administration.Account	resolved:starter	Administration ships in the `mxcli new` app; DispatchApp has its own user store (target-architecture.md, ASSUMED)
+out	Administration.Account.*	resolved:starter	Administration.Account members (FullName, Email) exist in the starter's Account
+out	Administration.Account_Technician	resolved:local-owner	association re-created in the starter's Administration module against local Technician (edges-B-stubs.mdl, describe-verbatim); each app links its own accounts — ASSUMED in target-architecture.md
+out	FSM_Specific.LeftMenuLayout	resolved:copy-drift	layout copied from describe (edges-A-layout.mdl): brand image, Visualizations.Snippet_Alerts, SidebarToggleButton dropped
+out	ModuleIntegration_Administration_Impl.*	resolved:copied	the three Rule_User_HasUserRole_* rules copied verbatim (edges-A2-copied.mdl) with the FSM user roles they name
+out	ObjectHandling.getGUID*	resolved:copy-drift	Java action copied; item typed TicketManagement.WorkOrder (describe gives a bare TypeParameter -> CE1613 '.TypeParameter'); body rewritten without ORM, Mendix 11 API (captures/14, 21)
+out	Visualizations.JA_CanWriteAttribute_User*	resolved:copied	Java action copied (edges-A3-java.mdl + .java file, getContext() for Mendix 11, captures/21)
+out	ValidationFeedback.*	resolved:copied	Java action copied (edges-A3-java.mdl + .java file, Mendix 11 API edits, captures/21)
+out	BizzomateScheduler.*	resolved:copied	the 2 BizzomateScheduler enums copied (edges-A4-bizzomate.mdl): planner event-style expressions -> CE0117 otherwise
+out	BIZZOMATESCHEDULER*	resolved:copied	bizzomate scheduler widget shipped inside Scheduler.mpk (exporter: widgets_shipped 3)
+out	URLREDIRECTOR*	handoff	URLRedirector is not supported on the React client (CE0572): replaced by a text on 2 pages (edges-C-widgets.mdl, edges-C2-urlredirector.mdl); the planner's open-in-new-tab deep link does not work
+out	Technician_Impl.*	retire	target page does not exist in the source either (`show pages in Technician_Impl`: 0 pages); ACT_NextDay/PreviousDay are dead in the source
+out	Utils.*	stub	CUT STUB microflows/entity (signature only, edges-B-stubs.mdl): language texts return empty, validation feedback is not shown, Account_GetCurrent returns empty
+out	TicketManagement.*	stub	CUT STUB entities WorkOrder/Appointment/Ticket/Priority/WorkOrderAssignment/AppointmentAssignment + associations + microflows + 5 pages + 1 snippet (edges-B-stubs.mdl): empty tables, flows do nothing — the planner board has no work orders
+out	AssetManagement.*	stub	CUT STUB entity Asset (attributes verbatim, empty table, edges-B-stubs.mdl): planner shows no asset of a ticket
+out	WarehouseManagement.*	stub	CUT STUB entity Warehouse (edges-B-stubs.mdl): technician ↔ warehouse assignment has no warehouses
+out	FeatureToggle.*	stub	CUT STUB entity FeatureToggle (edges-B-stubs.mdl): planner feature toggle reads an empty table (feature off)
+out	AppSettings.*	stub	CUT STUB entity ApplicationSettings / microflow (edges-B-stubs.mdl): available-timeslot calculation and native keep-until dates get no settings
+out	Visualizations.User_Refresh	stub	CUT STUB microflow (signature only): work-break recalculation no longer refreshes the user's visualisation
+out	DeepLink.*	stub	CUT STUB microflow DeepLink.DeepLinkHome (signature only): technician home navigation does not run the deep-link handler
+out	NativeMobile*.*	handoff	Mobile partition out of scope (CONFIRMED): device-copy pushes (NativeTimeRegistration/NativeWorkBreak/NativeRegistrationCode) are CUT STUBS that do nothing — rewire with the Mobile partition (REST-fed local copies)
+out	Synchronization.*	handoff	Mobile partition out of scope (CONFIRMED): web-sync helper updates are CUT STUBS that do nothing
+# ---- IN: something that stays in the monolith uses the slice. At levels 1-2 the monolith keeps its own copy of the 5 modules, so these edges still resolve inside the monolith; at level 3 they are the strangle work.
+in	NativeModelCheck.*	retire	NativeModelCheck is a model-check helper module (cut-score: retire)
+in	LoadTest.*	retire	LoadTest helper module (cut-score: retire)
+in	NativeMobile*.*	handoff	device-side consumers of slice entities — Mobile partition, out of scope (CONFIRMED)
+in	NativeRestAPI.*	handoff	native REST API over slice entities — Mobile partition, out of scope (CONFIRMED)
+in	Synchronization.*	handoff	native sync of technician/time-registration/work-break copies — Mobile partition, out of scope (CONFIRMED)
+in	Navigation.*	handoff	monolith menu items to slice pages: DispatchApp has its own navigation; at strangle the items go or deep-link
+in	*	handoff	monolith still owns its own copy of the 5 slice modules at levels 1-2 (no change); at strangle: OData read from DispatchApp's Workforce v1 + key copy for monolith-owned associations (target-architecture.md §3-4)

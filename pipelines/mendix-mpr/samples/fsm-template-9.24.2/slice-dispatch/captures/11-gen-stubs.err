@@ -1,0 +1,4 @@
+-- describe failed: ModuleIntegration_Administration_Impl.Rule_User_HasUserRole_SDE
+-- describe failed: ModuleIntegration_Administration_Impl.Rule_User_HasUserRole_SRM
+-- describe failed: ModuleIntegration_Administration_Impl.Rule_User_HasUserRole_Technician
+-- needed: {'layout': 1, 'entity': 16, 'association': 15, 'microflow': 46, 'rule': 3, 'user role': 2, 'page': 5, 'snippet': 1}

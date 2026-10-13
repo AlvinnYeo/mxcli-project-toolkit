@@ -1,0 +1,12 @@
+('in', 'handoff', 'mobile') 70
+('in', 'handoff', 'web') 347
+('in', 'retire', 'mobile') 20
+('in', 'retire', 'web') 9
+('out', 'handoff', 'mobile') 33
+('out', 'handoff', 'web') 27
+('out', 'platform', 'web') 6
+('out', 'resolved', 'web') 365
+('out', 'retire', 'web') 2
+('out', 'stub', 'mobile') 1
+('out', 'stub', 'web') 3
+stub rows by target: [('DeepLink.DeepLinkHome', 1), ('TicketManagement.Appointment_Validate_ManualPlanning', 1), ('Visualizations.User_Refresh', 1), ('NativeMobile.NativeAppointment', 1)]

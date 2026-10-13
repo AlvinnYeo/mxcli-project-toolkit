@@ -1,0 +1,52 @@
+mdl 1;
+-- Increment 8 seam, slice: helpers the rebind needs, and the planner's create-appointment write moved to REST.
+-- recipe B join: the monolith's WorkOrder_Skill points at its MonoSkill mirror; the slice's skills match by SkillName
+create or modify microflow DispatchSeam.WorkOrder_GetLocalSkills (
+  $WorkOrder: TicketManagement.WorkOrder
+) returns List of Skill.Skill
+begin
+  $Result = create list of Skill.Skill;
+  retrieve $MonoSkills from $WorkOrder/TicketManagement.WorkOrder_Skill;
+  loop $MonoSkill in $MonoSkills begin
+    retrieve $Local from Skill.Skill where [SkillName = $MonoSkill/SkillName] first;
+    if $Local != empty then
+      add $Local to $Result;
+    end if;
+  end loop;
+  return $Result;
+end;
+
+-- CE0852 (Change on external Appointment): the five monolith flows this used to call now run behind
+-- rest/dispatchcore/v1/workorders/plan-for-technician (mono-dispatch-actions-2.mdl); the new appointment is read back
+-- over OData by PublicID. P4 error handler; P9 UTC ISO.
+drop microflow Scheduler.AvailableTimeslot_CreateAppointment_ForWorkOrder;
+create or modify microflow Scheduler.AvailableTimeslot_CreateAppointment_ForWorkOrder (
+  $WorkOrder: TicketManagement.WorkOrder,
+  $AvailableTimeslot: Scheduler.AvailableTimeslot,
+  $MinutesToPlan: Integer,
+  $Technician: Technician.Technician
+)
+returns TicketManagement.Appointment
+folder 'Objects/AvailableTimeslot'
+begin
+  $Response = call rest service post '{1}/rest/dispatchcore/v1/workorders/plan-for-technician?WorkOrderPublicID={2}&TechnicianSystemID={3}&PlannedWorkStart={4}&MinutesToPlan={5}' with (
+    {1} = @DispatchSeam.CoreBaseUrl,
+    {2} = toString($WorkOrder/PublicID),
+    {3} = urlEncode($Technician/SystemID),
+    {4} = urlEncode(formatDateTimeUTC($AvailableTimeslot/MainStartDate, 'yyyy-MM-dd''T''HH:mm:ss.SSS''Z''')),
+    {5} = toString($MinutesToPlan)
+  ) (
+    Authentication: basic (Username: @DispatchSeam.CoreAPIUserName, Password: @DispatchSeam.CoreAPIPassword),
+    Timeout: 30,
+  ) returns String on error without rollback begin
+    log error node 'DispatchSeam' 'monolith plan-for-technician of work order {1} failed: {2}' with ({1} = toString($WorkOrder/PublicID), {2} = $latestError/Message);
+    return empty;
+  end error;
+  if startsWith($Response, 'error') then
+    log warning node 'DispatchSeam' 'monolith refused plan-for-technician: {1}' with ({1} = $Response);
+    return empty;
+  end if;
+  declare $NewPublicID Long = parseInteger($Response);
+  retrieve $NewAppointment from TicketManagement.Appointment where [PublicID = $NewPublicID] first;
+  return $NewAppointment;
+end;

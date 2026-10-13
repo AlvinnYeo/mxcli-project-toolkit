@@ -1,0 +1,215 @@
+$ mxcli -p DispatchApp.mpr exec mdl/slice-seam-rewire-asset.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Parse error: line 519:16 mismatched input ')' expecting '}'  [see: mxcli syntax <topic>, e.g. entity | microflow | page]
+Parse error: line 889:0 extraneous input '}' expecting the start of a statement (create, alter, drop, show, describe, …)  [see: mxcli syntax <topic>, e.g. entity | microflow | page]
+Parse error: line 955:71 extraneous input '-' expecting the start of a statement (create, alter, drop, show, describe, …)  [see: mxcli syntax <topic>, e.g. entity | microflow | page]
+Parse error: line 888: the statement ending at "}" has no terminating `;`: under mdl 1 every statement ends with `;`
+exit=1 real 1.8 s
+$ mxcli -p DispatchApp.mpr exec mdl/slice-seam-rewire-asset.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+(no module)
+-----------
+  ⚠ page Scheduler.PageContext_View: DataView `dataView1` contains input fields but is not inside a layout grid — label and input widths only render correctly inside a layoutgrid [MPR010]
+      at 
+      → Wrap dataview `dataView1` in `layoutgrid { row { column (desktopwidth: autofill) { … } } }`
+
+  ✗ page Scheduler.PageContext_View: dynamictext "text7": ContentParams parameter {1} is written as "$currentObject/FilterCaption" — a template parameter is evaluated against the widget's own context object, so it takes the attribute name (or an association path to one), not a path rooted in a variable. Write "FilterCaption". Left as-is the prefix becomes part of the attribute name and mxbuild reports CE1613 "The selected attribute '….$currentObject/FilterCaption' no longer exists" [MDL-WIDGET24]
+      at 
+
+  ⚠ page Scheduler.PageContext_View: DataView `dataView2` contains input fields but is not inside a layout grid — label and input widths only render correctly inside a layoutgrid [MPR010]
+      at 
+      → Wrap dataview `dataView2` in `layoutgrid { row { column (desktopwidth: autofill) { … } } }`
+
+  ⚠ page Scheduler.PageContext_View: DataView `dataView7` contains input fields but is not inside a layout grid — label and input widths only render correctly inside a layoutgrid [MPR010]
+      at 
+      → Wrap dataview `dataView7` in `layoutgrid { row { column (desktopwidth: autofill) { … } } }`
+
+  ⚠ page Scheduler.PageContext_View: widget "gallery1" (gallery) sets design property "Use grid", which is not defined for this widget type [MDL-WIDGET11]
+      at page Scheduler.PageContext_View
+      → Valid design properties for this widget: Align self, Borders, Disable selection highlight, Grid spacing, Hide on, Hover, Pagination, Spacing, Striped
+
+  ⚠ page Scheduler.PageContext_View: widget "container87" (container) sets design property "Use Material Icon", which is not defined for this widget type [MDL-WIDGET11]
+      at page Scheduler.PageContext_View
+      → Valid design properties for this widget: Align content (deprecated), Align items X, Align items Y, Align self, Background color, Border color, Border radius, Border style, Border width, Borders, Card style, Default item size, Disable row wrap, Flex container, Grow / shrink (self), Grow / shrink items, Hide on, Item gap, Overflow, Preferred size (self), Shade, Shadow, Spacing
+
+  ⚠ page Scheduler.PageContext_View: widget "text12" (dynamictext) design property "Color" has value "White", which is not an allowed value [MDL-WIDGET12]
+      at page Scheduler.PageContext_View
+      → Allowed values (case-sensitive): Header color, Detail color, Brand Primary, Default, Brand Success, Brand Warning, Brand Danger, Contrast
+
+  ⚠ page Scheduler.PageContext_View: widget "gallery1" (gallery) sets design property "Grid gap size", which is not defined for this widget type [MDL-WIDGET11]
+      at page Scheduler.PageContext_View
+      → Valid design properties for this widget: Align self, Borders, Disable selection highlight, Grid spacing, Hide on, Hover, Pagination, Spacing, Striped
+
+  ⚠ page Scheduler.PageContext_View: widget "gallery1" (gallery) sets design property "Grid item size", which is not defined for this widget type [MDL-WIDGET11]
+      at page Scheduler.PageContext_View
+      → Valid design properties for this widget: Align self, Borders, Disable selection highlight, Grid spacing, Hide on, Hover, Pagination, Spacing, Striped
+
+  ⚠ page Scheduler.PageContext_View: widget "text11" (dynamictext) sets design property "Transform", which the theme has renamed to "Letter case" — mxbuild reports CE6087 "Design properties have been renamed in your theme" unless the page is excluded [MDL-WIDGET11]
+      at page Scheduler.PageContext_View
+      → Write it under "Letter case". "Italic" has no current equivalent in the theme; the values it maps are: lower, UPPER, Capitalize
+
+  ⚠ page Scheduler.PageContext_View: widget "container75" (container) sets design property "Spacing bottom", which the theme has renamed to "Spacing" — mxbuild reports CE6087 "Design properties have been renamed in your theme" unless the page is excluded [MDL-WIDGET11]
+      at page Scheduler.PageContext_View
+      → Write it as 'Spacing': ['margin-bottom': 'S'].
+
+  ⚠ page Scheduler.PageContext_View: widget "text28" (dynamictext) sets design property "Max lines", which is not defined for this widget type [MDL-WIDGET11]
+      at page Scheduler.PageContext_View
+      → Valid design properties for this widget: Align self, Alignment, Color, Color shade, Hide on, Letter case, Size, Spacing, Weight, Wrap options
+
+  ⚠ page Scheduler.PageContext_View: widget "text14" (dynamictext) sets design property "Max lines", which is not defined for this widget type [MDL-WIDGET11]
+      at page Scheduler.PageContext_View
+      → Valid design properties for this widget: Align self, Alignment, Color, Color shade, Hide on, Letter case, Size, Spacing, Weight, Wrap options
+
+  ⚠ page Scheduler.PageContext_View: widget "text13" (dynamictext) sets design property "Max lines", which is not defined for this widget type [MDL-WIDGET11]
+      at page Scheduler.PageContext_View
+      → Valid design properties for this widget: Align self, Alignment, Color, Color shade, Hide on, Letter case, Size, Spacing, Weight, Wrap options
+
+14 issues: 1 errors, 13 warnings, 0 info
+
+Refusing to execute: 1 error(s) above. Nothing was written.
+  exec applies statements one at a time and cannot roll back, so a script
+  with a known error would leave the model partly updated.
+  Fix them, or re-run with --no-check to apply the script anyway.
+exit=1 real 2.3 s
+$ mxcli -p DispatchApp.mpr exec mdl/slice-seam-rewire-asset.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+(no module)
+-----------
+  ⚠ page Scheduler.PageContext_View: DataView `dataView1` contains input fields but is not inside a layout grid — label and input widths only render correctly inside a layoutgrid [MPR010]
+      at 
+      → Wrap dataview `dataView1` in `layoutgrid { row { column (desktopwidth: autofill) { … } } }`
+
+  ⚠ page Scheduler.PageContext_View: DataView `dataView2` contains input fields but is not inside a layout grid — label and input widths only render correctly inside a layoutgrid [MPR010]
+      at 
+      → Wrap dataview `dataView2` in `layoutgrid { row { column (desktopwidth: autofill) { … } } }`
+
+  ⚠ page Scheduler.PageContext_View: DataView `dataView7` contains input fields but is not inside a layout grid — label and input widths only render correctly inside a layoutgrid [MPR010]
+      at 
+      → Wrap dataview `dataView7` in `layoutgrid { row { column (desktopwidth: autofill) { … } } }`
+
+  ⚠ page Scheduler.PageContext_View: widget "gallery1" (gallery) sets design property "Use grid", which is not defined for this widget type [MDL-WIDGET11]
+      at page Scheduler.PageContext_View
+      → Valid design properties for this widget: Align self, Borders, Disable selection highlight, Grid spacing, Hide on, Hover, Pagination, Spacing, Striped
+
+  ⚠ page Scheduler.PageContext_View: widget "container75" (container) sets design property "Spacing bottom", which the theme has renamed to "Spacing" — mxbuild reports CE6087 "Design properties have been renamed in your theme" unless the page is excluded [MDL-WIDGET11]
+      at page Scheduler.PageContext_View
+      → Write it as 'Spacing': ['margin-bottom': 'S'].
+
+  ⚠ page Scheduler.PageContext_View: widget "container87" (container) sets design property "Use Material Icon", which is not defined for this widget type [MDL-WIDGET11]
+      at page Scheduler.PageContext_View
+      → Valid design properties for this widget: Align content (deprecated), Align items X, Align items Y, Align self, Background color, Border color, Border radius, Border style, Border width, Borders, Card style, Default item size, Disable row wrap, Flex container, Grow / shrink (self), Grow / shrink items, Hide on, Item gap, Overflow, Preferred size (self), Shade, Shadow, Spacing
+
+  ⚠ page Scheduler.PageContext_View: widget "text12" (dynamictext) design property "Color" has value "White", which is not an allowed value [MDL-WIDGET12]
+      at page Scheduler.PageContext_View
+      → Allowed values (case-sensitive): Header color, Detail color, Brand Primary, Default, Brand Success, Brand Warning, Brand Danger, Contrast
+
+  ⚠ page Scheduler.PageContext_View: widget "gallery1" (gallery) sets design property "Grid gap size", which is not defined for this widget type [MDL-WIDGET11]
+      at page Scheduler.PageContext_View
+      → Valid design properties for this widget: Align self, Borders, Disable selection highlight, Grid spacing, Hide on, Hover, Pagination, Spacing, Striped
+
+  ⚠ page Scheduler.PageContext_View: widget "gallery1" (gallery) sets design property "Grid item size", which is not defined for this widget type [MDL-WIDGET11]
+      at page Scheduler.PageContext_View
+      → Valid design properties for this widget: Align self, Borders, Disable selection highlight, Grid spacing, Hide on, Hover, Pagination, Spacing, Striped
+
+  ⚠ page Scheduler.PageContext_View: widget "text11" (dynamictext) sets design property "Transform", which the theme has renamed to "Letter case" — mxbuild reports CE6087 "Design properties have been renamed in your theme" unless the page is excluded [MDL-WIDGET11]
+      at page Scheduler.PageContext_View
+      → Write it under "Letter case". "Italic" has no current equivalent in the theme; the values it maps are: lower, UPPER, Capitalize
+
+  ⚠ page Scheduler.PageContext_View: widget "text28" (dynamictext) sets design property "Max lines", which is not defined for this widget type [MDL-WIDGET11]
+      at page Scheduler.PageContext_View
+      → Valid design properties for this widget: Align self, Alignment, Color, Color shade, Hide on, Letter case, Size, Spacing, Weight, Wrap options
+
+  ⚠ page Scheduler.PageContext_View: widget "text14" (dynamictext) sets design property "Max lines", which is not defined for this widget type [MDL-WIDGET11]
+      at page Scheduler.PageContext_View
+      → Valid design properties for this widget: Align self, Alignment, Color, Color shade, Hide on, Letter case, Size, Spacing, Weight, Wrap options
+
+  ⚠ page Scheduler.PageContext_View: widget "text13" (dynamictext) sets design property "Max lines", which is not defined for this widget type [MDL-WIDGET11]
+      at page Scheduler.PageContext_View
+      → Valid design properties for this widget: Align self, Alignment, Color, Color shade, Hide on, Letter case, Size, Spacing, Weight, Wrap options
+
+13 issues: 0 errors, 13 warnings, 0 info
+Scheduler
+---------
+  ✗ exec would refuse this statement: create or modify microflow Scheduler.PlannerContext_GetWorkOrders: this change cannot be spliced into the stored flow: alter microflow Scheduler.PlannerContext_GetWorkOrders: replace case $PageContext/Sorting: every path through the fragment ends the flow with a return, so nothing would lead on to the rest of it; a return can be inserted only on a path that branches off the rest (a guard clause). Nothing was written: rebuilding the whole flow instead would reset what Studio Pro drew (curves, merges, element IDs). Change activities with `alter microflow Scheduler.PlannerContext_GetWorkOrders { … }`; to rebuild the flow deliberately, drop the microflow and create it in the same script (the drop's module-role grants carry to a create in the same script or session, not to one in a later run) [MDL-V1-REBUILD]
+      at Scheduler.PlannerContext_GetWorkOrders
+
+1 issues: 1 errors, 0 warnings, 0 info
+
+Refusing to execute: 1 flow change(s) above would be refused when reached. Nothing was written.
+  exec applies statements one at a time, so the statements before a refused
+  change would be written and the ones after it would not.
+  Make the change the refusal names, or re-run with --continue-on-error to
+  apply every other statement.
+exit=1 real 13.8 s
+$ mxcli -p DispatchApp.mpr exec mdl/slice-seam-rewire-asset.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+(no module)
+-----------
+  ⚠ page Scheduler.PageContext_View: DataView `dataView1` contains input fields but is not inside a layout grid — label and input widths only render correctly inside a layoutgrid [MPR010]
+      at 
+      → Wrap dataview `dataView1` in `layoutgrid { row { column (desktopwidth: autofill) { … } } }`
+
+  ⚠ page Scheduler.PageContext_View: DataView `dataView2` contains input fields but is not inside a layout grid — label and input widths only render correctly inside a layoutgrid [MPR010]
+      at 
+      → Wrap dataview `dataView2` in `layoutgrid { row { column (desktopwidth: autofill) { … } } }`
+
+  ⚠ page Scheduler.PageContext_View: DataView `dataView7` contains input fields but is not inside a layout grid — label and input widths only render correctly inside a layoutgrid [MPR010]
+      at 
+      → Wrap dataview `dataView7` in `layoutgrid { row { column (desktopwidth: autofill) { … } } }`
+
+  ⚠ page Scheduler.PageContext_View: widget "gallery1" (gallery) sets design property "Use grid", which is not defined for this widget type [MDL-WIDGET11]
+      at page Scheduler.PageContext_View
+      → Valid design properties for this widget: Align self, Borders, Disable selection highlight, Grid spacing, Hide on, Hover, Pagination, Spacing, Striped
+
+  ⚠ page Scheduler.PageContext_View: widget "container75" (container) sets design property "Spacing bottom", which the theme has renamed to "Spacing" — mxbuild reports CE6087 "Design properties have been renamed in your theme" unless the page is excluded [MDL-WIDGET11]
+      at page Scheduler.PageContext_View
+      → Write it as 'Spacing': ['margin-bottom': 'S'].
+
+  ⚠ page Scheduler.PageContext_View: widget "container87" (container) sets design property "Use Material Icon", which is not defined for this widget type [MDL-WIDGET11]
+      at page Scheduler.PageContext_View
+      → Valid design properties for this widget: Align content (deprecated), Align items X, Align items Y, Align self, Background color, Border color, Border radius, Border style, Border width, Borders, Card style, Default item size, Disable row wrap, Flex container, Grow / shrink (self), Grow / shrink items, Hide on, Item gap, Overflow, Preferred size (self), Shade, Shadow, Spacing
+
+  ⚠ page Scheduler.PageContext_View: widget "text12" (dynamictext) design property "Color" has value "White", which is not an allowed value [MDL-WIDGET12]
+      at page Scheduler.PageContext_View
+      → Allowed values (case-sensitive): Header color, Detail color, Brand Primary, Default, Brand Success, Brand Warning, Brand Danger, Contrast
+
+  ⚠ page Scheduler.PageContext_View: widget "gallery1" (gallery) sets design property "Grid gap size", which is not defined for this widget type [MDL-WIDGET11]
+      at page Scheduler.PageContext_View
+      → Valid design properties for this widget: Align self, Borders, Disable selection highlight, Grid spacing, Hide on, Hover, Pagination, Spacing, Striped
+
+  ⚠ page Scheduler.PageContext_View: widget "gallery1" (gallery) sets design property "Grid item size", which is not defined for this widget type [MDL-WIDGET11]
+      at page Scheduler.PageContext_View
+      → Valid design properties for this widget: Align self, Borders, Disable selection highlight, Grid spacing, Hide on, Hover, Pagination, Spacing, Striped
+
+  ⚠ page Scheduler.PageContext_View: widget "text11" (dynamictext) sets design property "Transform", which the theme has renamed to "Letter case" — mxbuild reports CE6087 "Design properties have been renamed in your theme" unless the page is excluded [MDL-WIDGET11]
+      at page Scheduler.PageContext_View
+      → Write it under "Letter case". "Italic" has no current equivalent in the theme; the values it maps are: lower, UPPER, Capitalize
+
+  ⚠ page Scheduler.PageContext_View: widget "text28" (dynamictext) sets design property "Max lines", which is not defined for this widget type [MDL-WIDGET11]
+      at page Scheduler.PageContext_View
+      → Valid design properties for this widget: Align self, Alignment, Color, Color shade, Hide on, Letter case, Size, Spacing, Weight, Wrap options
+
+  ⚠ page Scheduler.PageContext_View: widget "text14" (dynamictext) sets design property "Max lines", which is not defined for this widget type [MDL-WIDGET11]
+      at page Scheduler.PageContext_View
+      → Valid design properties for this widget: Align self, Alignment, Color, Color shade, Hide on, Letter case, Size, Spacing, Weight, Wrap options
+
+  ⚠ page Scheduler.PageContext_View: widget "text13" (dynamictext) sets design property "Max lines", which is not defined for this widget type [MDL-WIDGET11]
+      at page Scheduler.PageContext_View
+      → Valid design properties for this widget: Align self, Alignment, Color, Color shade, Hide on, Letter case, Size, Spacing, Weight, Wrap options
+
+13 issues: 0 errors, 13 warnings, 0 info
+Dropped microflow: Scheduler.PlannerContext_GetWorkOrders
+Created microflow: Scheduler.PlannerContext_GetWorkOrders
+Error: failed to build page: failed to build widget: dynamictext text14: Visible: Status in (…): Scheduler.PlannerContext_WorkOrder_Selected has no attribute Status
+exit=1 real 14.7 s
+$ mxcli -p DispatchApp.mpr exec mdl/slice-seam-rewire-asset.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Dropped microflow: Scheduler.PlannerContext_GetWorkOrders
+Created microflow: Scheduler.PlannerContext_GetWorkOrders
+Altered page Scheduler.PageContext_View
+Altered snippet Scheduler.Snippet_Technician_Tooltip
+Altered page Technician.Technician_ConfirmRemove
+Altered snippet Technician.Snippet_Technician_DataTabs
+Revoked access on RosterManagement.Roster from RosterManagement.ViewMy
+  Result: (no access)
+exit=0 real 14.6 s

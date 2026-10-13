@@ -1,0 +1,4 @@
+title: Mendix - Appointments (monolith, OData)
+dialogs: ["Error\n\nAn error occurred, please contact your system administrator.\n\nOK"]
+2026-10-13 05:54:44.831 ERROR - Client: Internal server error
+Error: Internal server error

@@ -1,0 +1,44 @@
+mdl 1;
+-- Increment 8, monolith: second behaviour-carrying write (P3). The planner's "plan this work order into a free timeslot
+-- of a technician" (slice: Scheduler.AvailableTimeslot_CreateAppointment_ForWorkOrder) changed and created monolith
+-- objects (assignment, appointment) -> CE0852 on external entities. The same five monolith flows now run here.
+create or modify microflow DispatchSeam.API_WorkOrder_PlanForTechnician (
+  $WorkOrderPublicID: Long,
+  $TechnicianSystemID: String,
+  $PlannedWorkStart: String,
+  $MinutesToPlan: Integer
+) returns String
+begin
+  retrieve $WorkOrder from TicketManagement.WorkOrder where [PublicID = $WorkOrderPublicID] first;
+  if $WorkOrder = empty then
+    return 'error: absent work order ' + toString($WorkOrderPublicID);
+  end if;
+  retrieve $Technician from Technician.Technician where [SystemID = $TechnicianSystemID] first;
+  if $Technician = empty then
+    return 'error: absent technician ' + $TechnicianSystemID;
+  end if;
+  declare $Start DateTime = parseDateTimeUTC($PlannedWorkStart, 'yyyy-MM-dd''T''HH:mm:ss.SSS''Z''');
+  $WorkOrderAssignment = call microflow TicketManagement.WorkOrder_GetCreate_WorkorderAssignmentForTechnician(WorkOrder = $WorkOrder, Technician = $Technician);
+  call microflow TicketManagement.WorkOrderAssignment_SetAutoAcceptedDate(WorkOrderAssignment = $WorkOrderAssignment);
+  call microflow TicketManagement.WorkOrderAssignment_RemoveCancelledDate(WorkOrderAssignment = $WorkOrderAssignment);
+  $NewAppointment = call microflow TicketManagement.Appointment_Create(WorkOrder = $WorkOrder, Technician = $Technician);
+  change $NewAppointment (PlannedTravelStart = $Start, PlannedWorkStart = $Start, PlannedWorkEnd = addMinutes($Start, $MinutesToPlan));
+  call microflow TicketManagement.Appointment_Save(Appointment = $NewAppointment);
+  return toString($NewAppointment/PublicID);
+end;
+grant execute on microflow DispatchSeam.API_WorkOrder_PlanForTechnician to DispatchSeam.APIClient;
+create or modify published rest service DispatchSeam.DispatchActions (
+  Path: 'rest/dispatchcore/v1',
+  Version: '1.0.0',
+  ServiceName: 'FSM dispatch seam (writes)',
+  Authentication: (basic)
+)
+{
+  resource 'appointments' {
+    post 'plan' microflow DispatchSeam.API_Appointment_PlanManual;
+  }
+  resource 'workorders' {
+    post 'plan-for-technician' microflow DispatchSeam.API_WorkOrder_PlanForTechnician;
+  }
+};
+grant access on published rest service DispatchSeam.DispatchActions to DispatchSeam.APIClient;

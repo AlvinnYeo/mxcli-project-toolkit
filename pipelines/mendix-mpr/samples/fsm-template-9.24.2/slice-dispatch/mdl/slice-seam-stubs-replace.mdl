@@ -1,0 +1,173 @@
+mdl 1;
+-- Increment 8 seam-live: CUT STUB microflows replaced by working code.
+-- (1) four TicketManagement stubs no slice flow calls any more (their caller now uses plan-for-technician): dropped
+drop microflow TicketManagement.Appointment_Save;
+drop microflow TicketManagement.WorkOrderAssignment_RemoveCancelledDate;
+drop microflow TicketManagement.WorkOrderAssignment_SetAutoAcceptedDate;
+drop microflow TicketManagement.WorkOrder_GetCreate_WorkorderAssignmentForTechnician;
+-- (2) the monolith's manual planning: REST (P3/P4/P9), same contract as the journey's lane
+drop microflow TicketManagement.Appointment_PlanManual;
+create or modify microflow TicketManagement.Appointment_PlanManual (
+  $Appointment: TicketManagement.Appointment,
+  $PlannedTravelStart: DateTime,
+  $PlannedWorkEnd: DateTime,
+  $PlannedWorkStart: DateTime,
+  $Technician_New: Technician.Technician
+)
+begin
+  $Response = call rest service post '{1}/rest/dispatchcore/v1/appointments/plan?AppointmentPublicID={2}&TechnicianSystemID={3}&PlannedTravelStart={4}&PlannedWorkStart={5}&PlannedWorkEnd={6}' with (
+    {1} = @DispatchSeam.CoreBaseUrl,
+    {2} = toString($Appointment/PublicID),
+    {3} = urlEncode(if $Technician_New = empty then '' else $Technician_New/SystemID),
+    {4} = urlEncode(formatDateTimeUTC($PlannedTravelStart, 'yyyy-MM-dd''T''HH:mm:ss.SSS''Z''')),
+    {5} = urlEncode(formatDateTimeUTC($PlannedWorkStart, 'yyyy-MM-dd''T''HH:mm:ss.SSS''Z''')),
+    {6} = urlEncode(formatDateTimeUTC($PlannedWorkEnd, 'yyyy-MM-dd''T''HH:mm:ss.SSS''Z'''))
+  ) (
+    Authentication: basic (Username: @DispatchSeam.CoreAPIUserName, Password: @DispatchSeam.CoreAPIPassword),
+    Timeout: 30,
+  ) returns String on error without rollback begin
+    log error node 'DispatchSeam' 'monolith plan of appointment {1} failed: {2}' with ({1} = toString($Appointment/PublicID), {2} = $latestError/Message);
+    show message 'The planner (FSM) could not be reached; the appointment was not moved.' type Error;
+    return;
+  end error;
+  log info node 'DispatchSeam' 'monolith plan of appointment {1}: {2}' with ({1} = toString($Appointment/PublicID), {2} = $Response);
+end;
+-- (3) remove a technician from work orders: one REST call per work order (no list parameters across the seam)
+-- `on error without rollback` inside a loop is refused (CE0644 "Error handling type must be 'Rollback' inside a looped
+-- activity."): the REST call sits in a per-item sub-microflow, the loop calls it
+create or modify microflow DispatchSeam.WorkOrder_RemoveTechnician_One (
+  $WorkOrder: TicketManagement.WorkOrder,
+  $Technician: Technician.Technician
+)
+begin
+  $Response = call rest service post '{1}/rest/dispatchcore/v1/workorders/remove-technician?WorkOrderPublicID={2}&TechnicianSystemID={3}' with (
+    {1} = @DispatchSeam.CoreBaseUrl,
+    {2} = toString($WorkOrder/PublicID),
+    {3} = urlEncode($Technician/SystemID)
+  ) (
+    Authentication: basic (Username: @DispatchSeam.CoreAPIUserName, Password: @DispatchSeam.CoreAPIPassword),
+    Timeout: 30,
+  ) returns String on error without rollback begin
+    log error node 'DispatchSeam' 'monolith remove-technician on work order {1} failed: {2}' with ({1} = toString($WorkOrder/PublicID), {2} = $latestError/Message);
+    return;
+  end error;
+  log info node 'DispatchSeam' 'monolith remove-technician: {1}' with ({1} = $Response);
+end;
+drop microflow TicketManagement.WorkOrder_RemoveTechnician;
+create or modify microflow TicketManagement.WorkOrder_RemoveTechnician (
+  $WorkOrderList: List of TicketManagement.WorkOrder,
+  $Technician: Technician.Technician
+)
+begin
+  loop $WorkOrder in $WorkOrderList begin
+    call microflow DispatchSeam.WorkOrder_RemoveTechnician_One(WorkOrder = $WorkOrder, Technician = $Technician);
+  end loop;
+end;
+-- (4) Utils helpers: copied verbatim from the 10.24 source (pure functions / non-persistent helpers)
+drop microflow Utils.Language_GetCurrent;
+create or modify microflow Utils.Language_GetCurrent ()
+returns System.Language
+begin
+  @start(100, 200)
+  @position(305, 200)
+  @curve(from: (30, 0), to: (-15, 0))
+  retrieve $Language from $currentUser/System.User_Language;
+  @position(545, 200)
+  return $Language;
+end;
+drop microflow Utils.Language_TextInUserLanguage;
+create or modify microflow Utils.Language_TextInUserLanguage (
+  @position(85, -175)
+  $Language: System.Language,
+  @position(85, -75)
+  $Dutch: String,
+  @position(85, 25)
+  $English: String
+)
+returns String
+begin
+  @start(85, 150)
+  @position(230, 150)
+  @curve(from: (15, 0), to: (-15, 0))
+  @caption 'Language != empty?'
+  if $Language != empty then
+    @position(405, 150)
+    @curve(from: (15, 0), to: (-15, 0))
+    @caption 'Dutch?'
+    if $Language/Code = 'nl_NL' then
+      @position(555, 150)
+      return $Dutch;
+    @position(405, 280)
+    @anchor(to: top)
+    @curve(from: (15, 0), to: (-15, 0))
+    @caption 'English US?'
+    elsif $Language/Code = 'en_US' then
+      @position(555, 280)
+      return $English;
+    else
+      @position(405, 390)
+      @anchor(to: top)
+      return $English;
+    end if;
+  else
+    @position(230, 390)
+    @anchor(to: top)
+    return $English;
+  end if;
+end;
+drop microflow Utils.Account_GetCurrent;
+create or modify microflow Utils.Account_GetCurrent ()
+returns Administration.Account
+begin
+  @start(-50, 200)
+  @position(45, 200)
+  @anchor(to: left)
+  @curve(from: (15, 0), to: (-30, 0))
+  split type $currentUser
+    when Administration.Account then
+      @position(290, 200)
+      @curve(from: (30, 0), to: (-15, 0))
+      cast $Account;
+      @position(410, 200)
+      return $Account;
+    when System.User then
+      @position(45, 310)
+      @anchor(to: top)
+      return empty;
+    when (empty) then
+      @position(165, 290)
+      return empty;
+  end split;
+end;
+drop microflow Utils.ValidationFeedback_Create;
+create or modify microflow Utils.ValidationFeedback_Create (
+  @position(80, 70)
+  $ShowClientFeedback: Boolean
+)
+returns Utils.ValidationFeedback
+begin
+  @start(70, 157)
+  @position(255, 157)
+  $NewValidationFeedback = create Utils.ValidationFeedback (Message = '', ShowClientFeedback = $ShowClientFeedback);
+  @position(475, 157)
+  return $NewValidationFeedback;
+end;
+drop microflow Utils.ValidationFeedback_SetNotValid;
+create or modify microflow Utils.ValidationFeedback_SetNotValid (
+  @position(-280, 50)
+  $ValidationFeedback: Utils.ValidationFeedback,
+  @position(-280, -30)
+  $Message: String
+)
+begin
+  @start(-280, 135)
+  @position(-20, 135)
+  @curve(to: (-15, 0))
+  change $ValidationFeedback (Message = if trim($Message) != '' then
+  trim($ValidationFeedback/Message + '
+- '+ $Message)
+else
+trim($ValidationFeedback/Message), IsValid = false);
+  @position(185, 135)
+  return;
+end;

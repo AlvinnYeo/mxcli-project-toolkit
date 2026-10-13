@@ -1,0 +1,78 @@
+$ mxcli -p DispatchApp.mpr exec mdl/slice-seam-lane.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Parse error: line 33:21 mismatched input 'DispatchSeam' expecting '('  [see: mxcli syntax <topic>, e.g. entity | microflow | page]
+exit=1 real 0.4 s
+$ mxcli -p DispatchApp.mpr exec mdl/slice-seam-lane.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Parse error: line 58:23 extraneous input ''No active technician in DispatchApp'' expecting ';'  [see: mxcli syntax <topic>, e.g. entity | microflow | page]
+Parse error: line 77:23 extraneous input ''The monolith did not accept the planning request'' expecting ';'  [see: mxcli syntax <topic>, e.g. entity | microflow | page]
+Parse error: line 83:27 mismatched input ''Monolith answered: '' expecting ';'  [see: mxcli syntax <topic>, e.g. entity | microflow | page]
+Parse error: line 99:22 no viable alternative at input 'DataSource'  [see: mxcli syntax <topic>, e.g. entity | microflow | page]
+Parse error: line 99:32 mismatched input ':' expecting '}'  [see: mxcli syntax <topic>, e.g. entity | microflow | page]
+exit=1 real 0.7 s
+$ mxcli -p DispatchApp.mpr exec mdl/slice-seam-lane.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+(no module)
+-----------
+  ⚠ page DispatchSeam.Appointments_FromCore: DataView `dvRequest` contains input fields but is not inside a layout grid — label and input widths only render correctly inside a layoutgrid [MPR010]
+      at 
+      → Wrap dataview `dvRequest` in `layoutgrid { row { column (desktopwidth: autofill) { … } } }`
+
+  ⚠ line 149: `alter settings model …` (runtime) is deprecated; write `alter settings runtime …` — same meaning. Refused from `mdl 2`. (mxcli help MDL-DEPR555) [MDL-DEPR555]
+      at 
+      → Rewrite the section name: `model` becomes `runtime`. `runtime` is the App Settings tab that holds these values in Studio Pro (R10); `model` also collided with the agent-editor document type.
+
+4 issues: 0 errors, 2 warnings, 2 info (not shown)
+2 info notes not shown — run `mxcli check <repo>/pipelines/mendix-mpr/samples/fsm-template-9.24.2/slice-dispatch/mdl/slice-seam-lane.mdl` to see them (or pass --verbose)
+Reference error: statement 21: page 'DispatchSeam.Appointments_FromCore' has reference errors:
+  - entity not found: DispatchSeam.Appointment
+
+Refusing to execute: 1 unresolved reference(s) above. Nothing was written.
+  A name that resolves to nothing is written into the model as it stands and
+  is not reported until mxbuild rejects it (CE1613) — and a misspelled MODULE
+  is created rather than refused.
+  Fix them, or re-run with --no-check to apply the script anyway.
+exit=1 real 1.4 s
+$ mxcli -p DispatchApp.mpr exec --no-check mdl/slice-seam-lane.mdl   (pre-check does not see the external entities created by statement 9 of the same script)
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Created module: DispatchSeam
+Created constant: DispatchSeam.CoreODataUrl
+Created constant: DispatchSeam.CoreBaseUrl
+Created constant: DispatchSeam.CoreAPIUserName
+Created constant: DispatchSeam.CoreAPIPassword
+Created constant: DispatchSeam.JourneyUserPassword
+Created module role: DispatchSeam.User
+Created microflow: DispatchSeam.GetAuthHeaders
+Created OData client: DispatchSeam.DispatchCore
+  Cached $metadata: 9 entity types, 0 actions
+Created 4 navigation associations
+
+From DispatchSeam.DispatchCore into DispatchSeam: 4 created, 0 updated, 0 skipped, 0 failed
+Granted access on DispatchSeam.WorkOrder to DispatchSeam.User
+  Result: read *
+Granted access on DispatchSeam.Appointment to DispatchSeam.User
+  Result: read *
+Granted access on DispatchSeam.Ticket to DispatchSeam.User
+  Result: read *
+Granted access on DispatchSeam.MonoTechnician to DispatchSeam.User
+  Result: read *
+Created entity: DispatchSeam.PlanRequest
+Granted access on DispatchSeam.PlanRequest to DispatchSeam.User
+  Result: create, read *, write *
+Created microflow: DispatchSeam.ACT_Appointment_Plan
+Granted execute access on DispatchSeam.ACT_Appointment_Plan to DispatchSeam.User
+Created microflow: DispatchSeam.DS_PlanRequest_New
+Granted execute access on DispatchSeam.DS_PlanRequest_New to DispatchSeam.User
+Created page DispatchSeam.Appointments_FromCore
+Granted view access on DispatchSeam.Appointments_FromCore to DispatchSeam.User
+Created microflow: DispatchSeam.EnsureAccount
+Created microflow: DispatchSeam.ASU_Dispatch
+Updated model settings
+Added module roles Administration.User, RosterManagement.ViewAll, Skill.CallCenterEmployee, Technician.ViewAll, TimeRegistration.ViewAll to user role CallCenterEmployee
+Added module roles Administration.User, RosterManagement.EditAll, Scheduler._AddOn_SetSnapSettings, Skill.FunctionalAdministrator, Technician.EditAll, TimeRegistration.EditRegistrationCode, TimeRegistration.ViewAll, TimeRegistration.ViewTimeRegistration to user role FunctionalAdministrator
+Added module roles Administration.User, RosterManagement.ViewMy, Scheduler.EditMy, Scheduler._AddOn_ViewMyRegion, Skill.Mechanic, Technician.ViewAll, TimeRegistration.EditAll, TimeRegistration.EditMy, TimeRegistration.ViewAll to user role Mechanic
+Added module roles Administration.User, RosterManagement.EditAll, Scheduler.EditAll, Scheduler._AddOn_ExportScheduler, Skill.ServiceDeskEmployee, Technician.EditAll, TimeRegistration.ViewAll, TimeRegistration.ViewTimeRegistration, DispatchSeam.User to user role ServiceDeskEmployee
+Added module roles Administration.User, RosterManagement.ViewAll, Scheduler.EditAll, Skill.ServiceRegionManager, Technician.ViewAll, TimeRegistration.ViewAll, TimeRegistration.ViewMyRegion, TimeRegistration.ViewTimeRegistration, DispatchSeam.User to user role ServiceRegionManager
+Created user role: TechnicalAdministrator
+Set project security level to Production
+exit=0

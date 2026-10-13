@@ -1,0 +1,10 @@
+=== final state run 1 (after stubs-replace + stubs-copy; fresh starts of both apps)
+run J8-261013054003
+  FAIL  [read: monolith appointment listed in the slice over OData (ledger: TicketManagement.Appointment out-rows)] row J8-APPT-1 visible in the slice grid, and present in the MONOLITH database — []
+total 34.7 s
+exit=1
+=== final state run 2 (after stubs-replace + stubs-copy; fresh starts of both apps)
+run J8-261013054039
+  FAIL  [read: monolith appointment listed in the slice over OData (ledger: TicketManagement.Appointment out-rows)] row J8-APPT-1 visible in the slice grid, and present in the MONOLITH database — []
+total 33.5 s
+exit=1

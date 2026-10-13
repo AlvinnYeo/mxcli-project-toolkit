@@ -1,0 +1,46 @@
+$ mxcli -p DispatchApp.mpr exec mdl/slice-seam-stubs-replace.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+(no module)
+-----------
+  ⚠ Activity has error handling type 'CustomWithoutRollBack' inside a loop. Mendix requires error handling to be 'Rollback' inside looped activities (CE0644). [MDL006]
+      at TicketManagement.WorkOrder_RemoveTechnician
+      → Extract the activity with custom error handling into a submicroflow
+
+1 issues: 0 errors, 1 warnings, 0 info
+Dropped microflow: TicketManagement.Appointment_Save
+  Removed its execute grants to TicketManagement.User. A create of TicketManagement.Appointment_Save later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow TicketManagement.Appointment_Save to TicketManagement.User;
+Dropped microflow: TicketManagement.WorkOrderAssignment_RemoveCancelledDate
+  Removed its execute grants to TicketManagement.User. A create of TicketManagement.WorkOrderAssignment_RemoveCancelledDate later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow TicketManagement.WorkOrderAssignment_RemoveCancelledDate to TicketManagement.User;
+Dropped microflow: TicketManagement.WorkOrderAssignment_SetAutoAcceptedDate
+  Removed its execute grants to TicketManagement.User. A create of TicketManagement.WorkOrderAssignment_SetAutoAcceptedDate later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow TicketManagement.WorkOrderAssignment_SetAutoAcceptedDate to TicketManagement.User;
+Dropped microflow: TicketManagement.WorkOrder_GetCreate_WorkorderAssignmentForTechnician
+  Removed its execute grants to TicketManagement.User. A create of TicketManagement.WorkOrder_GetCreate_WorkorderAssignmentForTechnician later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow TicketManagement.WorkOrder_GetCreate_WorkorderAssignmentForTechnician to TicketManagement.User;
+Dropped microflow: TicketManagement.Appointment_PlanManual
+  Removed its execute grants to TicketManagement.User. A create of TicketManagement.Appointment_PlanManual later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow TicketManagement.Appointment_PlanManual to TicketManagement.User;
+Created microflow: TicketManagement.Appointment_PlanManual
+Dropped microflow: TicketManagement.WorkOrder_RemoveTechnician
+  Removed its execute grants to TicketManagement.User. A create of TicketManagement.WorkOrder_RemoveTechnician later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow TicketManagement.WorkOrder_RemoveTechnician to TicketManagement.User;
+Created microflow: TicketManagement.WorkOrder_RemoveTechnician
+Dropped microflow: Utils.Language_GetCurrent
+  Removed its execute grants to Utils.User. A create of Utils.Language_GetCurrent later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow Utils.Language_GetCurrent to Utils.User;
+Created microflow: Utils.Language_GetCurrent
+Dropped microflow: Utils.Language_TextInUserLanguage
+  Removed its execute grants to Utils.User. A create of Utils.Language_TextInUserLanguage later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow Utils.Language_TextInUserLanguage to Utils.User;
+Created microflow: Utils.Language_TextInUserLanguage
+Dropped microflow: Utils.Account_GetCurrent
+  Removed its execute grants to Utils.User. A create of Utils.Account_GetCurrent later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow Utils.Account_GetCurrent to Utils.User;
+Created microflow: Utils.Account_GetCurrent
+Dropped microflow: Utils.ValidationFeedback_Create
+  Removed its execute grants to Utils.User. A create of Utils.ValidationFeedback_Create later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow Utils.ValidationFeedback_Create to Utils.User;
+Created microflow: Utils.ValidationFeedback_Create
+Dropped microflow: Utils.ValidationFeedback_SetNotValid
+  Removed its execute grants to Utils.User. A create of Utils.ValidationFeedback_SetNotValid later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow Utils.ValidationFeedback_SetNotValid to Utils.User;
+Created microflow: Utils.ValidationFeedback_SetNotValid
+exit=0 real 3.3 s
+$ mxcli -p DispatchApp.mpr exec mdl/slice-seam-stubs-replace-2.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Created microflow: DispatchSeam.WorkOrder_RemoveTechnician_One
+Dropped microflow: TicketManagement.WorkOrder_RemoveTechnician
+  Removed its execute grants to TicketManagement.User. A create of TicketManagement.WorkOrder_RemoveTechnician later in this script or session carries them; a create in a later run does not — do the drop and the create in one script, or re-grant: grant execute on microflow TicketManagement.WorkOrder_RemoveTechnician to TicketManagement.User;
+Created microflow: TicketManagement.WorkOrder_RemoveTechnician
+exit=0 real 1.1 s

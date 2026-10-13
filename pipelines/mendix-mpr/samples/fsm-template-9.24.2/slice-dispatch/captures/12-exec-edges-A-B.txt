@@ -1,0 +1,31 @@
+$ mxcli -p DispatchApp.mpr exec mdl/edges-A-layout.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Created module: FSM_Specific
+Created layout FSM_Specific.LeftMenuLayout
+exit=0 real 0.7 s
+$ mxcli -p DispatchApp.mpr exec mdl/edges-A2-copied.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Created user role: Mechanic
+Created user role: ServiceRegionManager
+Created user role: ServiceDeskEmployee
+Created user role: FunctionalAdministrator
+Created user role: CallCenterEmployee
+Created module: ModuleIntegration_Administration_Impl
+Created rule: ModuleIntegration_Administration_Impl.Rule_User_HasUserRole_SDE
+Created rule: ModuleIntegration_Administration_Impl.Rule_User_HasUserRole_SRM
+Created rule: ModuleIntegration_Administration_Impl.Rule_User_HasUserRole_Technician
+exit=0 real 1.4 s
+$ mxcli -p DispatchApp.mpr exec mdl/edges-B-stubs.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Reference error: statement 43: association NativeMobileTimeRegistration.NativeTimeRegistration_NativeAppointment: TO entity NativeMobile.NativeAppointment does not exist — exec would stop at this statement ("child entity not found") with every statement before it already applied
+Reference error: statement 59: microflow 'NativeMobile.NativeAppointment_Get_BySystemID' has reference errors:
+  - parameter $NativeAppointmentList_optional of microflow NativeMobile.NativeAppointment_Get_BySystemID: entity NativeMobile.NativeAppointment does not exist
+  - return type of microflow NativeMobile.NativeAppointment_Get_BySystemID: entity NativeMobile.NativeAppointment does not exist
+
+Refusing to execute: 2 unresolved reference(s) above. Nothing was written.
+  A name that resolves to nothing is written into the model as it stands and
+  is not reported until mxbuild rejects it (CE1613) — and a misspelled MODULE
+  is created rather than refused.
+  Fix them, or re-run with --no-check to apply the script anyway.
+exit=1 real 1.9 s
+$ (re-run) mxcli exec mdl/edges-B-stubs.mdl with second-order NativeMobile.NativeAppointment: exit 0, no reference errors

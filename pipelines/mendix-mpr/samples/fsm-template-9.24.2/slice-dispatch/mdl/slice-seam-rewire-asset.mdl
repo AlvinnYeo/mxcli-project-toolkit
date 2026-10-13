@@ -1,0 +1,504 @@
+mdl 1;
+-- Increment 8 seam: AssetManagement.Asset stays a CUT STUB in DispatchApp (not published in DispatchCore v1), so
+-- TicketManagement.Ticket_Asset did not come back with the external entities (P6: a navigation exists only inside one
+-- module; Asset would arrive as TicketManagement.Asset, not AssetManagement.Asset). Every Ticket_Asset path is a
+-- hand-off: widgets show a HAND-OFF text, the planner's asset filters/search are ignored. Technician navigations of
+-- the external WorkOrder now end at TicketManagement.MonoTechnician (recipe B mirror). Documents re-created from their
+-- own describe output (0 'NOT re-executable' lines in each).
+-- create or modify refuses to splice this change ("every path ... ends the flow with a return"); rebuild deliberately
+drop microflow Scheduler.PlannerContext_GetWorkOrders;
+create or modify microflow Scheduler.PlannerContext_GetWorkOrders (
+  @position(-2715, 0)
+  $PlannerContext: Scheduler.PlannerContext,
+  @position(-2715, -80)
+  $PageContext: Scheduler.PageContext
+)
+returns List of TicketManagement.WorkOrder
+folder 'Objects/PlannerContext'
+begin
+  @start(-2715, 85)
+  @position(-2570, 85)
+  @curve(from: (30, 0), to: (-30, 0))
+  declare $Amount Integer = $PageContext/Page * 20;
+  @position(-2380, 85)
+  @curve(from: (30, 0), to: (-30, 0))
+  declare $SearchString String = trim($PageContext/SearchString);
+  @position(-2190, 85)
+  @curve(from: (30, 0), to: (-30, 0))
+  declare $TicketID_FilterQuery String = trim($PageContext/FilterTicketID);
+  @position(-2010, 85)
+  @curve(from: (30, 0), to: (-30, 0))
+  declare $WorkOrderID_FilterQuery String = trim($PageContext/FilterWorkOrderID);
+  @position(-1840, 85)
+  @curve(from: (30, 0), to: (-30, 0))
+  declare $AssetID_FilterQuery String = trim($PageContext/FilterAssetID);
+  @position(-1670, 85)
+  @curve(from: (30, 0), to: (-30, 0))
+  declare $Technician_FilterQuery String = trim($PageContext/FilterTechnician);
+  @position(-1500, 85)
+  @curve(from: (30, 0), to: (-15, 0))
+  declare $Location_FilterQuery String = trim($PageContext/FilterAddress);
+  @position(-1325, 85)
+  @curve(from: (15, 0), to: (-15, 0))
+  @merge(-1165, 85)
+  @caption 'User is SDE?'
+  if not(ModuleIntegration_Administration_Impl.Rule_User_HasUserRole_SDE(User = $currentUser/System.owner/Administration.Account)) then
+    @position(-1325, 860)
+    @anchor(to: top)
+    @curve(from: (15, 0), to: (-15, 0))
+    @caption 'User is SRM?'
+    if ModuleIntegration_Administration_Impl.Rule_User_HasUserRole_SRM(User = $currentUser/System.owner/Administration.Account) then
+      @position(-1165, 860)
+      @anchor(false: (from: top, to: bottom))
+      @curve(from: (0, -15), to: (0, 15))
+      @caption 'Show all?'
+      if $PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty then
+        @position(-990, 860)
+        @curve(from: (30, 0), to: (-30, 0))
+        retrieve $NextWorkOrder_SRM_1 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = '_New' or Status = 'Partially_planned') or ($PageContext/Filter = '_New' and Status = '_New') or ($PageContext/Filter = 'PartiallyPlanned' and Status = 'Partially_planned')]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString)]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or true()]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or true()]
+    [($PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty and (not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician) and not(TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup)) or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/ Technician.TechnicianGroup_Technician/Technician.TechnicianGroup/ Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]' or TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup/ Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]') or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup != empty and (TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician /Technician.TechnicianGroup_Technician = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup or TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup))]
+    limit 1
+    offset $Amount;
+        @position(-805, 860)
+        @curve(from: (30, 0), to: (-15, 0))
+        change $PageContext (HasMoreData = $NextWorkOrder_SRM_1 != empty);
+        @position(-625, 860)
+        @curve(from: (15, 0), to: (-30, 0))
+        @caption 'Sorting'
+        case $PageContext/Sorting
+          when Ticket_ID___Ascending then
+            @position(-220, 630)
+            @curve(to: (-15, 0))
+            retrieve $WorkOrderList_SRM_1 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = '_New' or Status = 'Partially_planned') or ($PageContext/Filter = '_New' and Status = '_New') or ($PageContext/Filter = 'PartiallyPlanned' and Status = 'Partially_planned')]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString)]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or true()]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or true()]
+    [($PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty and (not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician) and not(TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup)) or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/ Technician.TechnicianGroup_Technician/Technician.TechnicianGroup/ Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]' or TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup/ Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]') or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup != empty and (TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician /Technician.TechnicianGroup_Technician = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup or TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup))]
+    sort by TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket.TicketID asc
+    limit $Amount;
+            @position(-80, 630)
+            return $WorkOrderList_SRM_1;
+          when Ticket_ID___Descending then
+            @position(-220, 740)
+            @curve(to: (-15, 0))
+            retrieve $WorkOrderList_SRM_2 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = '_New' or Status = 'Partially_planned') or ($PageContext/Filter = '_New' and Status = '_New') or ($PageContext/Filter = 'PartiallyPlanned' and Status = 'Partially_planned')]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString)]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or true()]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or true()]
+    [($PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty and (not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician) and not(TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup)) or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/ Technician.TechnicianGroup_Technician/Technician.TechnicianGroup/ Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]' or TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup/ Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]') or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup != empty and (TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician /Technician.TechnicianGroup_Technician = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup or TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup))]
+    sort by TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket.TicketID desc
+    limit $Amount;
+            @position(-80, 740)
+            return $WorkOrderList_SRM_2;
+          when (empty) then
+            @position(-220, 860)
+            @curve(to: (-15, 0))
+            retrieve $WorkOrderList_SRM_3 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = '_New' or Status = 'Partially_planned') or ($PageContext/Filter = '_New' and Status = '_New') or ($PageContext/Filter = 'PartiallyPlanned' and Status = 'Partially_planned')]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString)]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or true()]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or true()]
+    [($PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty and (not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician) and not(TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup)) or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/ Technician.TechnicianGroup_Technician/Technician.TechnicianGroup/ Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]' or TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup/ Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]') or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup != empty and (TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician /Technician.TechnicianGroup_Technician = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup or TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup))]
+    sort by DueDate asc
+    limit $Amount;
+            @position(-80, 860)
+            return $WorkOrderList_SRM_3;
+          when Due_date___Descending then
+            @position(-220, 980)
+            @curve(from: (30, 0), to: (-15, 0))
+            retrieve $WorkOrderList_SRM_4 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = '_New' or Status = 'Partially_planned') or ($PageContext/Filter = '_New' and Status = '_New') or ($PageContext/Filter = 'PartiallyPlanned' and Status = 'Partially_planned')]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString)]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or true()]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or true()]
+    [($PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty and (not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician) and not(TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup)) or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/ Technician.TechnicianGroup_Technician/Technician.TechnicianGroup/ Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]' or TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup/ Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]') or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup != empty and (TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician /Technician.TechnicianGroup_Technician = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup or TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup))]
+    sort by DueDate desc
+    limit $Amount;
+            @position(-80, 980)
+            return $WorkOrderList_SRM_4;
+          when Workorder_ID___Ascending then
+            @position(-220, 1095)
+            @curve(to: (-15, 0))
+            retrieve $WorkOrderList_SRM_5 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = '_New' or Status = 'Partially_planned') or ($PageContext/Filter = '_New' and Status = '_New') or ($PageContext/Filter = 'PartiallyPlanned' and Status = 'Partially_planned')]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString)]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or true()]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or true()]
+    [($PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty and (not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician) and not(TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup)) or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/ Technician.TechnicianGroup_Technician/Technician.TechnicianGroup/ Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]' or TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup/ Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]') or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup != empty and (TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician /Technician.TechnicianGroup_Technician = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup or TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup))]
+    sort by WorkOrderID asc
+    limit $Amount;
+            @position(-80, 1095)
+            return $WorkOrderList_SRM_5;
+          when Workorder_ID___Descending then
+            @position(-220, 1210)
+            @curve(to: (-15, 0))
+            retrieve $WorkOrderList_SRM_6 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = '_New' or Status = 'Partially_planned') or ($PageContext/Filter = '_New' and Status = '_New') or ($PageContext/Filter = 'PartiallyPlanned' and Status = 'Partially_planned')]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString)]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or true()]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or true()]
+    [($PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty and (not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician) and not(TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup)) or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician/ Technician.TechnicianGroup_Technician/Technician.TechnicianGroup/ Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]' or TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup/ Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]') or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup != empty and (TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician /Technician.TechnicianGroup_Technician = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup or TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup))]
+    sort by WorkOrderID desc
+    limit $Amount;
+            @position(-80, 1210)
+            return $WorkOrderList_SRM_6;
+        end case;
+      end if;
+    @position(-1325, 1595)
+    @anchor(to: top)
+    @curve(from: (15, 0), to: (-30, 0))
+    @caption 'User is Technician?'
+    elsif ModuleIntegration_Administration_Impl.Rule_User_HasUserRole_Technician(User = $currentUser/System.owner/Administration.Account) then
+      @position(-990, 1595)
+      @curve(from: (30, 0), to: (-30, 0))
+      retrieve $NextWorkOrder_Technician_1 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = '_New' or Status = 'Partially_planned') or ($PageContext/Filter = '_New' and Status = '_New') or ($PageContext/Filter = 'PartiallyPlanned' and Status = 'Partially_planned')]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString)]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or true()]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or true()]
+    [(not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician) and not(TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup)) or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician /Administration.Account_Technician = '[%CurrentUser%]' or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty and TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup /Technician.TechnicianGroup_Technician/Technician.Technician /Administration.Account_Technician = '[%CurrentUser%]') or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup != empty and TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup)]
+    limit 1
+    offset $Amount;
+      @position(-800, 1595)
+      @curve(from: (30, 0), to: (-15, 0))
+      change $PageContext (HasMoreData = if $NextWorkOrder_Technician_1 != empty then true
+else false);
+      @position(-625, 1595)
+      @curve(from: (15, 0), to: (-30, 0))
+      @caption 'Sorting'
+      case $PageContext/Sorting
+        when Ticket_ID___Ascending then
+          @position(-220, 1365)
+          @curve(to: (-15, 0))
+          retrieve $WorkOrderList_Technician_1 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = '_New' or Status = 'Partially_planned') or ($PageContext/Filter = '_New' and Status = '_New') or ($PageContext/Filter = 'PartiallyPlanned' and Status = 'Partially_planned')]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString)]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or true()]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or true()]
+    [(not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician) and not(TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup)) or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician /Administration.Account_Technician = '[%CurrentUser%]' or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty and TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup /Technician.TechnicianGroup_Technician/Technician.Technician /Administration.Account_Technician = '[%CurrentUser%]') or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup != empty and TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup)]
+    sort by TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket.TicketID asc
+    limit $Amount;
+          @position(-80, 1365)
+          return $WorkOrderList_Technician_1;
+        when Ticket_ID___Descending then
+          @position(-220, 1475)
+          @curve(to: (-15, 0))
+          retrieve $WorkOrderList_Technician_2 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = '_New' or Status = 'Partially_planned') or ($PageContext/Filter = '_New' and Status = '_New') or ($PageContext/Filter = 'PartiallyPlanned' and Status = 'Partially_planned')]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString)]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or true()]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or true()]
+    [(not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician) and not(TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup)) or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician /Administration.Account_Technician = '[%CurrentUser%]' or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty and TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup /Technician.TechnicianGroup_Technician/Technician.Technician /Administration.Account_Technician = '[%CurrentUser%]') or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup != empty and TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup)]
+    sort by TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket.TicketID desc
+    limit $Amount;
+          @position(-80, 1475)
+          return $WorkOrderList_Technician_2;
+        when (empty) then
+          @position(-220, 1595)
+          @curve(to: (-15, 0))
+          retrieve $WorkOrderList_Technician_3 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = '_New' or Status = 'Partially_planned') or ($PageContext/Filter = '_New' and Status = '_New') or ($PageContext/Filter = 'PartiallyPlanned' and Status = 'Partially_planned')]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString)]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or true()]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or true()]
+    [(not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician) and not(TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup)) or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician /Administration.Account_Technician = '[%CurrentUser%]' or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty and TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup /Technician.TechnicianGroup_Technician/Technician.Technician /Administration.Account_Technician = '[%CurrentUser%]') or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup != empty and TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup)]
+    sort by DueDate asc
+    limit $Amount;
+          @position(-80, 1595)
+          return $WorkOrderList_Technician_3;
+        when Due_date___Descending then
+          @position(-220, 1715)
+          @curve(to: (-15, 0))
+          retrieve $WorkOrderList_Technician_4 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = '_New' or Status = 'Partially_planned') or ($PageContext/Filter = '_New' and Status = '_New') or ($PageContext/Filter = 'PartiallyPlanned' and Status = 'Partially_planned')]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString)]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or true()]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or true()]
+    [(not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician) and not(TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup)) or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician /Administration.Account_Technician = '[%CurrentUser%]' or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty and TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup /Technician.TechnicianGroup_Technician/Technician.Technician /Administration.Account_Technician = '[%CurrentUser%]') or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup != empty and TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup)]
+    sort by DueDate desc
+    limit $Amount;
+          @position(-80, 1715)
+          return $WorkOrderList_Technician_4;
+        when Workorder_ID___Ascending then
+          @position(-220, 1840)
+          @curve(to: (-15, 0))
+          retrieve $WorkOrderList_Technician_5 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = '_New' or Status = 'Partially_planned') or ($PageContext/Filter = '_New' and Status = '_New') or ($PageContext/Filter = 'PartiallyPlanned' and Status = 'Partially_planned')]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString)]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or true()]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or true()]
+    [(not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician) and not(TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup)) or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician /Administration.Account_Technician = '[%CurrentUser%]' or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty and TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup /Technician.TechnicianGroup_Technician/Technician.Technician /Administration.Account_Technician = '[%CurrentUser%]') or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup != empty and TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup)]
+    sort by WorkOrderID asc
+    limit $Amount;
+          @position(-80, 1840)
+          return $WorkOrderList_Technician_5;
+        when Workorder_ID___Descending then
+          @position(-220, 1965)
+          @curve(to: (-15, 0))
+          retrieve $WorkOrderList_Technician_6 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = '_New' or Status = 'Partially_planned') or ($PageContext/Filter = '_New' and Status = '_New') or ($PageContext/Filter = 'PartiallyPlanned' and Status = 'Partially_planned')]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString)]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or true()]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or true()]
+    [(not(TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician) and not(TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup)) or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician /Administration.Account_Technician = '[%CurrentUser%]' or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty and TicketManagement.WorkOrder_TechnicianGroup/Technician.TechnicianGroup /Technician.TechnicianGroup_Technician/Technician.Technician /Administration.Account_Technician = '[%CurrentUser%]') or ($PlannerContext/Scheduler.PlannerContext_TechnicianGroup != empty and TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup)]
+    sort by WorkOrderID desc
+    limit $Amount;
+          @position(-80, 1965)
+          return $WorkOrderList_Technician_6;
+      end case;
+    else
+      @position(-1325, 1720)
+      @anchor(to: top)
+      return empty;
+    end if;
+  end if;
+  join shared1;
+  @position(-1165, 85)
+  merge shared1;
+  @position(-990, 85)
+  @curve(from: (30, 0), to: (-30, 0))
+  retrieve $NextWorkOrder_1 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = '_New' or Status = 'Partially_planned') or ($PageContext/Filter = '_New' and Status = '_New') or ($PageContext/Filter = 'PartiallyPlanned' and Status = 'Partially_planned')]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString)]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or true()]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or true()]
+    [$PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician /Technician.TechnicianGroup_Technician = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup or TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup]
+    limit 1
+    offset $Amount;
+  @position(-800, 85)
+  @curve(from: (30, 0), to: (-15, 0))
+  change $PageContext (HasMoreData = $NextWorkOrder_1 != empty);
+  @position(-625, 85)
+  @curve(from: (15, 0), to: (-30, 0))
+  @caption 'Sorting'
+  case $PageContext/Sorting
+    when Ticket_ID___Ascending then
+      @position(-220, -145)
+      @curve(to: (-15, 0))
+      retrieve $WorkOrderList_SDE_1 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = '_New' or Status = 'Partially_planned') or ($PageContext/Filter = '_New' and Status = '_New') or ($PageContext/Filter = 'PartiallyPlanned' and Status = 'Partially_planned')]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString)]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or true()]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or true()]
+    [$PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician /Technician.TechnicianGroup_Technician = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup or TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup]
+    sort by TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket.TicketID asc
+    limit $Amount;
+      @position(-80, -145)
+      return $WorkOrderList_SDE_1;
+    when Ticket_ID___Descending then
+      @position(-220, -35)
+      @curve(to: (-15, 0))
+      retrieve $WorkOrderList_2 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = '_New' or Status = 'Partially_planned') or ($PageContext/Filter = '_New' and Status = '_New') or ($PageContext/Filter = 'PartiallyPlanned' and Status = 'Partially_planned')]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString)]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or true()]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or true()]
+    [$PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician /Technician.TechnicianGroup_Technician = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup or TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup]
+    sort by TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket.TicketID desc
+    limit $Amount;
+      @position(-80, -35)
+      return $WorkOrderList_2;
+    when (empty) then
+      @position(-220, 85)
+      @curve(to: (-15, 0))
+      retrieve $WorkOrderList_3 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = '_New' or Status = 'Partially_planned') or ($PageContext/Filter = '_New' and Status = '_New') or ($PageContext/Filter = 'PartiallyPlanned' and Status = 'Partially_planned')]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString)]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or true()]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or true()]
+    [$PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician /Technician.TechnicianGroup_Technician = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup or TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup]
+    sort by DueDate asc
+    limit $Amount;
+      @position(-80, 85)
+      return $WorkOrderList_3;
+    when Due_date___Descending then
+      @position(-220, 200)
+      @curve(to: (-15, 0))
+      retrieve $WorkOrderList_4 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = '_New' or Status = 'Partially_planned') or ($PageContext/Filter = '_New' and Status = '_New') or ($PageContext/Filter = 'PartiallyPlanned' and Status = 'Partially_planned')]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString)]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or true()]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or true()]
+    [$PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician /Technician.TechnicianGroup_Technician = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup or TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup]
+    sort by DueDate desc
+    limit $Amount;
+      @position(-80, 200)
+      return $WorkOrderList_4;
+    when Workorder_ID___Ascending then
+      @position(-220, 320)
+      @curve(to: (-15, 0))
+      retrieve $WorkOrderList_5 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = '_New' or Status = 'Partially_planned') or ($PageContext/Filter = '_New' and Status = '_New') or ($PageContext/Filter = 'PartiallyPlanned' and Status = 'Partially_planned')]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString)]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or true()]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or true()]
+    [$PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician /Technician.TechnicianGroup_Technician = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup or TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup]
+    sort by WorkOrderID asc
+    limit $Amount;
+      @position(-80, 320)
+      return $WorkOrderList_5;
+    when Workorder_ID___Descending then
+      @position(-220, 440)
+      @curve(to: (-15, 0))
+      retrieve $WorkOrderList_6 from TicketManagement.WorkOrder
+    where [$PageContext/Filter = empty or $PageContext/Filter = 'All' and (Status = '_New' or Status = 'Partially_planned') or ($PageContext/Filter = '_New' and Status = '_New') or ($PageContext/Filter = 'PartiallyPlanned' and Status = 'Partially_planned')]
+    [$SearchString = '' or contains(ShortDescription, $SearchString) or contains(Description, $SearchString) or contains(WorkOrderID, $SearchString) or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $SearchString) or TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket[contains(TicketID, $SearchString) or contains(ShortDescription, $SearchString) or contains(Description, $SearchString)]]
+    [$TicketID_FilterQuery = '' or contains(TicketManagement.WorkOrder_Ticket/TicketManagement.Ticket/TicketID, $TicketID_FilterQuery)]
+    [$WorkOrderID_FilterQuery = '' or contains(WorkOrderID, $WorkOrderID_FilterQuery)]
+    [$AssetID_FilterQuery = '' or true()]
+    [$Technician_FilterQuery = '' or contains(TicketManagement._WorkOrder_Technician/TicketManagement.MonoTechnician/TechnicianName, $Technician_FilterQuery)]
+    [$Location_FilterQuery = '' or true()]
+    [$PlannerContext/Scheduler.PlannerContext_TechnicianGroup = empty or TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment [Status = 'Accepted' or Status = 'Auto_accepted'] /TicketManagement.WorkOrderAssignment_Technician/Technician.Technician /Technician.TechnicianGroup_Technician = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup or TicketManagement.WorkOrder_TechnicianGroup = $PlannerContext/Scheduler.PlannerContext_TechnicianGroup]
+    sort by WorkOrderID desc
+    limit $Amount;
+      @position(-80, 440)
+      return $WorkOrderList_6;
+  end case;
+end;
+
+
+
+-- widgets: replaced in place (alter page), not re-created from describe — the describe round trip of PageContext_View
+-- failed at exec (`dynamictext text14: Visible: Status in (…): Scheduler.PlannerContext_WorkOrder_Selected has no attribute Status`)
+alter page Scheduler.PageContext_View {
+  replace textBox2 with {
+    dynamictext textBox2 (Content: 'HAND-OFF: Location is served by the monolith (asset not published)')
+  };
+  replace textBox7 with {
+    dynamictext textBox7 (Content: 'HAND-OFF: Asset ID is served by the monolith (asset not published)')
+  };
+  replace textBox14 with {
+    dynamictext textBox14 (Content: 'HAND-OFF: Asset name is served by the monolith (asset not published)')
+  };
+};
+alter snippet Scheduler.Snippet_Technician_Tooltip {
+  replace dataView1 with {
+    dynamictext dataView1 (Content: 'HAND-OFF: working location (asset) is served by the monolith')
+  };
+};
+alter page Technician.Technician_ConfirmRemove {
+  replace grid4 with {
+    datagrid grid4 (
+        DataSource: database from TicketManagement.WorkOrder where [Status = 'In_progress'] [TicketManagement.Appointment_WorkOrder/TicketManagement.Appointment/TicketManagement.AppointmentAssignment_Appointment/TicketManagement.AppointmentAssignment/TicketManagement.AppointmentAssignment_Technician = $Technician] sort by DisplayStart desc,
+        Selection: Single
+      ) {
+        -- Context: $currentObject (TicketManagement.WorkOrder), $grid4 (selection)
+        column (Attribute: Description, Caption: 'Description')
+        column (Attribute: WorkOrder_Ticket/CreationTime, Caption: 'Creation date')
+        column (Attribute: WorkOrder_Skill/SkillName, Caption: 'Skills')
+        column (Attribute: WorkOrder_Ticket/Ticket_Priority/Description, Caption: 'Priority')
+        column (Attribute: Status, Caption: 'Status')
+        column (Attribute: DisplayStart, Caption: 'Start of work')
+        column (Attribute: DisplayEnd, Caption: 'End of work')
+      }
+  };
+  replace grid3 with {
+    datagrid grid3 (
+        DataSource: database from TicketManagement.WorkOrder where [Status != 'Finished'] [Status != 'In_progress'] [TicketManagement.Appointment_WorkOrder/TicketManagement.Appointment/TicketManagement.AppointmentAssignment_Appointment/TicketManagement.AppointmentAssignment/TicketManagement.AppointmentAssignment_Technician = $Technician] sort by DisplayStart desc,
+        Selection: Single
+      ) {
+        -- Context: $currentObject (TicketManagement.WorkOrder), $grid3 (selection)
+        column (Attribute: Description, Caption: 'Description')
+        column (Attribute: WorkOrder_Skill/SkillName, Caption: 'Skills')
+        column (Attribute: WorkOrder_Ticket/Ticket_Priority/Description, Caption: 'Priority')
+        column (Attribute: Status, Caption: 'Status')
+        column (Attribute: DisplayStart, Caption: 'Start of work')
+        column (Attribute: DisplayEnd, Caption: 'End of work')
+        column (Attribute: SetOnSpecificTechnician, Caption: 'Specific to this technician')
+        column (Attribute: SetOnSpecificTime, Caption: 'On specific time')
+      }
+  };
+};
+alter snippet Technician.Snippet_Technician_DataTabs {
+  replace grid1 with {
+    datagrid grid1 (
+        DataSource: database from TicketManagement.WorkOrder where [TicketManagement.WorkOrderAssignment_WorkOrder/TicketManagement.WorkOrderAssignment[Status = 'Auto_accepted' or Status = 'Accepted' or Status = 'Pending']/TicketManagement.WorkOrderAssignment_Technician = $Technician] sort by DisplayStart asc,
+        Selection: Single
+      ) {
+        -- Context: $currentObject (TicketManagement.WorkOrder), $grid1 (selection)
+        column (Attribute: WorkOrder_Ticket/Description, Caption: 'Ticket description')
+        column (Attribute: WorkOrder_Ticket/CreationTime, Caption: 'Ticket Creation time')
+        column (Attribute: WorkOrder_Skill/SkillName, Caption: 'Skills')
+        column (Attribute: WorkOrder_Ticket/Ticket_Priority/PriorityLevel, Caption: 'Priority')
+        column (Attribute: Status, Caption: 'Status')
+        column (Attribute: DisplayStart, Caption: 'Work start')
+        column (Attribute: DisplayEnd, Caption: 'Work end')
+        column (Caption: ' ', ShowContentAs: customContent) {
+          actionbutton actionButton10 (
+            Caption: 'Open',
+            Action: show page TicketManagement.WorkOrder_View(WorkOrder = $currentObject)
+          )
+        }
+      }
+  };
+};
+
+-- Roster ViewMy (Mechanic) XPath walks Roster -> asset -> ticket -> assignment -> technician -> account across both apps:
+-- no external entity can carry it (seam limits -> XPath). Equivalent of [false()]: the rule is removed (hand-off, Mobile).
+revoke all on entity RosterManagement.Roster from RosterManagement.ViewMy;

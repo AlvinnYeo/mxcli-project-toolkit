@@ -1,0 +1,4 @@
+$ mxcli -p DispatchApp.mpr exec mdl/slice-seam-pages.mdl
+Connected to: DispatchApp.mpr (Mendix 11.13.0)
+Altered page Scheduler.PageContext_View
+exit=0 real 1.1 s

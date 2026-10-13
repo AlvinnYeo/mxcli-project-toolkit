@@ -1,0 +1,12 @@
+cut-ledger: 1081 crossing refs -> 875 ledger rows (425 out, 446 in from the catalog; 4 check-only; 0 extra) -> cut-ledger.tsv
+  by resolution: handoff 452, platform 6, resolved 115, retire 31, stub 271
+  exporter-only: RosterManagement: exporter counts 6 unit(s) naming it, ledger has 0 out-edges to it
+  exporter-only: Skill: exporter counts 4 unit(s) naming it, ledger has 0 out-edges to it
+  exporter-only: Technician: exporter counts 30 unit(s) naming it, ledger has 0 out-edges to it
+  exporter-only: Technician: exporter counts 5 unit(s) naming it, ledger has 0 out-edges to it
+  exporter-only: RosterManagement: exporter counts 7 unit(s) naming it, ledger has 0 out-edges to it
+  exporter-only: Skill: exporter counts 18 unit(s) naming it, ledger has 0 out-edges to it
+  exporter-only: Technician: exporter counts 8 unit(s) naming it, ledger has 0 out-edges to it
+  exporter-only: Technician: exporter counts 2 unit(s) naming it, ledger has 0 out-edges to it
+  rules never used (lines): 9
+rc=0

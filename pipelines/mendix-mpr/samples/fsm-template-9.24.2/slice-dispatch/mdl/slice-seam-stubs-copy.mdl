@@ -1,0 +1,185 @@
+mdl 1;
+-- Increment 8 seam-live: TicketManagement CUT STUB microflows whose logic runs on slice-side data plus external reads:
+-- the monolith's own body (describe, 10.24 copy) copied and passed through tools/seam-rebind.py (R1-R13). HAND-OFF brackets:
+--   TicketManagement.WorkOrder_GetSelectableTechnicians: [Technician.Technician_Skill/Skill.Skill/TicketManagement.WorkOrder_Skill/TicketManagement.MonoSkill/SkillName = $WorkOrder/SkillName]
+--   TicketManagement.WorkOrder_GetTechnicianList_Preferred: REVERSE [TicketManagement.WorkOrderAssignment_Technician/TicketManagement.WorkOrderAssignment [Status = 'Auto_accepted' or Status = 'Accepted'] /TicketManagem
+drop microflow TicketManagement.CurrentUser_HasTechnicianInGroup;
+create or modify microflow TicketManagement.CurrentUser_HasTechnicianInGroup (
+  @position(-1160, 210)
+  $Technician: Technician.Technician
+)
+returns Boolean
+begin
+  @start(-1160, 310)
+  @position(-1015, 310)
+  @curve(from: (30, 0), to: (-15, 0))
+  retrieve $TechnicianGroup from Technician.TechnicianGroup
+    where [Technician.TechnicianGroup_Account_Manager = '[%CurrentUser%]']
+    [Technician.TechnicianGroup_Technician = $Technician]
+    first;
+  @position(-840, 310)
+  @curve(from: (15, 0), to: (-15, 0))
+  @caption 'Exists?'
+  if $TechnicianGroup != empty then
+    @position(-715, 310)
+    return true;
+  else
+    @position(-840, 400)
+    @anchor(to: top)
+    return false;
+  end if;
+end;
+
+drop microflow TicketManagement.WorkOrder_GetMinutesToPlan;
+create or modify microflow TicketManagement.WorkOrder_GetMinutesToPlan (
+  @position(100, 20)
+  $AvailableTimeslot: Scheduler.AvailableTimeslot,
+  @position(100, 105)
+  $WorkOrder: TicketManagement.WorkOrder
+)
+returns Integer
+begin
+  @start(100, 200)
+  @position(225, 200)
+  @curve(from: (30, 0), to: (-30, 0))
+  declare $TimeLeftToPlan Integer = $WorkOrder/ExpectedDuration - $WorkOrder/MinutesPlanned;
+  @curve(from: (30, 0), to: (-15, 0))
+  declare $TimeInAvailableTimeslot Integer = round(minutesBetween($AvailableTimeslot/MainStartDate,$AvailableTimeslot/MainEndDate));
+  @position(520, 200)
+  return min($TimeLeftToPlan,$TimeInAvailableTimeslot);
+end;
+
+drop microflow TicketManagement.WorkOrder_GetSelectableTechnicians;
+create or modify microflow TicketManagement.WorkOrder_GetSelectableTechnicians (
+  @position(-305, 100)
+  $WorkOrder: TicketManagement.WorkOrder
+)
+returns List of Technician.Technician
+begin
+  @start(-305, 215)
+  @position(-195, 215)
+  @curve(from: (15, 0), to: (-15, 0))
+  @caption 'Status new or partially planned?'
+  if $WorkOrder/Status = '_New'
+or 
+$WorkOrder/Status = 'Partially_planned' then
+    @position(-10, 215)
+    @curve(from: (15, 0), to: (-30, 0))
+    @caption 'Skill required?'
+    if $WorkOrder/TicketManagement.WorkOrder_Skill != empty then
+      @position(210, 215)
+      retrieve $TechnicianList_WithSkill from Technician.Technician
+    where [true()]
+    [IsActive]
+    sort by TechnicianID asc;
+      @position(400, 215)
+      $TechnicianList_WithAllSkills = call microflow Skill.WorkOrder_CheckTechnicianListOnSkills(WorkOrder = $WorkOrder, TechnicianList = $TechnicianList_WithSkill);
+      @position(570, 215)
+      return $TechnicianList_WithAllSkills;
+    else
+      @position(210, 330)
+      @curve(from: (30, 0), to: (-15, 0))
+      retrieve $TechnicianList_All from Technician.Technician
+    where IsActive
+    sort by TechnicianID asc;
+      @position(570, 330)
+      return $TechnicianList_All;
+    end if;
+  else
+    @position(-195, 400)
+    @anchor(to: top)
+    return empty;
+  end if;
+end;
+
+drop microflow TicketManagement.WorkOrder_GetTechnicianList_Preferred;
+create or modify microflow TicketManagement.WorkOrder_GetTechnicianList_Preferred (
+  @position(-955, 80)
+  $WorkOrder: TicketManagement.WorkOrder
+)
+returns List of Technician.Technician
+begin
+  @start(-955, 195)
+  @position(-830, 195)
+  @curve(from: (15, 0), to: (-30, 0))
+  @caption 'Status new or partially?'
+  if $WorkOrder/Status = '_New'
+or
+$WorkOrder/Status = 'Partially_planned' then
+    @position(-615, 195)
+    @curve(from: (30, 0), to: (-15, 0))
+    retrieve $TechnicianList_AssignedWO from Technician.Technician
+    where [false()]
+    [IsActive];
+    @position(-440, 195)
+    @curve(from: (15, 0), to: (-30, 0))
+    @caption 'Skill required?'
+    if $WorkOrder/TicketManagement.WorkOrder_Skill != empty then
+      @position(-180, 195)
+      @curve(from: (30, 0), to: (-15, 0))
+      $TechnicianList_WithAllSkills = call microflow Skill.WorkOrder_CheckTechnicianListOnSkills(WorkOrder = $WorkOrder, TechnicianList = $TechnicianList_AssignedWO);
+      @position(20, 195)
+      return $TechnicianList_WithAllSkills;
+    else
+      @position(-440, 295)
+      @anchor(to: top)
+      return $TechnicianList_AssignedWO;
+    end if;
+  else
+    @position(-830, 285)
+    @anchor(to: top)
+    return empty;
+  end if;
+end;
+
+-- Appointment_Validate_ManualPlanning NOT copied: its body calls two more monolith validators (second order); stays a CUT STUB
+
+drop microflow TicketManagement.WorkOrder_SetPlannerContext;
+create or modify microflow TicketManagement.WorkOrder_SetPlannerContext (
+  @position(-170, 80)
+  $WorkOrder: TicketManagement.WorkOrder,
+  @position(-170, 0)
+  $PlannerContext: Scheduler.PlannerContext
+)
+begin
+  @start(-170, 200)
+  @position(-30, 200)
+  @curve(from: (30, 0), to: (-30, 0))
+  change $PlannerContext (Scheduler.PlannerContext_WorkOrder_Selected = $WorkOrder);
+  @position(160, 200)
+  @curve(from: (30, 0), to: (-15, 0))
+  $PageContext = call microflow Scheduler.PlannerContext_GetPageContext(PlannerContext = $PlannerContext);
+  @position(335, 200)
+  @curve(from: (15, 0), to: (-30, 0))
+  @caption 'found?'
+  if $PageContext != empty then
+    @position(510, 200)
+    @curve(from: (30, 0), to: (-15, 0))
+    change $PageContext (_ShowFooter = $WorkOrder != empty);
+    @position(640, 200)
+    return;
+  else
+    @position(335, 290)
+    @anchor(to: top)
+    return;
+  end if;
+end;
+
+drop microflow TicketManagement.WorkOrder_SetPlannerContext_WithRefresh;
+create or modify microflow TicketManagement.WorkOrder_SetPlannerContext_WithRefresh (
+  @position(-70, 80)
+  $WorkOrder: TicketManagement.WorkOrder,
+  @position(-70, 0)
+  $PlannerContext: Scheduler.PlannerContext
+)
+begin
+  @start(-70, 200)
+  @position(75, 200)
+  @curve(from: (30, 0), to: (-30, 0))
+  call microflow TicketManagement.WorkOrder_SetPlannerContext(WorkOrder = $WorkOrder, PlannerContext = $PlannerContext);
+  @position(250, 200)
+  @curve(from: (30, 0), to: (-15, 0))
+  change $PlannerContext refresh;
+  @position(465, 200)
+  return;
+end;

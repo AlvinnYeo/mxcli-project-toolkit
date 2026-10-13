@@ -1,0 +1,75 @@
+Checking your app for issues...
+Checking the version of the mpr file.
+The mpr file version is '11.13.0'.
+Loading the mpr file.
+The mpr file version is '11.13.0'.
+Checking app for errors...
+[error] [CE0117] "Error(s) in expression." at List of Data sources (1/2) of bizzomate Ultimate Scheduler 'bizzomateUltimateScheduler1'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app." at Gallery 'gallery4'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app." at Gallery 'gallery5'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app." at Gallery 'gallery3'
+[error] [CE0463] "The definition of this widget has changed. Update this widget by right-clicking it and selecting 'Update widget', or select 'Update all widgets' to update all widgets in the app." at Gallery 'gallery1'
+[error] [CE0572] "Widget uRLRedirector is not supported in React client." at URLRedirector 'uRLRedirector1'
+[error] [CE0582] "Widget reference selector (with select page) is not supported in React client. Right-click this error to convert it to an alternative widget type." at Reference selector 'referenceSelector5', Reference selector 'referenceSelector1'
+[error] [CE0582] "Widget data grid is not supported in React client. Right-click this error to convert it to an alternative widget type." at Data grid 'grid3', Data grid 'grid2'
+[error] [CE0582] "Widget data grid is not supported in React client. Right-click this error to convert it to an alternative widget type." at Data grid 'grid1'
+[error] [CE0582] "Widget data grid is not supported in React client. Right-click this error to convert it to an alternative widget type." at Data grid 'grid1'
+[error] [CE0582] "Widgets reference selector (with select page), reference set selector and data grid are not supported in React client. Right-click this error to convert it to an alternative widget type." at Reference selector 'referenceSelector5', Reference selector 'referenceSelector1', Reference set selector 'referenceSetSelector1', Reference set selector 'referenceSetSelector2', Data grid 'grid2', Data grid 'grid1', Data grid 'grid3'
+[error] [CE0582] "Widget drop-down is not supported in React client. Right-click this error to convert it to an alternative widget type." at Drop-down [CodeType], Drop-down [RegistrationType]
+[error] [CE0582] "Widget drop-down is not supported in React client. Right-click this error to convert it to an alternative widget type." at Drop-down [CodeType], Drop-down [RegistrationType]
+[error] [CE0582] "Widget data grid is not supported in React client. Right-click this error to convert it to an alternative widget type." at Data grid 'grid1'
+[error] [CE0582] "Widget reference selector is not supported in React client. Right-click this error to convert it to an alternative widget type." at Reference selector 'referenceSelector1'
+[error] [CE0582] "Widget reference selector (with select page) is not supported in React client. Right-click this error to convert it to an alternative widget type." at Reference selector 'referenceSelector5', Reference selector 'referenceSelector1'
+[error] [CE0582] "Widget data grid is not supported in React client. Right-click this error to convert it to an alternative widget type." at Data grid 'grid4', Data grid 'grid3'
+[error] [CE0582] "Widget reference selector is not supported in React client. Right-click this error to convert it to an alternative widget type." at Reference selector 'referenceSelector1'
+[error] [CE0582] "Widget data grid is not supported in React client. Right-click this error to convert it to an alternative widget type." at Data grid 'grid1'
+[error] [CE0582] "Widgets reference set selector and data grid are not supported in React client. Right-click this error to convert it to an alternative widget type." at Reference set selector 'referenceSetSelector1', Reference set selector 'referenceSetSelector2', Data grid 'grid2', Data grid 'grid1', Data grid 'grid3'
+[error] [CE0582] "Widget data grid is not supported in React client. Right-click this error to convert it to an alternative widget type." at Data grid 'grid1'
+[error] [CE0582] "Widget data grid is not supported in React client. Right-click this error to convert it to an alternative widget type." at Data grid 'grid5', Data grid 'grid4'
+[error] [CE0582] "Widget data grid is not supported in React client. Right-click this error to convert it to an alternative widget type." at Data grid 'grid1'
+[error] [CE0582] "Widget data grid is not supported in React client. Right-click this error to convert it to an alternative widget type." at Data grid 'grid1'
+[error] [CE0582] "Widgets reference selector, data grid, input reference set selector and drop-down are not supported in React client. Right-click this error to convert it to an alternative widget type." at Reference selector 'referenceSelector3', Data grid 'grid3', Data grid 'grid2', Input reference set selector 'referenceSetSelector1', Drop-down [Sorting]
+[error] [CE0582] "Widget data grid is not supported in React client. Right-click this error to convert it to an alternative widget type." at Data grid 'grid1'
+[error] [CE0582] "Widgets reference selector and reference set selector are not supported in React client. Right-click this error to convert it to an alternative widget type." at Reference selector 'referenceSelector1', Reference set selector 'referenceSetSelector1'
+[error] [CE0582] "Widget drop-down is not supported in React client. Right-click this error to convert it to an alternative widget type." at Drop-down [CodeType], Drop-down [RegistrationType]
+[error] [CE0582] "Widgets reference selector and data grid are not supported in React client. Right-click this error to convert it to an alternative widget type." at Reference selector 'referenceSelector1', Data grid 'grid1'
+[error] [CE0582] "Widgets reference selector and data grid are not supported in React client. Right-click this error to convert it to an alternative widget type." at Reference selector 'referenceSelector1', Data grid 'grid1'
+[error] [CE0582] "Widget data grid is not supported in React client. Right-click this error to convert it to an alternative widget type." at Data grid 'grid2'
+[error] [CE6083] "Design property Make card is not supported by your theme. Right-click to see more options." at Container 'container1'
+[error] [CE6083] "Design property Padding bottom is not supported by your theme. Right-click to see more options." at Action button 'actionButton1'
+[error] [CE6083] "Design property Padding left is not supported by your theme. Right-click to see more options." at Action button 'actionButton1'
+[error] [CE6083] "Design property Padding right is not supported by your theme. Right-click to see more options." at Action button 'actionButton1'
+[error] [CE6083] "Design property Padding top is not supported by your theme. Right-click to see more options." at Action button 'actionButton1'
+[error] [CE6083] "Design property Make card is not supported by your theme. Right-click to see more options." at Container 'container1'
+[error] [CE6083] "Design property Padding bottom is not supported by your theme. Right-click to see more options." at Action button 'actionButton1'
+[error] [CE6083] "Design property Padding left is not supported by your theme. Right-click to see more options." at Action button 'actionButton1'
+[error] [CE6083] "Design property Padding right is not supported by your theme. Right-click to see more options." at Action button 'actionButton1'
+[error] [CE6083] "Design property Padding top is not supported by your theme. Right-click to see more options." at Action button 'actionButton1'
+[error] [CE6083] "Design property Padding bottom is not supported by your theme. Right-click to see more options." at Action button 'actionButton1'
+[error] [CE6083] "Design property Padding left is not supported by your theme. Right-click to see more options." at Action button 'actionButton1'
+[error] [CE6083] "Design property Padding right is not supported by your theme. Right-click to see more options." at Action button 'actionButton1'
+[error] [CE6083] "Design property Padding top is not supported by your theme. Right-click to see more options." at Action button 'actionButton1'
+[error] [CE6083] "Design property Make card is not supported by your theme. Right-click to see more options." at Container 'container1'
+[error] [CE6083] "Design property Padding bottom is not supported by your theme. Right-click to see more options." at Action button 'actionButton1'
+[error] [CE6083] "Design property Padding left is not supported by your theme. Right-click to see more options." at Action button 'actionButton1'
+[error] [CE6083] "Design property Padding right is not supported by your theme. Right-click to see more options." at Action button 'actionButton1'
+[error] [CE6083] "Design property Padding top is not supported by your theme. Right-click to see more options." at Action button 'actionButton1'
+[error] [CE6083] "Design property Make card is not supported by your theme. Right-click to see more options." at Container 'container1'
+[error] [CE6083] "Design property Max lines is not supported by your theme. Right-click to see more options." at Text 'text33'
+[error] [CE6083] "Design property Max lines is not supported by your theme. Right-click to see more options." at Text 'text32'
+[error] [CE6083] "Design property Max lines is not supported by your theme. Right-click to see more options." at Text 'text13'
+[error] [CE6083] "Design property Max lines is not supported by your theme. Right-click to see more options." at Text 'text14'
+[error] [CE6083] "Design property Max lines is not supported by your theme. Right-click to see more options." at Text 'text28'
+[error] [CE6083] "Design property Max lines is not supported by your theme. Right-click to see more options." at Text box [WorkOrder_Ticket/Ticket/Ticket_Priority/Priority/Description]
+[error] [CE6083] "Design property Max lines is not supported by your theme. Right-click to see more options." at Text box [WorkOrder_Ticket/Ticket/Ticket_Asset/Asset/FullAddress]
+[error] [CE6083] "Design property Use Material Icon is not supported by your theme. Right-click to see more options." at Text box [SearchString]
+[error] [CE6083] "Design property Use grid is not supported by your theme. Right-click to see more options." at Gallery 'gallery1'
+[error] [CE6083] "Design property Grid gap size is not supported by your theme. Right-click to see more options." at Gallery 'gallery1'
+[error] [CE6083] "Design property Grid item size is not supported by your theme. Right-click to see more options." at Gallery 'gallery1'
+[error] [CE6083] "Design property Max lines is not supported by your theme. Right-click to see more options." at Text 'text31'
+[error] [CE6083] "Design property Max lines is not supported by your theme. Right-click to see more options." at Text 'text32'
+[error] [CE6083] "Design property Make card is not supported by your theme. Right-click to see more options." at Container 'container1'
+[error] [CE6087] "Design properties have been renamed in your theme and need to be updated. Right-click to see more options." at 
+[error] [CE9900] "Association widgets and configured selection pages are not supported in the React client. You can re-use this page for another purpose or delete it. Right-click to see the existing usages." at Page 'Technician.Account_Select_ServiceRegionManager'
+[error] [CE9900] "Association widgets and configured selection pages are not supported in the React client. You can re-use this page for another purpose or delete it. Right-click to see the existing usages." at Page 'Technician.Account_Select_Technician'
+The app contains: 68 errors.

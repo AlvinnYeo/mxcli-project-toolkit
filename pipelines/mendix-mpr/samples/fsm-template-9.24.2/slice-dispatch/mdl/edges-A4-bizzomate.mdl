@@ -1,0 +1,33 @@
+mdl 1;
+-- BizzomateScheduler (marketplace, 2 enums + 3 Java actions on the monolith): the planner widget's event-style
+-- expressions name its enums (CE0117 at 'List of Data sources (1/2)' — an expression, so no CE1613). Enums copied.
+create module BizzomateScheduler;
+create or modify enumeration BizzomateScheduler.ENUM_Color (
+  green 'green',
+  red 'red',
+  pink 'pink',
+  purple 'purple',
+  violet 'violet',
+  indigo 'indigo',
+  blue 'blue',
+  cyan 'cyan',
+  teal 'teal',
+  lime 'lime',
+  yellow 'yellow',
+  orange 'orange',
+  deep_orange 'deep-orange',
+  gray 'gray',
+  gantt_green 'gantt-green',
+  no_color 'no-color'
+) folder 'Resources';
+create or modify enumeration BizzomateScheduler.ENUM_EventStyle (
+  plain '''plain'' (default) - flat look',
+  border '''border'' - has border in darker shade of events color',
+  colored '''colored'' - has colored text and wide left border in same color',
+  hollow '''hollow'' - only border + text until hovered',
+  line '''line'' - as a line with the text below it',
+  dashed '''dashed'' - as a dashed line with the text below it',
+  minimal '''minimal'' - as a thin line with small text above it',
+  rounded '''rounded'' - minimalistic style with rounded corners',
+  no_style '''no_style'' - create your own style'
+) folder 'Resources';
