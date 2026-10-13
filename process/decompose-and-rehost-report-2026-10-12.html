@@ -90,174 +90,252 @@
   footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 13.5px; color: var(--muted); }
   @media (max-width: 480px) { .kv { grid-template-columns: 1fr; } .kv dt { padding-top: 8px; } }
   @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+  .flow { display: grid; gap: 10px; grid-template-columns: 1fr 28px 1fr 28px 1fr; align-items: center; margin: 16px 0; }
+  .flow .box { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; font-size: 14.5px; min-width: 0; }
+  .flow .box strong { display: block; color: var(--accent); }
+  .flow .arr { text-align: center; color: var(--muted); font-size: 20px; }
+  @media (max-width: 640px) { .flow { grid-template-columns: 1fr; } .flow .arr { transform: rotate(90deg); } }
 </style>
 </head>
 <body>
 <div class="wrap">
 <header class="top">
-  <div class="eyebrow">Report &middot; 2026-10-12 &middot; one day of field work</div>
-  <h1>Decompose &amp; Rehost: what we did, what it cost, what holds</h1>
-  <p class="lead">For a product head who knows Mendix and did not watch the work. Six questions, answered first; the detail follows.</p>
+  <div class="eyebrow">Report &middot; 2026-10-13 &middot; two days of field work</div>
+  <h1>Decompose &amp; Rehost: what we built, what it cost, what holds</h1>
+  <p class="lead">For a product head who knows Mendix and did not watch the work. Each section opens with its answer; the detail follows.</p>
 </header>
 
-<h2>The six answers</h2>
+<h2>The answers</h2>
 <div class="grid">
-  <div class="card"><h3>1. Approach</h3><p>Two tracks. <strong>Rehost</strong> regenerates a whole app as text (MDL) into a fresh project. <strong>Decompose</strong> splits one app into several, one slice at a time, with the old app staying live.</p></div>
-  <div class="card"><h3>2. App to MDL</h3><p>A small same-version app came across almost perfectly (154 of 155 identical). A 48-module app did not: 29 of 36 modules landed and the build failed with 14 errors.</p></div>
-  <div class="card"><h3>3. Rebuilt differently</h3><p>Seven plan items changed. The big one: we move modules as packages (MPK) and use MDL only for the edges, because the probe proved IDs survive.</p></div>
-  <div class="card"><h3>4. Time</h3><p>Single steps take seconds to a minute. A web slice took about 2 h 10 min end to end; adding core services took about 1 h.</p></div>
-  <div class="card"><h3>5. Tokens</h3><p>3,641,710 tokens across 19 measured workers: Opus 2,440,604, Sonnet 1,022,175, Fable 178,931. The orchestrator itself is not counted.</p></div>
-  <div class="card"><h3>6. Proven and next</h3><p>The full flow is proven on one slice: Assets &amp; Parts was split out, served over OData/REST, and its four modules were deleted from the monolith, with a repeatable end-to-end test across both apps passing 16/16. A Mobile partition, token login across apps and data migration are not.</p></div>
+  <div class="card"><h3>Goal</h3><p>Turn one Mendix monolith into several smaller Mendix apps, one slice at a time, while the monolith stays live. A gated pipeline does it.</p></div>
+  <div class="card"><h3>Route</h3><p>Move modules as MPK packages (byte-identical, IDs kept). Use MDL only to build the edges and seams. Rehost stays a separate track for re-platforming a whole app.</p></div>
+  <div class="card"><h3>Proof</h3><p>Eight increments on one public template. One slice (Assets &amp; Parts) was fully strangled; a second (Dispatch &amp; Workforce) reached build-green with a live seam.</p></div>
+  <div class="card"><h3>Speed</h3><p>With the skills as playbook, Dispatch took about 1 h 55 to the level that took about 3 h 10 for Assets &amp; Parts, on a slice with about 1.8&times; the cross-app calls.</p></div>
+  <div class="card"><h3>mxcli</h3><p>47 defects ready to file. A nightly build fixed 15 of 50 retested; microflows can now be written into Mendix 9 projects.</p></div>
+  <div class="card"><h3>Tokens</h3><p>7,883,334 across 74 measured workers: Opus 3,244,089, Haiku 3,355,386, Sonnet 1,104,928, Fable 178,931.</p></div>
 </div>
 
-<h2>1. The approach</h2>
-<p>Two plain terms first. <strong>MDL</strong> is Mendix's text language for describing a model; <code>mxcli</code> is the command-line tool that reads and writes it. <strong>MPK</strong> is Mendix's own module package file. A <strong>slice</strong> is the part of an app we cut out and move.</p>
-<div class="tablewrap"><table>
-<thead><tr><th>Track</th><th>What it does</th><th>Done means</th></tr></thead>
-<tbody>
-<tr><td><strong>Rehost</strong></td><td>Reads an existing app, regenerates every module as MDL, runs it into a fresh Mendix 11 project. Checks and repairs in a loop.</td><td>Build-green with hand-offs (below)</td></tr>
-<tr><td><strong>Decompose</strong></td><td>Scores where to cut, moves a slice, accounts for every call that crosses the cut, builds the link between the apps.</td><td>Three levels: build-green, seam-live, strangled</td></tr>
-</tbody></table></div>
-<p>Decompose ran as six increments. Each one was small, ran in a cloud container, and left captured evidence.</p>
-<div class="tablewrap"><table>
-<thead><tr><th>#</th><th>Target</th><th>Result</th></tr></thead>
-<tbody>
-<tr><td class="num">1</td><td>Rehost extractor on a small public app, plus the cut-scoring script on a Mendix 10.24 fixture</td><td><span class="pill done">done</span> 155 of 155 documents emitted; cut scorer with 56 checks</td></tr>
-<tr><td class="num">2</td><td>Siemens FSM template (Mendix 9.24.2)</td><td><span class="pill done">done</span> read probe passed; 42 own modules; cut scored</td></tr>
-<tr><td class="num">3</td><td>NativeNote slice to Mendix 11</td><td><span class="pill done">build-green</span> 308-row ledger, 0 unresolved</td></tr>
-<tr><td class="num">4</td><td>Seam probe</td><td><span class="pill done">one record crossed</span> monolith to slice over REST</td></tr>
-<tr><td class="num">5</td><td>Assets &amp; Parts web slice (4 modules)</td><td><span class="pill done">build-green</span> seam-live not reached; 1 journey passes</td></tr>
-<tr><td class="num">6</td><td>Monolith publishes core services</td><td><span class="pill done">seam-live</span> for the non-Mobile core; stub rows 120 to 32</td></tr>
-<tr><td class="num">7</td><td>Strangle Assets &amp; Parts</td><td><span class="pill done">strangled</span> 4 modules deleted from the monolith (61 to 56 modules); in-edge hand-offs 499 to 157, each with a reason; cross-app e2e 16/16, twice</td></tr>
-</tbody></table></div>
+<h2>1. The goal: monolith to separate apps</h2>
+<p class="lead">Answer: split one big Mendix app into several smaller ones, one capability at a time, by a repeatable gated pipeline, so the old app never goes dark.</p>
+<p>Terms, once. <strong>MDL</strong> is Mendix's text language for describing a model. <code>mxcli</code> is the command-line tool that reads and writes it. <strong>MPK</strong> is Mendix's own module package file. A <strong>slice</strong> is the part of the app we cut out. A <strong>seam</strong> is the live link between the old app and the slice. A <strong>stub</strong> is a placeholder that compiles but does nothing yet. To <strong>strangle</strong> is to delete the old part once the slice has taken over.</p>
 
-<h3>The self-improvement loop</h3>
+<h3>The idea behind it</h3>
 <ul class="tight">
-<li>Workers drop findings into an inbox. Triage promotes them into the bug ledger or into skills.</li>
-<li>Every user-visible change adds a <code>CHANGELOG.md</code> line in the same commit, crediting the source project.</li>
-<li>Skills were written from the field runs, then corrected by their first real use. Example: the decompose skill was checked against Mendix's own documentation after it was drafted.</li>
-<li>mxcli defects found along the way were drafted as an upstream report: 53 drafted: 47 ready to file, 3 need a check on a local machine, 3 withdrawn as not real defects. The staged files live in the separate personal-toolkit repo. Nothing has been filed yet.</li>
+<li><strong>Why split at all.</strong> Independent teams and release cadence. Scaling only the busy part. Isolating risk, so one change cannot break everything. Smaller apps that are easier to upgrade.</li>
+<li><strong>What &ldquo;microservices&rdquo; means in Mendix.</strong> Not tiny services. Several smaller Mendix apps. Each owns its own data. They talk over OData (reads) and REST (writes with behaviour). Users keep one login.</li>
+<li><strong>The strangler idea.</strong> Move one capability at a time. The monolith keeps running. When a slice works in its new home, delete the old part.</li>
+<li><strong>Why a pipeline.</strong> A one-off big-bang rebuild cannot be repeated, measured or paused. A pipeline has gated steps and a ledger that lists every call crossing the cut and says how each is handled.</li>
+<li><strong>Machine vs human.</strong> The pipeline automates reading, scoring, moving modules, the ledger, builds and journeys. People decide the target architecture, which slice goes first, who owns each piece of data, and every gate.</li>
 </ul>
-<h3>Which model did what</h3>
-<p>Opus took the hard work: probes, slice builds, gate analysis, and writing the skills. Sonnet took recipe work: candidate tables, bug hunts, report drafting, shrinking bug repros. Fable ran one early extraction. The orchestrator coordinated the workers and merged their output.</p>
-
-<h2>2. How the app-to-MDL rebuild went</h2>
-<div class="tablewrap"><table>
-<thead><tr><th>App</th><th>Size</th><th>Result</th></tr></thead>
-<tbody>
-<tr><td>Banking (Mendix 11.13, same version as target)</td><td>155 documents</td><td>155 emitted, 154 identical (1 doc-comment drift). <code>mx check</code> 0 errors, build succeeded, structural diff empty. 35 s. Essentially lossless.</td></tr>
-<tr><td>GenAI Showcase (Mendix 11.12)</td><td>48 modules; 36 regenerated; 2,776 catalog documents</td><td>29 of 36 modules landed. 579 identical, 271 drift, 1,993 failed to execute. After repair, <code>mx check</code> 14 errors, build FAILED.</td></tr>
-</tbody></table></div>
-<p>The small app shows the idea works. The large app shows a long tail of defects in mxcli's own text output. Much of the loss was our extractor's fault, not the tool's: 7 whole modules (1,520 of the 1,993 failures) were silently dropped when our quarantine step could not map an error. That is the next fix.</p>
-<h3>The repair loop we built</h3>
-<ol class="stages">
-<li><strong>Check</strong><span>Validate each module's script. The check is all-or-nothing per file.</span></li>
-<li><strong>Quarantine</strong><span>Move the statements the check rejects into a deferred file, with the statements that depend on them.</span></li>
-<li><strong>Execute</strong><span>Run the rest. Execution stops at the first statement it cannot write.</span></li>
-<li><strong>Resume</strong><span>Defer that statement with the exact error and keep going. Retry deferred ones in passes.</span></li>
-</ol>
-<p>Why it exists: the first full run executed 1 of 36 modules, because one defect sank the other 35.</p>
-<div class="callout">
-<p><strong>Done-criterion, confirmed by the user: "build-green with hand-offs".</strong> <code>mx check</code> 0 errors, build succeeded, and every document either landed or is a named hand-off with a reason. The hand-off count is the progress measure. The build decides, not describe-identity: one attribute sort was describe-identical and still failed the build.</p>
-<p><strong>Correction:</strong> we first wrote that message definitions cannot be expressed. They turned out to be expressible, so that item moved off the hand-off list.</p>
+<div class="flow">
+  <div class="box"><strong>Monolith</strong>One app, many modules, tangled calls.</div><div class="arr">&rarr;</div>
+  <div class="box"><strong>Slices, one at a time</strong>Move, link with a seam, prove, then delete the old part.</div><div class="arr">&rarr;</div>
+  <div class="box"><strong>Landscape</strong>Several apps, each owning its data, linked by OData and REST.</div>
 </div>
 
-<h2>3. What we rebuilt differently than planned</h2>
-<p>This matters most. Each row is a plan item the field work overturned.</p>
+<h3>The Decompose pipeline, step by step</h3>
+<p>As it stands in <code>skills/decompose-app.md</code>. Every decision lands in <code>PROJECT.md</code> as CONFIRMED or ASSUMED. Gated stages end the turn and wait for the user.</p>
+<ol class="stages">
+<li><strong>Stage 0: Preconditions and scope</strong><span>Mendix 9 or later. Work on a copy. A 9.x monolith is first upgraded to 10.24 (<code>mx convert</code>), as a means, not a deliverable. Lanes are OData and REST only. Scope questions: why split, how many apps, may a slice leave Mendix, is data migration in scope.</span></li>
+<li><strong>Stage 1: Read and score</strong><span>Read the app, score candidate cuts by crossing calls, rank slices on business fit and coupling, not on coupling alone.</span></li>
+<li><strong>Stage 1b: Target architecture (gated)</strong><span>Eight sections before any cut: landscape, module-to-app map (every own module assigned), data ownership, contract per seam, auth, cut order, mobile partition, non-goals.</span></li>
+<li><strong>Stage 2: Sequence the cuts</strong><span>Follow dependency direction. The monolith publishes the services a slice needs before the slice is cut. Check access-rule XPath that cannot cross apps.</span></li>
+<li><strong>Stage 3: Move the slice</strong><span>Create the target app, export each module as an MPK, install dependencies first, then the slice.</span></li>
+<li><strong>Stage 4: Account for every edge</strong><span>The cut ledger (below).</span></li>
+<li><strong>Stage 5: Build the seam</strong><span>Replace stubs by OData reads and REST writes, with security on and errors handled.</span></li>
+<li><strong>Stage 5b: Strangle</strong><span>Level 3 only. Re-point the monolith at the slice, then delete the slice modules from the monolith.</span></li>
+<li><strong>Stage 6: Prove and report the level</strong><span>Build, check, journeys across both apps. The report names exactly one level.</span></li>
+<li><strong>Stage 7: Learnings</strong><span>Feed what broke back into the skills.</span></li>
+</ol>
+
+<h3>The three done levels</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Level</th><th>Means</th></tr></thead>
+<tbody>
+<tr><td><strong>1 build-green</strong></td><td>Ledger has 0 unresolved rows; <code>mx check</code> 0 errors; build succeeds; moved documents describe-identical.</td></tr>
+<tr><td><strong>2 seam-live</strong></td><td>Every stub that carries behaviour is replaced by a working call, or handed off with a written reason. Security on, roles mapped.</td></tr>
+<tr><td><strong>3 strangled</strong></td><td>Monolith calls into the slice are rewired or handed off, the old modules are deleted, and one journey per crossing kind (read, write, join, sync pull, offline forward) passes with data checked in both databases, twice in a row.</td></tr>
+</tbody></table></div>
+
+<h3>The cut ledger</h3>
+<p>One row per reference that crosses the cut, in both directions. Each row is resolved (moved, copied, OData, REST), a stub, a hand-off with a named reason, retired, or platform. The script exits non-zero while any row is unresolved. <strong>The stub count is the progress measure</strong>; a stub never counts as done. At level 3 the monolith's in-edge hand-offs become the measure.</p>
+
+<h3>The seam patterns, in plain words</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Need</th><th>Pattern</th></tr></thead>
+<tbody>
+<tr><td>Identify a record across apps</td><td>Give each shared entity a stable key (a <code>PublicID</code> auto-number).</td></tr>
+<tr><td>Who may call</td><td>One machine role per service, nothing else. Credentials live in each app's machine-local constants, never in the model.</td></tr>
+<tr><td>Reads</td><td>OData, shown in the other app as external entities. One consumer module per service.</td></tr>
+<tr><td>Writes with behaviour</td><td>A published REST action with simple parameters and a text result.</td></tr>
+<tr><td>Failure</td><td>Every REST call has an error handler. OData-backed pages have no error path, so a service outage is visible.</td></tr>
+<tr><td>Joins across apps</td><td>No association across apps. Filter on the key, using a copy of the other side's key.</td></tr>
+<tr><td>Deletes</td><td>Go through the owner's own delete flow, so its rules still run.</td></tr>
+<tr><td>Formats</td><td>Enumerations travel as text; dates as UTC ISO text.</td></tr>
+<tr><td>Change</td><td>Version the path. A changed member is a new contract.</td></tr>
+<tr><td>Ownership</td><td>Once the slice owns an entity, a local save beside the REST call is a dual write and stays a hand-off until one side goes.</td></tr>
+</tbody></table></div>
+<p>Limits: external entities cannot own associations, cannot aggregate, cannot sync offline, and cannot carry behaviour. That is why writes use REST and offline data arrives as REST-fed copies.</p>
+
+<h2>2. How that raised the Rehost vs MPK question</h2>
+<p class="lead">Answer: moving a slice by MPK beats regenerating it as MDL, so the route is a hybrid: MPK moves the modules, MDL builds the edges and seams.</p>
+<p>To move a slice we first planned to regenerate it as MDL (Rehost). The MPK probe then showed that exporting a module as a package is byte-identical and keeps entity and unit IDs across 9.24, 10.24 and 11.13. Export takes under 1 s, install about 8 s per module. Caveat: Mendix refuses a 9.x package into 11, so a 9.x source hops through 10.24 first (about 35 s).</p>
+<h3>Rehost as its own track</h3>
+<p>Rehost re-platforms a whole app: describe each module to MDL, check it, write it into a fresh project with a repair loop (check, quarantine, execute, resume), then describe the target and compare. The result is a fidelity ledger. It works on small same-version apps and breaks on limits: Java action type parameters, rules, legacy widgets, native layouts, mutual recursion, and 9.x authoring.</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Row</th><th>Rehost (MDL)</th><th>MPK move</th></tr></thead>
+<tbody>
+<tr><td>What moves</td><td>Documents regenerated from text into a fresh project</td><td>The module's units byte for byte, with Java, theme and widget files</td></tr>
+<tr><td>Fidelity</td><td>Banking 154/155 identical; GenAI 579 identical, 271 drift</td><td>NativeNote 66/66 identical; Assets slice 207 identical, 5 drift</td></tr>
+<tr><td>Speed</td><td>35 s for 155 documents; about 36 min for 36 modules</td><td>Export &lt; 1 s; install ~8 s per module</td></tr>
+<tr><td>IDs and data</td><td>New IDs</td><td>IDs preserved</td></tr>
+<tr><td>Java and widgets</td><td>Helper classes and jars not carried; legacy widgets not carried</td><td>Java arrives identical; widget packages travel with the module</td></tr>
+<tr><td>Version hops</td><td>Same-version only so far</td><td>9.x goes through 10.24 first</td></tr>
+<tr><td>Clean-up</td><td>Yes: a clean project and MDL you own</td><td>No: the module arrives as it was</td></tr>
+<tr><td>Typical use</td><td>Re-platform, audit, regenerate parts</td><td>Move modules between apps (Decompose)</td></tr>
+</tbody></table></div>
+<h3>Why MDL is valuable even without a rebuild</h3>
+<p>Describing an app as text is useful on its own, because reading and comparing do not need the text to be re-executable.</p>
+<ul class="tight">
+<li><strong>Understanding:</strong> the whole model is searchable. &ldquo;Who calls this flow&rdquo; becomes a search.</li>
+<li><strong>Review:</strong> diff the text before and after a change, like a code review.</li>
+<li><strong>Regression baseline:</strong> describe before and after an upgrade or package move. What drifted is what to test.</li>
+<li><strong>Test scoping:</strong> the call graph shows what a change touches.</li>
+<li><strong>Audits:</strong> scan access rules, constants and anti-patterns as text.</li>
+</ul>
+<p>Rule of thumb: describe every app you touch, even when you move it by MPK.</p>
+<h3>Rehost on GenAI Showcase (Mendix 11.12, 48 modules)</h3>
+<p>36 modules regenerated; 2,776 catalog documents: 579 identical, 271 drift, 1,993 failed. 29 of 36 modules landed. <code>mx check</code> 14 errors, build failed. 1,520 of the failures were seven modules our own repair step dropped, a toolkit defect, not a Mendix limit.</p>
+
+<h2>3. What we built and proved</h2>
+<p class="lead">Answer: eight increments. Assets &amp; Parts reached level 3; Dispatch &amp; Workforce reached level 1 with a live seam.</p>
+<div class="tablewrap"><table>
+<thead><tr><th>#</th><th>Target</th><th>Level reached</th><th>Key numbers</th></tr></thead>
+<tbody>
+<tr><td class="num">1</td><td>Rehost extractor on a small public app; cut scorer on a 10.24 fixture</td><td><span class="pill done">done</span></td><td>155 of 155 documents emitted, 154 identical; scorer with 56 checks</td></tr>
+<tr><td class="num">2</td><td>Siemens FSM template (Mendix 9.24.2): read probe, cut score; GenAI rehost</td><td><span class="pill done">done</span></td><td>FSM: 45 own modules, 1,896 microflows read. GenAI: see section 2</td></tr>
+<tr><td class="num">3</td><td>NativeNote slice to Mendix 11</td><td><span class="pill done">1 build-green</span></td><td>308-row ledger, 0 unresolved; 66/66 documents identical; 26 behaviour stubs</td></tr>
+<tr><td class="num">4</td><td>Seam probe</td><td><span class="pill done">one record crossed</span></td><td>Monolith to slice over REST; ran on the 10.24 copy</td></tr>
+<tr><td class="num">5</td><td>Assets &amp; Parts web slice (4 modules)</td><td><span class="pill done">1 build-green</span></td><td>703 ledger rows, 0 unresolved; 120 stub rows; 1 of 536 in-edges rewired; 1 journey passes</td></tr>
+<tr><td class="num">6</td><td>Monolith publishes core services</td><td><span class="pill done">2 seam-live</span> (non-Mobile)</td><td>Stub rows 120 to 32; journey slice-monolith-slice 9/9</td></tr>
+<tr><td class="num">7</td><td>Strangle Assets &amp; Parts</td><td><span class="pill done">3 strangled</span></td><td>4 modules deleted (61 to 56); in-edge hand-offs 499 to 157, each with a reason; cross-app e2e 16/16, twice</td></tr>
+<tr><td class="num">8</td><td>Dispatch &amp; Workforce (5 modules, 21 entities), run from the skills</td><td><span class="pill done">1 build-green</span>, seam live on every lane</td><td>Stub rows 271 to 3; 42/42 own modules assigned; journeys pass twice; strangle not run</td></tr>
+</tbody></table></div>
+
+<h2>4. Speed</h2>
+<p class="lead">Answer: machine steps take seconds to a minute; the hours go to authoring. The skills cut Dispatch to well under the time of Assets &amp; Parts.</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Recurring step</th><th>Typical time</th></tr></thead>
+<tbody>
+<tr><td>Banking rehost, end to end</td><td class="num">35 s</td></tr>
+<tr><td>GenAI rehost, 36 modules</td><td class="num">~36 min</td></tr>
+<tr><td><code>mx convert</code> 9.24 to 10.24</td><td class="num">35&ndash;56 s</td></tr>
+<tr><td>MPK export / install</td><td class="num">&lt; 1 s / ~8 s per module</td></tr>
+<tr><td><code>mx check</code></td><td class="num">10&ndash;30 s</td></tr>
+<tr><td>mxbuild</td><td class="num">18&ndash;56 s</td></tr>
+<tr><td>App boot</td><td class="num">40&ndash;90 s</td></tr>
+<tr><td>Cross-app journey</td><td class="num">5&ndash;29 s</td></tr>
+</tbody></table></div>
+<div class="tablewrap"><table>
+<thead><tr><th>Increment, wall clock</th><th>Time</th></tr></thead>
+<tbody>
+<tr><td>4 seam probe</td><td class="num">~32 min</td></tr>
+<tr><td>5 Assets &amp; Parts</td><td class="num">~2 h 10</td></tr>
+<tr><td>6 core services</td><td class="num">~1 h</td></tr>
+<tr><td>7 strangle</td><td class="num">~1 h 40</td></tr>
+<tr><td>8 Dispatch &amp; Workforce, build work</td><td class="num">~1 h 55</td></tr>
+</tbody></table></div>
+<div class="callout"><p><strong>The skills effect.</strong> Dispatch &amp; Workforce reached build-green plus a live seam in about 1 h 55 of build work. Assets &amp; Parts needed about 3 h 10 (increments 5 and 6) for the same level. Dispatch has about 1.8&times; the no-lane cross-app calls (126 vs 69). Increments 5&ndash;7 together took about 4 h 50. One run each, so treat it as a strong signal, not a benchmark.</p></div>
+
+<h2>5. What we rebuilt differently than planned</h2>
+<p class="lead">Answer: ten plan items changed. Each row is a plan the field work overturned.</p>
 <div class="tablewrap"><table>
 <thead><tr><th>Planned</th><th>What we did</th><th>Why</th></tr></thead>
 <tbody>
-<tr><td>Cut by regenerating the slice as MDL</td><td><strong>MPK moves the module; MDL only for the edges</strong></td><td>The export probe proved entity and unit IDs survive 9.24 to 11.13. Package install is faster and keeps Java bodies byte-identical.</td></tr>
-<tr><td>Mendix 9 monolith stays on 9</td><td><strong>Upgrade a copy to 10.24 first</strong> (<code>mx convert</code>)</td><td>mxcli 0.26 cannot create or alter microflows in a 9.x project, and cannot run one. Mendix also refuses a 9.x package into 11.x.</td></tr>
+<tr><td>Cut by regenerating the slice as MDL</td><td><strong>MPK moves the module; MDL only for the edges</strong></td><td>The export probe proved IDs survive 9.24 to 11.13. Install is faster and keeps Java identical.</td></tr>
+<tr><td>Mendix 9 monolith stays on 9</td><td><strong>Upgrade a copy to 10.24 first</strong></td><td>mxcli 0.26 cannot create or alter microflows in a 9.x project. Mendix refuses a 9.x package into 11.</td></tr>
 <tr><td>Create slice apps with <code>mxcli new</code></td><td><strong>Marketplace native starter</strong> for native slices</td><td><code>mxcli new</code> has no native profile.</td></tr>
-<tr><td>Legacy widgets regenerated as MDL</td><td><strong>Our own generator, from a BSON dump</strong></td><td>No headless route from legacy data grids to the React client. 22 widgets hit this (CE0582).</td></tr>
-<tr><td>NativeNote first (cheapest cut)</td><td><strong>Business-fit slices</strong>: Assets &amp; Parts first, then Dispatch &amp; Workforce</td><td>NativeNote was cheap but meant little to the business. Assets &amp; Parts is mostly the acceptable lane: 335 inbound reads as OData.</td></tr>
-<tr><td>Cut a leaf slice first</td><td><strong>Monolith publishes its core first</strong></td><td>A leaf's outgoing calls need services that must exist before the cut. Increment 6 did exactly that.</td></tr>
-<tr><td>OData-only reads</td><td><strong>OData reads plus REST writes with behaviour</strong>; a mirror pattern for cross-app joins; <code>PublicID</code> AutoNumber keys</td><td>External entities cannot own associations or carry behaviour. Offline mobile cannot sync external entities. Keys are added where none exist.</td></tr>
+<tr><td>Legacy widgets regenerated as MDL</td><td><strong>Our own generator, from a BSON dump</strong></td><td>No headless route from legacy data grids to the React client (22 widgets, CE0582).</td></tr>
+<tr><td>NativeNote first (cheapest cut)</td><td><strong>Business-fit slices</strong>: Assets &amp; Parts, then Dispatch &amp; Workforce</td><td>NativeNote was cheap but left 238 in-edges behind.</td></tr>
+<tr><td>Cut a leaf slice first</td><td><strong>Monolith publishes its core first</strong></td><td>A leaf's outgoing calls need services that must exist first. Stub rows fell 120 to 32.</td></tr>
+<tr><td>OData-only reads</td><td><strong>OData reads plus REST writes</strong>; <code>PublicID</code> keys</td><td>External entities cannot own associations, carry behaviour or sync offline.</td></tr>
+<tr><td>Design the target as we go</td><td><strong>Target architecture before any cut</strong> (Stage 1b, gated)</td><td>Keys, auth, joins and dual writes were invented mid-build in increments 3&ndash;7.</td></tr>
+<tr><td>A mirror for cross-app joins at level 3</td><td><strong>The key-copy pattern</strong></td><td>At level 3 the owner no longer keeps a mirror; the consumer filters on a copy of the key.</td></tr>
+<tr><td>Rehost done when it builds</td><td><strong>Rehost now needs journey parity and a configuration checklist</strong></td><td>Describe-identical is not behaviour-identical. Certificates, per-environment constants and credentials live outside the model.</td></tr>
 </tbody></table></div>
 
-<h2>4. Performance: how long things take</h2>
+<h2>6. mxcli: defects and the nightly</h2>
+<p class="lead">Answer: the nightly build already fixes 15 of the 50 defects we retested, including the blocker for Mendix 9.</p>
+<p>Defects found along the way were drafted for the upstream mxcli project: 53 drafted, 47 ready to file, 3 need a local check, 3 withdrawn as not real defects. The user filed them.</p>
 <div class="tablewrap"><table>
-<thead><tr><th>Step</th><th>Typical time</th></tr></thead>
+<thead><tr><th>Nightly retest</th><th>Count</th></tr></thead>
 <tbody>
-<tr><td>Describe phase, 36 modules (GenAI)</td><td class="num">~30 min (36 min whole run)</td></tr>
-<tr><td>Banking, end to end</td><td class="num">35 s</td></tr>
-<tr><td><code>mx convert</code> 9.24 to 10.24</td><td class="num">~35 s</td></tr>
-<tr><td>MPK export</td><td class="num">&lt; 1 s per module</td></tr>
-<tr><td>MPK install</td><td class="num">~8 s per module</td></tr>
-<tr><td><code>mx check</code></td><td class="num">10&ndash;30 s</td></tr>
-<tr><td>mxbuild</td><td class="num">20&ndash;51 s</td></tr>
-<tr><td>App boot</td><td class="num">40&ndash;90 s</td></tr>
-<tr><td>Playwright journey across apps</td><td class="num">5&ndash;8 s</td></tr>
-<tr><td>Increment 4 (seam probe), wall clock</td><td class="num">~32 min</td></tr>
-<tr><td>Increment 5 (Assets &amp; Parts), wall clock</td><td class="num">~2 h 10 min</td></tr>
-<tr><td>Increment 6 (core services), wall clock</td><td class="num">~1 h</td></tr>
-<tr><td>Increment 7 (strangle), wall clock</td><td class="num">~1 h 40 min</td></tr>
-<tr><td>Cross-app e2e journey (16 checks, both databases)</td><td class="num">21&ndash;29 s</td></tr>
+<tr><td>Build</td><td><code>nightly-80-gbd45c47e</code>, 62 commits after v0.26.0</td></tr>
+<tr><td>FIXED</td><td class="num">15</td></tr>
+<tr><td>CHANGED</td><td class="num">8</td></tr>
+<tr><td>STILL_BROKEN</td><td class="num">26</td></tr>
+<tr><td>CANNOT_TEST</td><td class="num">1</td></tr>
 </tbody></table></div>
-<p>Wall clock includes authoring. The machine steps are short; most time goes to one-time work such as dead ends and first-time setup.</p>
+<div class="callout"><p><strong>Headline:</strong> microflows can now be written into Mendix 9 projects (verified by hand). Once released, the &ldquo;upgrade the monolith first&rdquo; rule can relax for monolith-side edits. Mendix itself still refuses 9.x packages into 11, so the package move still hops through 10.24.</p><p>Also fixed: rules can be described, the Java action comma, the 10,000-line truncation, and the null-entity import mapping.</p></div>
 
-<h2>5. Tokens: what the agent work cost</h2>
-<p>Subagent tokens as reported by the harness at each worker's completion. No prices given.</p>
-<div class="tablewrap"><table>
-<thead><tr><th>Worker</th><th>Model</th><th>Tokens</th></tr></thead>
-<tbody>
-<tr><td>Rehost increment 2: GenAI Showcase extraction</td><td>Fable</td><td class="num">178,931</td></tr>
-<tr><td>MPK export probe</td><td>Opus</td><td class="num">237,824</td></tr>
-<tr><td>Increment 3: NativeNote slice</td><td>Opus</td><td class="num">309,133</td></tr>
-<tr><td>GenAI run 4 analysis and gates</td><td>Opus</td><td class="num">200,588</td></tr>
-<tr><td>Increment 4: seam probe (Mx9 to Mx11)</td><td>Opus</td><td class="num">180,625</td></tr>
-<tr><td>Increment 5: Assets &amp; Parts web slice</td><td>Opus</td><td class="num">364,740</td></tr>
-<tr><td>Increment 6: monolith publishes core services</td><td>Opus</td><td class="num">362,047</td></tr>
-<tr><td>Skills: decompose-app + rehost-app</td><td>Opus</td><td class="num">149,873</td></tr>
-<tr><td>Skills: mendix-service-seam + patches</td><td>Opus</td><td class="num">103,049</td></tr>
-<tr><td>Web slice candidates</td><td>Sonnet</td><td class="num">92,826</td></tr>
-<tr><td>Native bug hunt</td><td>Sonnet</td><td class="num">124,028</td></tr>
-<tr><td>Upstream bug report draft</td><td>Sonnet</td><td class="num">107,142</td></tr>
-<tr><td>Decompose skill vs Mendix docs check</td><td>Sonnet</td><td class="num">67,486</td></tr>
-<tr><td>Stage 53 issues for filing</td><td>Sonnet</td><td class="num">79,082</td></tr>
-<tr><td>Reduce repros group A</td><td>Sonnet</td><td class="num">159,018</td></tr>
-<tr><td>Reduce repros group B</td><td>Sonnet</td><td class="num">177,316</td></tr>
-<tr><td>Reduce repros group C</td><td>Sonnet</td><td class="num">117,053</td></tr>
-<tr><td>Increment 7: strangle Assets &amp; Parts + cross-app e2e</td><td>Opus</td><td class="num">532,725</td></tr>
-<tr><td>This report (first draft)</td><td>Sonnet</td><td class="num">98,224</td></tr>
-</tbody></table></div>
+<h2>7. Tokens</h2>
+<p class="lead">Answer: 7,883,334 tokens across 74 workers. Opus and Haiku each used about 41&ndash;43%.</p>
+<p>As reported by the harness at each worker's completion. No prices.</p>
 <div class="tablewrap"><table>
 <thead><tr><th>Model</th><th>Workers</th><th>Tokens</th><th>Share</th></tr></thead>
 <tbody>
-<tr><td>Opus</td><td class="num">9</td><td class="num">2,440,604</td><td class="num">67.0%</td></tr>
-<tr><td>Sonnet</td><td class="num">9</td><td class="num">1,022,175</td><td class="num">28.1%</td></tr>
-<tr><td>Fable</td><td class="num">1</td><td class="num">178,931</td><td class="num">4.9%</td></tr>
-<tr><td><strong>Total</strong></td><td class="num"><strong>19</strong></td><td class="num"><strong>3,641,710</strong></td><td class="num">100%</td></tr>
+<tr><td>Opus</td><td class="num">13</td><td class="num">3,244,089</td><td class="num">41.1%</td></tr>
+<tr><td>Sonnet</td><td class="num">10</td><td class="num">1,104,928</td><td class="num">14.0%</td></tr>
+<tr><td>Haiku</td><td class="num">50 (one workflow, the nightly retest)</td><td class="num">3,355,386</td><td class="num">42.6%</td></tr>
+<tr><td>Fable</td><td class="num">1</td><td class="num">178,931</td><td class="num">2.3%</td></tr>
+<tr><td><strong>Total</strong></td><td class="num"><strong>74</strong></td><td class="num"><strong>7,883,334</strong></td><td class="num">100%</td></tr>
 </tbody></table></div>
-<div class="callout">
-<p><strong>Not counted:</strong> the orchestrator session itself; increments 1a and 1b and the first FSM cut-score worker (they ran before measurement began); the Dispatch run, stopped after a few minutes in favour of strangling. The real total is higher.</p>
-<p><strong>Routing decision:</strong> after the first worker ran on Fable, the most expensive model, we moved work off it mid-session: Opus for hard work, Sonnet for recipe work. Fable's share fell to under 5%.</p>
-</div>
+<p>The Haiku retest was cheap per token but large in count.</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Worker</th><th>Model</th><th>Tokens</th></tr></thead>
+<tbody>
+<tr><td>Rehost increment 2: GenAI extraction</td><td>Fable</td><td class="num">178,931</td></tr>
+<tr><td>MPK export probe</td><td>Opus</td><td class="num">237,824</td></tr>
+<tr><td>Increment 3: NativeNote slice</td><td>Opus</td><td class="num">309,133</td></tr>
+<tr><td>GenAI run 4 analysis and gates</td><td>Opus</td><td class="num">200,588</td></tr>
+<tr><td>Increment 4: seam probe</td><td>Opus</td><td class="num">180,625</td></tr>
+<tr><td>Increment 5: Assets &amp; Parts</td><td>Opus</td><td class="num">364,740</td></tr>
+<tr><td>Increment 6: core services</td><td>Opus</td><td class="num">362,047</td></tr>
+<tr><td>Increment 7: strangle</td><td>Opus</td><td class="num">532,725</td></tr>
+<tr><td>Increment 8: Dispatch</td><td>Opus</td><td class="num">548,951</td></tr>
+<tr><td>Skills: decompose-app + rehost-app</td><td>Opus</td><td class="num">149,873</td></tr>
+<tr><td>Skills: mendix-service-seam + patches</td><td>Opus</td><td class="num">103,049</td></tr>
+<tr><td>Level-3 skill corrections</td><td>Opus</td><td class="num">87,871</td></tr>
+<tr><td>Target-architecture stage</td><td>Opus</td><td class="num">81,800</td></tr>
+<tr><td>Rehost skill: journey and configuration</td><td>Opus</td><td class="num">84,863</td></tr>
+<tr><td>Web slice candidates; native bug hunt; bug report draft; skill vs docs check; stage 53 issues; repro reduction A, B, C; first report draft</td><td>Sonnet (9 workers)</td><td class="num">1,022,175</td></tr>
+<tr><td>Rehost vs MPK page</td><td>Sonnet</td><td class="num">82,753</td></tr>
+<tr><td>Nightly retest, 50 workers</td><td>Haiku</td><td class="num">3,355,386</td></tr>
+</tbody></table></div>
+<div class="callout"><p><strong>Not counted:</strong> the orchestrator session; increments 1a/1b and the first FSM cut-score worker; the first Dispatch attempt, stopped after minutes; this regenerated report. The real total is higher.</p></div>
 
-<h2>6. Proven, not proven, and next</h2>
+<h2>8. Proven, not proven, next</h2>
 <div class="tablewrap"><table>
 <thead><tr><th>Proven</th><th>Not proven</th></tr></thead>
 <tbody>
-<tr><td>A small same-version app rehosts essentially losslessly (154 of 155 documents identical).</td><td>A large rehost reaching build-green. GenAI stopped at 14 errors and a failed build.</td></tr>
-<tr><td>A Mendix 9 app can be read, upgraded on a copy and its modules moved to Mendix 11 by package.</td><td>Regression parity of a rehosted app. It is not reachable headlessly and needs a human-run level.</td></tr>
-<tr><td>Strangling works end to end: four modules deleted from the monolith, both apps build, and a repeatable test crosses both apps in both directions (16/16, twice).</td><td>One journey per crossing edge: 2 journeys cover the 5 crossing kinds, not each of the 536 references.</td></tr>
-<tr><td>Two slices reach build-green (<code>mx check</code> 0, build succeeded, 0 unresolved ledger rows).</td><td>Monolith-side UI over the moved data (tickets, work orders, appointments) at runtime: the test database held none. Slice-to-device push of used parts. Behaviour with the slice down.</td></tr>
-<tr><td>A live seam: one record crossed in increment 4; a journey slice to monolith to slice passed 9/9 in increment 6.</td><td>Mobile: 31 stub rows remain, and offline sync needs REST-fed copies.</td></tr>
-<tr><td>Stub rows fell 120 to 32 by publishing core services.</td><td>Login across apps, and data migration. A monolith outage makes the slice's asset page unusable (measured).</td></tr>
+<tr><td>A small same-version app rehosts essentially losslessly.</td><td>A large rehost reaching build-green, and a 9/10 source regenerated into 11.</td></tr>
+<tr><td>MPK move from Mendix 9 via 10.24 into 11, IDs kept.</td><td>Journey parity of a rehosted app against its source.</td></tr>
+<tr><td>Strangling Assets &amp; Parts end to end, cross-app e2e 16/16 twice.</td><td>One journey per crossing edge: 2 journeys cover 5 crossing kinds, not each of 536 references.</td></tr>
+<tr><td>Skills as playbook: Dispatch to build-green plus live seam in about 1 h 55.</td><td>Dispatch strangled (3 behaviour stubs short of level 2). Mobile: offline sync needs REST-fed copies.</td></tr>
+<tr><td>Stub rows fell 120 to 32 (Assets) and 271 to 3 (Dispatch).</td><td>Login across apps, data migration, behaviour with a slice down.</td></tr>
 </tbody></table></div>
 <h3>Next</h3>
 <ul class="tight">
-<li><span class="pill done">done</span> Strangled Assets &amp; Parts: four modules deleted from the monolith, cross-app end-to-end test 16/16 on two consecutive runs. 157 in-edges remain as reasoned hand-offs.</li>
-<li><span class="pill next">next</span> Fold the level-3 lessons into the skills: a "strangle" recipe, one journey per crossing kind, key read rights on AutoNumber keys, key copies instead of a mirror.</li>
-<li><span class="pill next">next</span> Dispatch &amp; Workforce. It has about 1.8 times the no-lane calls of Assets &amp; Parts (126 vs 69), so it follows once the pattern works.</li>
-<li><span class="pill next">next</span> The Mobile partition (offline sync, REST-fed copies).</li>
+<li><span class="pill next">next</span> Re-run the Rehost GenAI test on the nightly.</li>
+<li><span class="pill next">next</span> Update the skills for the nightly fixes.</li>
+<li><span class="pill next">next</span> Mobile partition.</li>
+<li><span class="pill next">next</span> Strangle Dispatch.</li>
 <li><span class="pill open">open</span> Token authentication between apps (today a machine role with basic auth).</li>
 <li><span class="pill open">open</span> Data migration per owned entity: toolkit scope or customer job is undecided.</li>
-<li><span class="pill next">next</span> Fix the extractor's silent module drop, then re-run GenAI.</li>
+<li><span class="pill run">review</span> Pull request #293 (MendixMau/mxcli-project-toolkit) is open and awaiting review.</li>
 </ul>
 
-<footer>Sources: <code>process/decompose-and-rehost-plan-2026-10-12.md</code>, <code>pipelines/mendix-mpr/README.md</code>, and the FINDINGS files under <code>pipelines/mendix-mpr/samples/</code>. Companion to the overview page. A reading aid, not a decision register.</footer>
+<footer>Sources: <code>process/decompose-and-rehost-plan-2026-10-12.md</code>, <code>process/rehost-vs-mpk-2026-10-13.html</code>, <code>pipelines/mendix-mpr/README.md</code>, the FINDINGS files under <code>pipelines/mendix-mpr/samples/</code>, and the decompose, seam and rehost skills. A reading aid, not a decision register.</footer>
 </div>
 </body>
 </html>
