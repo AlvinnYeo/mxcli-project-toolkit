@@ -4,9 +4,9 @@
 consumes — usually after a split (`decompose-app.md` Stage 5), also any app-to-app seam.
 **Purpose:** Patterns that worked, and the concrete failure each one prevents, for publishing
 OData/REST from one Mendix app and consuming it as external entities and REST calls in another.
-**Evidence:** FSM template increment 6. `<core>` below is
-`pipelines/mendix-mpr/samples/fsm-template-9.24.2/slice-assets-core/` (`FINDINGS.md`,
-`captures/NN-*.txt`, `mdl/*.mdl`).
+**Evidence:** FSM template increments 6–7. `<core>` and `<str>` below are
+`pipelines/mendix-mpr/samples/fsm-template-9.24.2/slice-assets-core/` and `…/slice-assets-strangled/`
+(`FINDINGS.md`, `captures/NN-*.txt`, `mdl/*.mdl`).
 
 **Not this skill:** a third-party REST API with JSON structures and mappings →
 `rest-integration-first-time-right.md`. Where to cut an app → `decompose-app.md`.
@@ -19,12 +19,13 @@ Each: do this → the failure it prevents → where it was captured.
 
 **P1 Key: add `PublicID: AutoNumber default 1`.**
 `alter entity M.E add attribute if not exists PublicID: AutoNumber default 1;` — accepted as the
-OData key without a unique rule and never fails a commit (`<core>/mdl/mono-core-publish.mdl`,
-`captures/02`). `default 1` is mandatory (MDL023/CE7247). Put a unique rule on an existing
-attribute only when every create path fills it.
-*Anti:* a key with no unique rule passes `check`, then `CE6624`; no key at all →
-`CE6585 "Published entity '…' must have a key defined."` (`slice-assets/FINDINGS.md`). A unique
-rule on an attribute some flow leaves empty fails that flow's commit at runtime.
+OData key without a unique rule (`<core>/mdl/mono-core-publish.mdl`, `captures/02`). `default 1` is
+mandatory (MDL023/CE7247). **Grant read on `PublicID` to every module role with an access rule on
+the entity** — page-created objects fail on commit otherwise: `Failed to commit: Value of
+auto-number attribute 'PublicID' not available, could be caused by insufficient access rights …`
+(`<str>/captures/25`). A unique rule on an existing attribute only when every create path fills it.
+*Anti:* a key with no unique rule passes `check`, then `CE6624`; no key →
+`CE6585 "Published entity '…' must have a key defined."` (`slice-assets/FINDINGS.md`).
 
 **P2 Machine role only, on both services.** One machine user role (here `CoreAPIClient`) with one
 read-only module role per published module, granted exactly the published members; create/delete
@@ -92,8 +93,11 @@ crashes `mx check`. Fix: drop the consumed service and recreate it with `Headers
 external entities survive.
 
 **P13 Ownership.** A slice-owned association to an external entity loses the owner's delete
-cascade: when the far side deletes, local rows orphan. Record it as a hand-off row. A local save
-next to a REST write is a dual write — a hand-off until one side goes.
+cascade: when the far side deletes, local rows orphan. The same holds from the monolith side: its
+own delete cascades into slice rows are lost once those rows move (FSM: `AppointmentList_Delete`,
+`WorkOrderList_Delete`). Fix: a published REST delete-for-parent action on the owner (P7), or an
+orphan hand-off row. A local save next to a REST write is a dual write — a hand-off until one side
+goes.
 
 ---
 
@@ -101,17 +105,25 @@ next to a REST write is a dual write — a hand-off until one side goes.
 
 What re-pointing a consumer at an external entity costs — `mx check` will not tell you all of it:
 
-- **Associations:** local → external only with the **local entity as owner**. An external entity
-  cannot own an association to a local entity (that edge stays a hand-off).
+- **Associations:** local → external only with the **local entity as owner**; an external entity
+  cannot own one (hand-off). A reference set local → external works, but entity-path widgets over it
+  fail `[CE6634] "An association to or from an external entity is not allowed in an entity path
+  source."` (`<str>/captures/12`). A slice-owned association to a monolith entity cannot be
+  published — publish a key copy (B′). Inherited attributes cannot be published via mxcli: give each
+  specialization its own key.
 - **XPath:** cannot traverse local ↔ external — retrieves, access rules, pages and nanoflows using
-  one break. Access-rule disjuncts that walk such a path become `[false()]` or need a local owner
-  entity (recipe B, P5).
+  one break. Also CE0161: comparing the local entity's own local → external association with an
+  object (`[TicketManagement.Ticket_Asset = $Asset]`), and retrieving an external entity by reverse
+  association. Retrieve over the navigation instead. Access-rule disjuncts that walk such a path
+  become `[false()]` or need a local owner entity (recipe B, P5).
 - **Writes:** Commit/Change/Delete on an external entity do not work — rewrite to Send External
   Object (Insertable/Updatable/Deletable publish) or a REST action (P3). The consumer cannot create
   an external object: post a non-persistent draft.
 - **Aggregates:** count works; sum/avg/min/max run in memory or not at all; no OQL or datasets.
   Totals need a published aggregate or a local copy.
 - **Offline:** native offline profiles cannot hold external entities — REST-fed local copies.
+  Push chains that ended in the owner's commit flows die when those flows move: rebind each to the
+  REST write and add a pull entry (FSM: `NativeSync_Pull*`).
 - **Security:** external entities need read grants to a consumer module role. Granting a module
   role of one module on another module's entity → `[CE0007] "Please re-select module roles."`
   (`<core>/captures/08`).
@@ -149,6 +161,10 @@ the owner.
 4. Where an access rule must walk the join, a local owner entity carries it
    (`CoreSeam.TechnicianLink`, names copied from OData at link time).
 
+The mirror is **temporary**: at level 3 it lives in the module being deleted. **B′:** the
+owner-side entity carries a copy of the consumer's key, set before commit and published; the
+consumer filters on it. Removing the mirror from a published service is a breaking change (P10).
+
 ---
 
 ## Completion criteria
@@ -158,7 +174,8 @@ Bound for a seam: every line below holds, each with its count stated.
 - Every published service grants **exactly one** machine role, measured 200 / 401 / 404 per
   service (N of N services captured).
 - Every published key is `PublicID` AutoNumber or an attribute with a unique rule filled by every
-  create path (N of N keys named with their kind).
+  create path, readable by every module role with an access rule on its entity (N of N keys named
+  with their kind).
 - Every `call rest service` has `on error` (0 calls without; grep the MDL).
 - Every external entity on a page is listed with its outage behaviour — lazy tab, local copy, or
   availability-coupling hand-off (N of N pages; "not probed" is legal, silence is not).
