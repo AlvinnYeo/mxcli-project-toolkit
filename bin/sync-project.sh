@@ -69,6 +69,8 @@ AGENTS="$MXTK_AGENTS"
 # read FIRST, and which nothing in the toolkit created until 2026-08-20. Same one-copy
 # arrangement; see bin/lib/resume-template.sh's header for what was broken.
 . "$SCRIPT_DIR/lib/resume-template.sh"
+# The CLAUDE.local.md session-start ritual: the short text, and the long one it heals (#288).
+. "$SCRIPT_DIR/lib/ritual-template.sh"
 
 # Item 3 of wire-agents.sh's stamped block, the one text shared with the in-place repair step
 # below (5c) — see that file's header for why it is not typed twice.
@@ -660,22 +662,17 @@ fi
 
 # --- 2b. CLAUDE.local.md: append the session-start ritual if this project predates it ---
 if [ -f "$CL" ] && ! grep -q "Session-start ritual" "$CL"; then
-  w_app "$CL" <<EOF
-
-## Session-start ritual (mandatory, before any pipeline work)
-
-1. \`git -C $TOOLKIT_ROOT pull --ff-only\` then \`git -C $TOOLKIT_ROOT rev-parse --short HEAD\`
-2. If \`git -C $TOOLKIT_ROOT branch --show-current\` isn't \`master\`, or the pull above could not
-   fast-forward, say so before trusting anything you read from the clone — a session on a stale
-   or non-master toolkit branch can re-stamp a rule master already replaced (real incident,
-   2026-09-16). \`bin/sync-project.sh\` reports the same check on every sync.
-3. \`$TOOLKIT_ROOT/bin/status.sh <project-root> --brief\` — where, done/overdue, next action; post it
-   as the session's first message (same step as init-project writes for new projects).
-4. If the commit differs from \`PROJECT.md\`'s \`Toolkit commit:\` line: re-read
-   \`$TOOLKIT_ROOT/skills/conversion-runbook.md\` §1b plus your stage's section, then update that line.
-5. State in chat which commit you're working from. gate-check blocks all gates on a mismatch.
-EOF
+  { printf '\n'; mxtk_ritual_new "$TOOLKIT_ROOT"; } | w_app "$CL"
   echo "Updated: CLAUDE.local.md — appended the session-start ritual."
+  CHANGES=$((CHANGES + 1))
+fi
+# --- 2b1. CLAUDE.local.md: replace the long pre-#288 ritual with the short one -----------------
+# The old section re-explained the protocol-ack procedure on every turn of the main session and
+# of every subagent; gate-check.sh prints that procedure in the notice it shows when an update is
+# actually waiting. Exact whole-section match only (bin/lib/ritual-template.sh), so a section
+# anyone edited by hand is left alone.
+if mxtk_ritual_heal "$CL" "$DRY_RUN"; then
+  echo "${DRY:-}Rewrote: CLAUDE.local.md session-start ritual — the short version (main session only; the ack procedure now comes from gate-check's own notice)."
   CHANGES=$((CHANGES + 1))
 fi
 if [ -f "$PROJECT_DIR/PROJECT.md" ] && ! grep -q "Toolkit commit:" "$PROJECT_DIR/PROJECT.md"; then

@@ -763,7 +763,7 @@ Then filter by Role(s). A helper dispatched with a role stub (ba, architect, mdl
 | Any question before asking the user or writing anything — query the model, then read the source, then ask the human, in that order | `skills/query-the-model.md` | P,0,1,2,3,4,5,6,7 | every role |
 | Putting a question TO the user — any gate, any stage: ask in chat not in a file, two named options plus your recommendation, one batch per gate then end the turn | `skills/interview-protocol.md` | P,0,1,2,3,4,5,6,7 | lead, ba, architect |
 | Any stage transition — the 2+1 format every CAC uses, and the one-register rule (answers land in PROJECT.md, never in a separate state file). The seven CACs themselves are routed per stage in the situational table | `skills/checkpoints/checkpoint-template.md` | 0,1,2,3,4,6,7 | lead, ba, architect |
-| Setting up or completing a project's dev-process subagents — once, at project start, not "on demand" | `skills/agent-roles.md` | P,4,5 | lead |
+| Starting a subagent, sending it a fix round, or reading an agent-stop notice; or setting up the project's subagents — read its Dispatching section per dispatch, the rest once at setup | `skills/agent-roles.md` | P,1,2,3,4,5,6 | lead |
 | Deciding whether to extract at all, before any BRD gets generated | `skills/source-triage.md` | 0 | ba |
 | Taking in a new source — before generating anything from it. Grades what the source can support; nothing else in this toolkit reads a source | `bin/source-sufficiency.sh` | 0,1 | ba |
 | Closing Stage 1, or adding files to a source folder — every inventoried file must name the artifact that consumed it (text AND embedded diagrams), or carry a waiver; blocks Stages 1–2 until it does | `bin/source-ledger.sh` | 0,1,2 | ba |
