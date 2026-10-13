@@ -194,7 +194,8 @@
 <h3>What a Rehost does not carry</h3>
 <ul class="tight">
   <li>Passwords and demo-user secrets (described as a masked value).</li>
-  <li>Constants and certificates.</li>
+  <li>Per-environment constant values, certificates and database credentials. Constants themselves are copied, with their default values.</li>
+  <li>Navigation: the extractor does not emit it, so it is re-entered.</li>
   <li>The theme.</li>
   <li>Project security level (described as a report, not MDL).</li>
   <li>Environment configuration.</li>
