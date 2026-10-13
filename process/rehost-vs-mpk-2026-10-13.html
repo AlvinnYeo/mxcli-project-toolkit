@@ -202,7 +202,22 @@
 </ul>
 <div class="callout"><p><strong>Run the same journeys against source and target afterwards.</strong> Identical describe output does not prove identical behaviour. The Banking run was proven statically only: <code>mx check</code>, build and describe compare.</p></div>
 
-<h2>6. Not proven yet</h2>
+<h2>6. Why MDL is valuable even without a rebuild</h2>
+<p class="lead">Describing an app as MDL text is useful on its own. Reading and comparing do not need the text to be re-executable, so the round-trip limits above do not apply here.</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Use</th><th>What the MDL text gives you</th><th>Where we used it</th></tr></thead>
+<tbody>
+<tr><td>Understand the app</td><td>The whole model as searchable text. "Who calls this flow" or "which roles can see this entity" becomes a search, not clicking through Studio Pro.</td><td>Every worker read FSM this way; the catalog, app facts and cut scorer are built on it.</td></tr>
+<tr><td>Let an AI agent work on it</td><td>Agents read and reason over text. Without it they cannot see the model at all.</td><td>All decomposition increments started from describe output.</td></tr>
+<tr><td>Review a change</td><td>Diff the MDL before and after, like a code review for Mendix.</td><td>Fidelity ledgers compare source and target per document.</td></tr>
+<tr><td>Regression baseline</td><td>Describe before and after an upgrade, marketplace update or package move. What drifted is what to test.</td><td>NativeNote 66/66 identical after the move; Assets 207 identical, 5 drift.</td></tr>
+<tr><td>Scope the tests</td><td>The call graph shows what a change touches, so you test those flows and not everything.</td><td>The cut ledger lists every reference across a cut by document.</td></tr>
+<tr><td>Audit and static checks</td><td>Scan access rules, constants, hard-coded values and known anti-patterns as text.</td><td>The access-rule XPath pre-check in the decompose skill.</td></tr>
+<tr><td>Document or derive requirements</td><td>Generate documentation or requirements from the real model, not from memory.</td><td>Feeds the toolkit's requirements and build-plan skills.</td></tr>
+</tbody></table></div>
+<p>Rule of thumb: <strong>describe every app you touch</strong>, even when you move it by MPK. The text costs seconds to minutes and pays back in understanding, review and test scoping.</p>
+
+<h2>7. Not proven yet</h2>
 <ul class="tight">
   <li><span class="pill open">open</span> A 9 or 10 source regenerated into 11. Reading a 9.24 source works; a Rehost from it was never run.</li>
   <li><span class="pill open">open</span> A large Rehost that reaches build-green. GenAI got to 14 errors.</li>
