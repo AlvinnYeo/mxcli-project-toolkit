@@ -161,8 +161,11 @@ recorded. A reviewer who doubts an artifact says which claim it fails to prove; 
 not a second run.
 
 **When the full suite runs:** full `mxcli test` (and the module's whole journey set) runs **at
-module close**, as part of `module-review.md`'s PROVE stage — **never at batch close**, never after
-an individual fix.
+module close**, as part of `module-review.md`'s PROVE stage; the **project-wide** suite runs at
+project close / cutover; and either runs **whenever the user explicitly asks for it** in that
+message. Those are the only triggers — **never at batch close**, never after an individual fix,
+and never because the change "felt wide". The e2e instruments themselves (journeys, Playwright,
+DB assertions, LOOK) are unchanged by this rule; only their trigger is.
 
 | Event | What happens |
 |---|---|
@@ -170,6 +173,8 @@ an individual fix.
 | A new script within agreed scope | Re-run its subject set. Extend the suite only for a *behaviour* the coverage checklist doesn't already cover. |
 | A new behaviour / scope change | The coverage checklist changes — the existing drift-sync path. The suite extends with it. |
 | Module close | The full suite, once (`module-review.md` PROVE). |
+| Project close / cutover | The project-wide suite, once. |
+| The user asks for a full run | Run it, that message is the trigger. |
 
 > **What the unscoped rule produced (toolkit issue #274, a 20-task UX-fix retro).** This table
 > used to say "a fix to an existing script → re-run the suite as regression", with no scope. Read
