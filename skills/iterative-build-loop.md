@@ -529,6 +529,14 @@ COVERAGE closes the gap `process-learnings.md` §C flagged and left open ("who o
 checklist review?") — `gate-agent` does, in the same pass as Gate: BUILD, not as a separate optional
 step.
 
+**Verification is scoped — once per gate, not once per script.** Gate: SYNTAX and Gate: BUILD run
+inside every `exec.sh`, and they are the only per-script checks. The test passes (happy path, journeys, LOOK) run **once
+per gate round** over what that round changed, and `bin/gate-check.sh` runs **once per gate round**,
+not after every exec. What re-runs after a change, by whom, and when the full suite runs (module
+close only, never batch close) is `testing-shape.md` §3 — the single source; `exec.sh` prints the
+run's lane (`ui-only` / `logic`). Repeating a pass the artifacts already prove is the over-testing
+toolkit issue #274 measured: UI-only changes re-proven 5–10×.
+
 > **Older ordinals, for anyone arriving from a document that still cites them:** Gate 2 = Gate:
 > BUILD, Gate 3 = Gate: COVERAGE, Gate 4 = Gate: UI. There was never a Gate 1 — the pre-exec
 > `mxcli check` was the unwritten first gate, which is why the numbering started at 2, and it is

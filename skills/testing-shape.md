@@ -73,8 +73,9 @@ is green, the page renders, the list is simply empty. Trace is the only instrume
 
 ## §2 — Who chooses the optional parts: the customer, at intake
 
-**Ask once, at project intake — not once per module.** Record the answer in `PROJECT.md` as a
-CONFIRMED decision like any other.
+**Ask once, at project intake — not once per module.** It is intake question 13 (`intake.md`,
+written by `bin/init-project.sh`, appended to older projects by `bin/sync-project.sh
+--repair-intake`). Record the answer in `PROJECT.md` as a CONFIRMED decision like any other.
 
 > **The intake question.** Every module gets UI tests and database assertions as standard. There are
 > two optional additions, both with a real cost:
@@ -82,16 +83,23 @@ CONFIRMED decision like any other.
 > - **Unit tests** — check a microflow's logic on its own. Worth it where a module has fiddly
 >   calculation or mapping logic. **Cost:** the runner temporarily writes to your project file, so
 >   Studio Pro must be closed and the file snapshotted first. It also has two confirmed parsing
->   defects (§4) that have to be worked around.
+>   defects (§4) that have to be worked around. **Project default: no.**
 > - **Trace (OpenTelemetry)** — see inside the running app: which microflow fired, and whether a step
 >   errored even though the screen looked fine. Worth it where a module **calls out** to something —
 >   a REST call, an import mapping, external data — because that is where failures get swallowed.
 >   **Cost:** someone must switch it on by hand in Studio Pro's settings (there is no command for it)
 >   and start the trace collector by hand. Neither is scriptable today.
 
-**Then one rule on top, and only one:** a module that **calls out** to something external may add
-Trace even when the project default is off. That is where swallowed failures live, and it is the only
-place Trace reliably earns its setup cost.
+**Then two rules on top, and only two:**
+
+- **Unit flips to yes per module** only when the module has calculation, mapping, or date/money
+  logic; calls a Java action or a REST service; or a bug was fixed in that flow (the unit test pins
+  the fix). Otherwise Unit stays **no**. Before this default existed nothing set it, so agents read
+  "optional" as "yes" — and in a 20-task UX-fix run (toolkit issue #274) **143 minutes** of
+  microflow tests found stale expected strings and credential problems, not a single logic bug.
+- **Trace may be added** by a module that **calls out** to something external, even when the
+  project default is off. That is where swallowed failures live, and it is the only place Trace
+  reliably earns its setup cost.
 
 **A module may declare its shape; it may never leave it blank.** Same discipline as "a step may say
 *not built*; it may never be *absent*".
@@ -121,16 +129,60 @@ added later do not move the goalpost, because the goalpost was placed before the
 definition of done (`iterative-build-loop.md`). Without this anchor someone declares two scripts
 "base", earns a green suite, and the module isn't built.
 
-**After the base set: re-run, don't re-propose.**
+**After the base set: re-run what the change touched — once — and nothing else.**
+
+> **The routing question, before any test run after the base set:** *does this run prove something
+> the existing artifact does not?* If the journey report, screenshot or diff already in hand proves
+> it, the run is waste. If you cannot name what the run would show that the artifact does not, do
+> not run it.
+
+**The subject set.** A re-run is scoped to the tests whose *subject* the change touched, read off
+what the exec'd script(s) changed — the script is the change list; `bin/exec.sh` also tags each run
+`ui-only` or `logic` and prints the lane below:
+
+| Changed in this exec | Its subject set — re-run these, only these |
+|---|---|
+| A microflow | the tests that call it, plus the tests of its callers (`SHOW CALLERS OF <Mod.Flow>`) |
+| A page or snippet | the journeys whose steps visit that page (or a page that embeds the snippet) |
+| An entity, association, enum or access rule | the tests and journeys of the module that owns it |
+
+Anything outside that set was not at risk from this change and is not re-run.
+
+**Two lanes, by change class:**
+
+| Change class | What re-runs | What does not |
+|---|---|---|
+| **UI-only** — `ALTER PAGE`/`ALTER SNIPPET`, styling, captions, visibility, layout; **no** microflow, entity, association, enum, security or navigation change (`exec.sh` tag `ui-only`) | The implementer's own journey for that page, **once**, plus a **LOOK** (screenshot, actually opened — `module-review.md` stage 4) | No `.test.mdl`. No regression journeys of other modules. No full `mxcli test`. |
+| **Logic** — anything else (`exec.sh` tag `logic`; a mixed script is logic) | The subject set above: the changed microflows' tests and their callers' tests, the changed pages' journeys | Tests whose subject this change did not touch. |
+
+**Who re-runs:** the implementer, once per gate. **Reviewers verify artifacts** — the diff, the
+screenshots, the journey report — and **never re-run** what the implementer already ran and
+recorded. A reviewer who doubts an artifact says which claim it fails to prove; that is a finding,
+not a second run.
+
+**When the full suite runs:** full `mxcli test` (and the module's whole journey set) runs **at
+module close**, as part of `module-review.md`'s PROVE stage — **never at batch close**, never after
+an individual fix.
 
 | Event | What happens |
 |---|---|
-| A fix to an existing script | **Re-run** the suite as regression. No questions, no re-authoring. |
-| A new script within agreed scope | Re-run. Extend the suite only for a *behaviour* the coverage checklist doesn't already cover. |
+| A fix to an existing script | **Re-run its subject set**, in its lane. No questions, no re-authoring. |
+| A new script within agreed scope | Re-run its subject set. Extend the suite only for a *behaviour* the coverage checklist doesn't already cover. |
 | A new behaviour / scope change | The coverage checklist changes — the existing drift-sync path. The suite extends with it. |
+| Module close | The full suite, once (`module-review.md` PROVE). |
 
-So the authoring conversation happens **once per module**; everything after is cheap re-running. That
-is what makes this affordable on a module under active development.
+> **What the unscoped rule produced (toolkit issue #274, a 20-task UX-fix retro).** This table
+> used to say "a fix to an existing script → re-run the suite as regression", with no scope. Read
+> literally, every caption change re-ran everything. Measured: each UI-only change was re-proven
+> **5–10×** — the implementer's journey, then 4–5 regression journeys of other modules, then the
+> reviewer re-running the same journeys, then a full `mxcli test` (~6 min) at every batch close.
+> **143 minutes of microflow tests** in that run found stale expected strings and credential
+> problems — not one logic bug — because the changes under test contained no logic. The fix is
+> not "test less", it is "test the subject": a caption change has no microflow subject, so it owes
+> one journey and one look.
+
+So the authoring conversation happens **once per module**; everything after is a scoped re-run.
+That is what makes this affordable on a module under active development.
 
 **The loop, once per module:**
 

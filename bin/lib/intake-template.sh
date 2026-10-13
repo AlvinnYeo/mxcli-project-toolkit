@@ -136,6 +136,16 @@ only (`.claude/settings.local.json`); force-push, `git reset --hard`, `git clean
 still prompt. Record it as `Permission profile:` in PROJECT.md, then run
 `bin/install-harness-permissions.sh <project> --profile <answer>`; `bin/doctor.sh <project>`
 shows what is in effect.
+
+## 13. Unit tests (`.test.mdl`): project default `no` (default) or `yes`?
+
+_Not yet asked._ How to verify: ask the user; default is `no`. Every module already gets UI
+journeys and data assertions. Unit tests cost a closed Studio Pro and a snapshot per run, and with
+the default unset agents ran them everywhere: in a 20-task UX-fix run, 143 minutes of microflow
+tests found stale strings and credential problems, not logic bugs (toolkit issue #274). With
+`no`, a module still flips to `yes` in its brief when it has calculation, mapping or date/money
+logic, calls Java or REST, or had a bug fixed in that flow (`testing-shape.md` §2). Record it as
+`Unit tests default:` in PROJECT.md.
 MXTK_INTAKE_EOF
 }
 
