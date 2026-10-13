@@ -83,7 +83,7 @@ open-ended search without a specific term in mind.
    from the same place. Otherwise a later task undoes an earlier fix without touching it.
 
    The field case (2026-10-12, a 20-task UX-fix run over three apps): task 4 made a withdrawn
-   bulletin read "Stopped" through a calculated display status. Task 18 added badges that read
+   record read "Stopped" through a calculated display status. Task 18 added badges that read
    the *stored* status, so four pages showed "Notified" again, one of them an external user's
    main page. Task 18's own review and journeys passed. Only the final whole-app LOOK found it.
    The same run had a closed record showing zeros from a summary that returns zeros once
@@ -94,7 +94,7 @@ open-ended search without a specific term in mind.
    comes from, log it as a `PROJECT.md` decision whose Decision cell starts `Displayed fact:`:
 
    ```
-   | 5 | Displayed fact: bulletin status — source Bulletins.Bulletin_GetDisplayStatus; raw Bulletin/Status is never shown; stale after Bulletins.StaleAfterMinutes | CONFIRMED | task 4 |
+   | 5 | Displayed fact: notice status — source Notices.Notice_GetDisplayStatus; raw Notice/Status is never shown; stale after Notices.StaleAfterMinutes | CONFIRMED | task 4 |
    ```
 
    A row names the fact, its **single** microflow or attribute, the raw attribute it
