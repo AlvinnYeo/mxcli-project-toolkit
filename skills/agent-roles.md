@@ -28,9 +28,64 @@
 
 ---
 
-**When to dispatch, in what batch, on which model:** `conversion-runbook.md` §1c is the single source. This file is the setup; that table is the runtime rule.
+**When to dispatch, in what batch, on which tier:** `conversion-runbook.md` §1c is the single source. **How to dispatch** — the four harness defaults to override on every call — is the next section. The rest of this file is the setup.
 
 The `model:` line in each template below is pinned to match the shipped stub at `agents/<name>-agent.md` — see `conversion-runbook.md` §1c for the why.
+
+## Dispatching — override four defaults on every call
+
+**Trigger:** you are the lead and are about to start a subagent, send one a fix round, or are
+reading an agent-stop notice. Read this section, not the whole file.
+
+Every default below is what the harness does when the call says nothing. In a 20-task,
+89-subagent UX-fix run (2026-10-12, 663.6M tokens, #288) none was overridden, and each one
+shows up in the bill:
+
+| Harness default | What it cost in that run | Override |
+|---|---|---|
+| The subagent inherits the lead's model | 15 of the 21 subagents on the most capable model got it by inheritance alone: read-only lint planners, a severity judge, a root-cause investigator, a PR drafter. 48.1M tokens, 7.2% of everything | 1 |
+| A scan is started as a fork | 6 forks started at 178–210k tokens of inherited context: 37.5M, 7.7% of subagent tokens. Three read-only scan forks made 2–7 tool calls each | 2 |
+| A fix round resumes the implementer | 15 resumes cost 46.6M (9.5%), 3.1M each, because a resumed agent re-reads its 120–215k context on every turn. The narrow re-reviews in the same run cost 0.2–1.2M each | 3 |
+| Every notice gets a turn | 130 task notices to the lead: 96 of the turns after them made no tool call, 19.9M. 20 notices reached subagents that had already reported | 4 |
+
+1. **Name the model on every call.** A stub carries `model:` in its frontmatter
+   (`sync-project.sh --pin-models` repairs drift in a completed one); an ad-hoc call carries
+   nothing and silently runs at the lead's price. Pick the tier from §1c's tier table and write
+   it on the call. Read-only planning, judging, root-cause reading and drafting a PR or report
+   are **mid**: their output is checked by the lead or a gate. Transcriptions and `SHOW` dumps
+   followed by a check are **cheap**. Only §1c's strong rows get the most capable model.
+2. **Scans start fresh, with a written brief — never as a fork.** A fork carries everything the
+   lead has read; a scan needs a question, the paths to read and the file to write. The brief
+   says: the question, the files or globs, the output file and its shape, the model, and "you are
+   a dispatched helper: skip the session-start ritual". If you cannot write the brief without
+   the conversation, a fact the scan needs lives only in chat — write it into `PROJECT.md`
+   first, then dispatch.
+3. **A fix round goes to a fresh, narrow fixer — not the resumed implementer.** Its brief is the
+   review file (each finding with file and line), the commit range (`git diff <base>..<head>`),
+   the module brief, and the gate to re-run. *What is lost:* the implementer's discarded
+   attempts and any reason it never wrote down. *How the brief covers it:* the review file
+   carries the evidence, the diff carries the work, and the implementer's returned report must
+   list every choice the brief did not dictate — require that line in every implementer brief.
+   Resume only when a finding needs the implementer's unwritten reasoning, and say why in the
+   dispatch. A fresh fixer has not been measured head-to-head against a resume yet; the first
+   run that does both records the numbers in `process/`.
+4. **Coalesce notices per lane; a notice that needs nothing gets no turn of reply.** Dispatch a
+   lane's independent units in one message as parallel foreground calls, so N results arrive in
+   one turn instead of N notices. With background agents, a notice whose result the next step
+   does not need yet gets no reply; read the lane's files when its last unit lands. Never send a
+   message to an agent that has already reported — that restarts it at its full context.
+
+**Prefix you do not control.** Every subagent turn also carries the harness's skill listing,
+tool and MCP notes and the instruction chain — 47–48k tokens in that run before the brief was
+read, about 40% of subagent volume. Each installed skill and plugin adds to it on every turn of
+every subagent: disable the ones a project does not use. The toolkit keeps its own share short
+(`CLAUDE.local.md`'s session-start ritual is main-session only and does not repeat what
+`gate-check.sh` prints).
+
+**Done when**, for each dispatch batch: N of N calls name a model; 0 scans started as forks;
+every fix round names its review file and commit range; 0 messages sent to agents that already
+reported. After a run, `bin/context-audit.sh --project <dir>` section 1 gives the subagent start
+size (median, p90, max): a p90 near the lead's own context means a fork slipped through.
 
 ## Why split into six roles
 
