@@ -70,6 +70,14 @@ Three of those are worth knowing before you write anything:
 | `seeds[]` | no | resolved in array order before the walk | nothing to substitute; the walk still runs | see below |
 | `steps[]` | **yes** | the walk | nothing happens | see below |
 | `outcome` | no | rung 5, after the last step | rung 5 is absent, which `journey-proof.md` classes as `fault` — say why in a `_outcomeGap` note | see below |
+| `requiresEnv[]` | no | suite preflight, before the browser opens | not checked. An unset mock credential then shows up as INVALID rungs mid-walk | `["MOCK_API_KEY"]` → one `SETUP  env:` line for the suite, and the journey is not walked |
+| `requires[]` | no | suite ordering and the precondition gate (walk runs, not `--positive-control`) | file order, no gate | `["request-at-review"]` runs after the journey that `leaves` it. If that journey did not complete: `precondition not met: request-at-review (left by journey J-SUBMIT, …)` |
+| `leaves[]` | no | ordering. The token holds only after a **clean** walk (no FAIL/INVALID) | — | `["request-at-review"]` |
+| `consumes[]` | no | ordering (every `requires` holder of the token runs first). The token is gone after this journey | — | `["request-at-review"]` on the journey that approves the request and moves it on |
+
+The three state fields are free strings that you choose. A `requires` token that no journey in the
+run `leaves` is left to the fixture (the runner lists it once and does not gate it). Journeys with
+none of the fields run exactly as before.
 
 ### `seeds[]`
 

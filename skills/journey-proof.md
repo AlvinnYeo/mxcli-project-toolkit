@@ -64,6 +64,48 @@ decorative.
 
 ---
 
+## Running a suite: INVALID across many journeys is a setup fault
+
+**Trigger:** you are about to run more than one journey, or a suite run came back with INVALID
+spread across journeys.
+
+The failure this prevents (field run 2026-10-12, 14 journeys, #286):
+
+```
+=== SUMMARY ===
+  PASS 305   FAIL 28   INVALID 6        2 of 14 journeys green — first pass discarded
+```
+
+Every data rung had gone `INVALID — OQL returned nothing` because the runner's default admin
+credential was not the app's (HTTP 403), and the suite walked all 14 journeys anyway. Two unset
+mock env vars made 3 journeys INVALID one at a time. One journey moved a record on, so the next
+journey's seed refused, and that made 6 of 14 INVALID. Each of these looks like a test fault, and
+each one was knowable before the first click.
+
+`journey-runner.js` now runs a **preflight** before it opens the browser. Read its `SETUP` lines first:
+
+| Line | Meaning | Do |
+|---|---|---|
+| `SETUP  credentials: TEST_PASS is unset` | aborted, exit 2, **no login attempted** | load the project env (`TEST_USER`/`TEST_PASS`). A run without it submitted the config default and then the admin fallback, and locked two demo accounts for ~5 min each (#278). `ALLOW_CONFIG_CREDENTIALS=1` only when the config default is the real password |
+| `SETUP  admin: … refused the credential (HTTP 403); credential from <source>` | suite **aborted**, exit 2, nothing walked | fix the credential at the named source. Resolution order: `M2EE_ADMIN_PASS` env → this app's `.mxcli/run-local.json` (`mxcli run --local`) → `.docker/.env` → a labelled guess. The value is never printed |
+| `SETUP  admin: admin API unreachable at host:port` | aborted, exit 2 | app down, or set `M2EE_ADMIN_PORT`. `ALLOW_NO_DATA_RUNG=1` runs anyway with every data rung INVALID |
+| `SETUP  env: missing MOCK_X (needed by J1, J3)` | **one** line, those journeys not walked | export the vars a journey names in `requiresEnv` |
+| `SETUP  sessions: N live` / `… cap C … refuses` | live `System.Session` count | leaked sessions fill a trial licence's cap and the next login reads as a wrong password (#287). Set `JOURNEY_SESSION_CAP` to refuse at the cap. Restart the runtime to clear the leak. Do not loop retries |
+
+**Declare order, do not rely on file order.** Add optional `requires` / `leaves` / `consumes`
+state tokens to a journey (field reference in `journey-examples.md`). The runner then puts every
+journey that leaves X before every journey that requires X, and every journey that requires X
+before every journey that consumes X. A journey whose precondition did not hold is reported as
+`precondition not met: X (left by journey Y, which did not complete: 1 FAIL / 0 INVALID)`
+and is not walked. Without the headers it would show up as a seed INVALID. Journeys without
+headers run in file order, as before.
+
+Logout runs on every exit path: normal end, a crash, and SIGINT/SIGTERM. A run whose logout is
+not confirmed says so. Declared state does not make a rerun idempotent. A journey that consumes
+its own fixture still needs a reset/seed journey that `leaves` that state again.
+
+---
+
 ## The five rungs
 
 One journey = a persona walking a path with carried state. Not a list of page stops. Per step, in
