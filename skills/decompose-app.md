@@ -42,9 +42,8 @@ reason beside its coupling numbers.
 2. Score candidate cuts: `bin/cut-score.sh --cut "A,B|C|D"` (read its header for flags). Every cut
    on a tangled monolith reads `blocked`; compare crossing refs and blocker rows, not the verdict.
    Retire test modules; copy utility modules a slice pulls on.
-3. **Choose on business fit AND coupling.** The failure: on FSM, `NativeNote` was the cheapest cut
-   the score found and became the first slice — and it is a poor business slice. Notes belong to
-   work orders: 238 in-edges stayed behind, 26 behaviour stubs went out
+3. **Choose on business fit AND coupling.** The failure: `NativeNote`, the cheapest cut, became the
+   first slice and is a poor business slice — 26 behaviour stubs went out
    (`slice-nativenote/FINDINGS.md`). The recipe: build a capability table per
    `web-slice-candidates.md` — modules, entities, roles using it, in/out refs by lane, biggest
    no-lane calls, one sentence of business fit — and rank. A slice that is mostly inbound reads
@@ -58,17 +57,43 @@ reason beside its coupling numbers.
    Native Mobile starter. An offline profile cannot sync an external entity, so data the device
    needs from the other app arrives as REST-fed local copies, not OData.
 
+## Stage 1b — Target architecture (gated) ✋
+
+Bound: `architecture/target-architecture.md` holds all eight sections below, its module map states
+N/N own modules assigned or retired, and every decision is a `PROJECT.md` line, `CONFIRMED` or
+`ASSUMED`. No cut, MPK export or seam work starts before this gate.
+
+The failure it prevents — seven FSM increments ran without it, and each of these was decided late:
+`NativeNote` was cut on coupling alone, yet notes belong to work orders (238 in-edges stayed
+behind); Assets & Parts went build-green with **120 out-stub rows** because the core was not
+published first (`slice-assets/FINDINGS.md` → "Stub count"; 120 → 32 once it was,
+`slice-assets-core/FINDINGS.md`); keys, machine-role auth, key-copy joins, dual writes and OData
+page outage behaviour were invented mid-build (`mendix-service-seam.md`).
+
+Write it with `architecture-blueprint.md` Step 7b §A (single vs multi-app), Step 3 (wiring, here
+between apps), Step 6a (roles) and Step 6c (contracts). Sections and their checks:
+1. **Target landscape** — the apps, within the Stage 0 app count.
+2. **Capability → module → app map** — every own module assigned to an app or `retire`: N/N.
+3. **Data ownership** — every entity crossing a cut has exactly one owning app.
+4. **Contract per seam** — lane (OData read / REST action / key copy / local owner / hand-off),
+   key, versioned path (`mendix-service-seam.md` P1, P10, recipe B).
+5. **Auth between apps** — machine role now (P2); the token-based target named.
+6. **Cut order** — follows dependency direction, core published first (Stage 2 recipes).
+7. **Mobile/offline partition** — which app owns the native profile and synced entities.
+8. **Non-goals** — e.g. who owns data migration of existing rows.
+
+Gate: put it to the user per `interview-protocol.md` §3, end the turn, wait. Moved modules need no
+wireframes or build plan — the existing app is the spec. Only redesigned parts do (legacy widgets →
+React client, new seam services, navigation across apps): `design-artifacts.md`,
+`brd-to-build-plan.md`.
+
 ## Stage 2 — Sequence the cuts by dependency direction
 
 Bound: for each planned slice, every out-edge target is either moving with it, copied, platform,
 or already published by the monolith.
 
-A slice can only go seam-live when what it depends on answers over HTTP. The failure: Assets &
-Parts reached build-green with **120 out-stub rows** (Technician, Customer, Ticket, Roster pickers
-empty) that the seam work could not reduce, because every seam call went *in* and the core it reads
-stayed unpublished in the monolith (`slice-assets/FINDINGS.md` → "Stub count").
-
-Recipe — pick one, record it in `PROJECT.md`:
+A slice can only go seam-live when what it depends on answers over HTTP (failure: Stage 1b).
+Recipe — the Stage 1b cut order picks one:
 - **Monolith publishes first.** Before cutting a leaf, publish the core services its out-edges need
   (OData for reads, REST for writes) from the 10.24 monolith copy; the slice consumes them.
 - **Cut in dependency order.** Cut what the leaf depends on before the leaf, so out-edges point at
