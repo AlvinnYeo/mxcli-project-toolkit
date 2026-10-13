@@ -107,26 +107,18 @@
 
 <h2>The answers</h2>
 <div class="grid">
-  <div class="card"><h3>Goal</h3><p>Turn one Mendix monolith into several smaller Mendix apps, one slice at a time, while the monolith stays live. A gated pipeline does it.</p></div>
+  <div class="card"><h3>How</h3><p>Score the cuts, agree a target architecture, move each slice as an MPK package, account for every crossing call in a ledger, link the apps over OData and REST, then delete the old modules. One slice at a time, the monolith stays live.</p></div>
   <div class="card"><h3>Route</h3><p>Move modules as MPK packages (byte-identical, IDs kept). Use MDL only to build the edges and seams. Rehost stays a separate track for re-platforming a whole app.</p></div>
   <div class="card"><h3>Proof</h3><p>Eight increments on one public template. One slice (Assets &amp; Parts) was fully strangled; a second (Dispatch &amp; Workforce) reached build-green with a live seam.</p></div>
-  <div class="card"><h3>Speed</h3><p>With the skills as playbook, Dispatch took about 1 h 55 to the level that took about 3 h 10 for Assets &amp; Parts, on a slice with about 1.8&times; the cross-app calls.</p></div>
+  <div class="card"><h3>Speed</h3><p>With the skills as playbook, Dispatch took about 1 h 55 to the level that took about 3 h 10 for Assets &amp; Parts (increments 5 and 6), on a slice with about 1.8&times; the cross-app calls.</p></div>
   <div class="card"><h3>mxcli</h3><p>47 defects ready to file. A nightly build fixed 15 of 50 retested; microflows can now be written into Mendix 9 projects.</p></div>
   <div class="card"><h3>Tokens</h3><p>7,883,334 across 74 measured workers: Opus 3,244,089, Haiku 3,355,386, Sonnet 1,104,928, Fable 178,931.</p></div>
 </div>
 
-<h2>1. The goal: monolith to separate apps</h2>
-<p class="lead">Answer: split one big Mendix app into several smaller ones, one capability at a time, by a repeatable gated pipeline, so the old app never goes dark.</p>
+<h2>1. How the pipeline works</h2>
+<p class="lead">Answer: one capability at a time, in gated steps, with a ledger that accounts for every call crossing the cut. The monolith stays live throughout.</p>
 <p>Terms, once. <strong>MDL</strong> is Mendix's text language for describing a model. <code>mxcli</code> is the command-line tool that reads and writes it. <strong>MPK</strong> is Mendix's own module package file. A <strong>slice</strong> is the part of the app we cut out. A <strong>seam</strong> is the live link between the old app and the slice. A <strong>stub</strong> is a placeholder that compiles but does nothing yet. To <strong>strangle</strong> is to delete the old part once the slice has taken over.</p>
 
-<h3>The idea behind it</h3>
-<ul class="tight">
-<li><strong>Why split at all.</strong> Independent teams and release cadence. Scaling only the busy part. Isolating risk, so one change cannot break everything. Smaller apps that are easier to upgrade.</li>
-<li><strong>What &ldquo;microservices&rdquo; means in Mendix.</strong> Not tiny services. Several smaller Mendix apps. Each owns its own data. They talk over OData (reads) and REST (writes with behaviour). Users keep one login.</li>
-<li><strong>The strangler idea.</strong> Move one capability at a time. The monolith keeps running. When a slice works in its new home, delete the old part.</li>
-<li><strong>Why a pipeline.</strong> A one-off big-bang rebuild cannot be repeated, measured or paused. A pipeline has gated steps and a ledger that lists every call crossing the cut and says how each is handled.</li>
-<li><strong>Machine vs human.</strong> The pipeline automates reading, scoring, moving modules, the ledger, builds and journeys. People decide the target architecture, which slice goes first, who owns each piece of data, and every gate.</li>
-</ul>
 <div class="flow">
   <div class="box"><strong>Monolith</strong>One app, many modules, tangled calls.</div><div class="arr">&rarr;</div>
   <div class="box"><strong>Slices, one at a time</strong>Move, link with a seam, prove, then delete the old part.</div><div class="arr">&rarr;</div>
@@ -207,13 +199,13 @@
 <h3>Rehost on GenAI Showcase (Mendix 11.12, 48 modules)</h3>
 <p>36 modules regenerated; 2,776 catalog documents: 579 identical, 271 drift, 1,993 failed. 29 of 36 modules landed. <code>mx check</code> 14 errors, build failed. 1,520 of the failures were seven modules our own repair step dropped, a toolkit defect, not a Mendix limit.</p>
 
-<h2>3. What we built and proved</h2>
+<h2>3. Results on the FSM app</h2>
 <p class="lead">Answer: eight increments. Assets &amp; Parts reached level 3; Dispatch &amp; Workforce reached level 1 with a live seam.</p>
 <div class="tablewrap"><table>
 <thead><tr><th>#</th><th>Target</th><th>Level reached</th><th>Key numbers</th></tr></thead>
 <tbody>
 <tr><td class="num">1</td><td>Rehost extractor on a small public app; cut scorer on a 10.24 fixture</td><td><span class="pill done">done</span></td><td>155 of 155 documents emitted, 154 identical; scorer with 56 checks</td></tr>
-<tr><td class="num">2</td><td>Siemens FSM template (Mendix 9.24.2): read probe, cut score; GenAI rehost</td><td><span class="pill done">done</span></td><td>FSM: 45 own modules, 1,896 microflows read. GenAI: see section 2</td></tr>
+<tr><td class="num">2</td><td>Siemens FSM template (Mendix 9.24.2): read probe, cut score; GenAI rehost</td><td><span class="pill done">done</span></td><td>FSM: 42 own modules read, every cut scored. GenAI: see section 2</td></tr>
 <tr><td class="num">3</td><td>NativeNote slice to Mendix 11</td><td><span class="pill done">1 build-green</span></td><td>308-row ledger, 0 unresolved; 66/66 documents identical; 26 behaviour stubs</td></tr>
 <tr><td class="num">4</td><td>Seam probe</td><td><span class="pill done">one record crossed</span></td><td>Monolith to slice over REST; ran on the 10.24 copy</td></tr>
 <tr><td class="num">5</td><td>Assets &amp; Parts web slice (4 modules)</td><td><span class="pill done">1 build-green</span></td><td>703 ledger rows, 0 unresolved; 120 stub rows; 1 of 536 in-edges rewired; 1 journey passes</td></tr>
@@ -320,7 +312,7 @@
 <tbody>
 <tr><td>A small same-version app rehosts essentially losslessly.</td><td>A large rehost reaching build-green, and a 9/10 source regenerated into 11.</td></tr>
 <tr><td>MPK move from Mendix 9 via 10.24 into 11, IDs kept.</td><td>Journey parity of a rehosted app against its source.</td></tr>
-<tr><td>Strangling Assets &amp; Parts end to end, cross-app e2e 16/16 twice.</td><td>One journey per crossing edge: 2 journeys cover 5 crossing kinds, not each of 536 references.</td></tr>
+<tr><td>Strangling Assets &amp; Parts end to end, cross-app e2e 16/16 twice.</td><td>Monolith screens for tickets and work orders over moved data, at runtime (the test database held none).</td></tr>
 <tr><td>Skills as playbook: Dispatch to build-green plus live seam in about 1 h 55.</td><td>Dispatch strangled (3 behaviour stubs short of level 2). Mobile: offline sync needs REST-fed copies.</td></tr>
 <tr><td>Stub rows fell 120 to 32 (Assets) and 271 to 3 (Dispatch).</td><td>Login across apps, data migration, behaviour with a slice down.</td></tr>
 </tbody></table></div>
