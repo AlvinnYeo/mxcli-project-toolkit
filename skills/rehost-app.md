@@ -35,13 +35,15 @@ works (FSM 9.24 read probe), but regeneration from 9/10 into 11 is **not yet exe
 Bound: the target opens in `mx check`; every row below has a state, and every hand-off row an owner
 in `PROJECT.md`.
 
+Tag **[fixed after 0.26.0]**: fixed on mxcli main after 0.26.0 (`nightly-80-gbd45c47e`, nightly retest 2026-10-13), not yet released — keep the workaround while `mxcli --version` reports ≤ 0.26.0; drop it once your mxcli includes the fix.
+
 `mxcli new <App> --version <target> --theme none`, then walk what a rehost carries:
 
 | Item | State | Action |
 |---|---|---|
 | Entities, flows, pages, nanoflows | copied; gaps on large apps | Steps 2–4; ledger rows |
 | Java actions | user code copied; helper classes and jars **not** | copy helpers and userlib jars by hand. R22 (`mpk-export-probe/captures/`) lands only the action body; without helpers mxbuild fails `package org.apache.tika does not exist` (R17) |
-| User roles, app settings | copied (`describe userrole`, `describe settings`) | `describe userrole` drops `CheckSecurity: false` — re-set it |
+| User roles, app settings | copied (`describe userrole`, `describe settings`) | `describe userrole` drops `CheckSecurity: false` — re-set it **[fixed after 0.26.0]** |
 | Demo-user passwords, project security level | `***` / a report — hand-off | re-enter real passwords; write `alter app security` |
 | Constants | copied with default values | per-environment values: environment row |
 | Navigation | not emitted by the extractor | re-enter menus and home pages; record as hand-off |
@@ -79,7 +81,7 @@ Per module, in order:
    by one from the project tree.
 2. `lib/topo-order-mdl.py` — callees before callers; a flow and its grants move as one unit.
 3. `lib/fix-describe-output.py` — repairs the Java-action parameter comma mxcli emits inside a
-   `--` comment.
+   `--` comment **[fixed after 0.26.0]**; on a fixed mxcli it moves 0 commas and can be skipped (keep it).
 4. **check → quarantine**: `mxcli check` is all-or-nothing per file; `lib/quarantine-mdl.py` moves
    the statements it rejects (with their same-module closure) to `<M>.deferred.mdl`.
 5. **exec → resume**: exec stops at the first statement it cannot write; `lib/exec-resume.py`
@@ -108,7 +110,8 @@ Bound: every row is landed or a named hand-off; the hand-off count is reported.
 | `target-extra` | only in the target | check it is the template's, not a stray |
 
 **The ledger does not decide done; the build gate does.** The failure: a sort on an inherited
-attribute was `emitted-identical` on the ledger and still CE1613 in `mx check` (GenAI M4).
+attribute was `emitted-identical` on the ledger and still CE1613 in `mx check` (GenAI M4; that
+defect is **[fixed after 0.26.0]**, the lesson stands).
 
 ## Step 5 — Gate and report
 
@@ -124,14 +127,15 @@ Hand-off classes by construction in mxcli 0.26 — record each document, fix in 
 |---|---|
 | Java action type parameters | described with no type parameter; exec writes entity `.Entity` (CE1613) |
 | ~~Message definitions~~ | **not a hand-off** (corrected 2026-10-12): `create message definition collection` exists in 0.26.0; the extractor must emit the collection before the export mappings that use it. The GenAI failure was ordering, and the error text does not point at the command |
-| Rules | cannot be described or created; also missing from the denominator |
+| Rules | cannot be described or created **[fixed after 0.26.0]**; once fixed, check each decision call — `describe microflow` drops the rule's argument. Also missing from the extractor's denominator |
 | Mutual recursion | exec refuses forward references, so both flows and their callers stay deferred |
 | NOT re-executable widgets | describe marks them; e.g. `Forms$FileManager` |
 | Step 1 hand-off rows | not carried by describe |
 
 If the model will not load (`ArgumentNullException … EntityType.set_EntityId`), mxcli wrote a
 microflow whose `import from mapping` result has a null entity: `drop microflow` then the source
-`create or modify` in one script (GenAI M1).
+`create or modify` in one script (GenAI M1). **[fixed after 0.26.0]**: exec refuses the forward reference
+(MDL-ORDER01) and writes nothing — move the mapping above the microflow.
 
 ## Step 5b — Journey parity, source vs target
 

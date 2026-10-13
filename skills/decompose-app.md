@@ -22,8 +22,11 @@ Bound: every line below is a `PROJECT.md` register line, `CONFIRMED` or `ASSUMED
 1. **Mendix 9 or later.** Earlier versions are out of scope; the upgrade hop is the customer's job.
 2. **Work on a copy.** The original `.mpr` is read-only for the whole decomposition.
 3. **A 9.x monolith is converted to 10.24 first** (`mx convert`, on the copy) — a means, not a
-   deliverable. Why: mxcli 0.26 cannot create or alter a microflow in a 9.x project, `mxcli run`
-   cannot run a 9.x app, and Mendix refuses a 9.x package into 11.x. Budget the one-time fixes
+   deliverable. Why: Mendix refuses a 9.x package into 11.x, so the MPK export always goes through a
+   10.24 copy. mxcli ≤ 0.26.0 also cannot create or alter a microflow in a 9.x project, so today the
+   monolith-side edits run on that copy too; **[fixed after 0.26.0]** (microflow written into 9.24.2, `mx check` 0)
+   — then monolith-side edits can stay on 9.x. `mxcli run` still fails on 9.x (nightly: the runtime
+   launcher rejects JDK 17, `Java 11 is required`). Budget the one-time fixes
    (marketplace and widget updates, Java API edits): on FSM they cost more than the seam itself
    (`seam-probe/FINDINGS.md`).
 4. **Lanes are OData and REST only.** No Event Broker licence, so Business Events is not a lane; an
@@ -212,18 +215,18 @@ Bound: every finding of the run is in exactly one place.
 
 ## Traps on this route (mxcli 0.26 and platform)
 
-Each line: trap → workaround → where it is written up (`contrib/inbox/2026-10-12-*`).
+Each line: trap → workaround → where it is written up (`contrib/inbox/2026-10-12-*`). Tag **[fixed after 0.26.0]**: fixed on mxcli main after 0.26.0 (`nightly-80-gbd45c47e`, nightly retest 2026-10-13), not yet released — keep the workaround while `mxcli --version` reports ≤ 0.26.0; drop it once your mxcli includes the fix.
 
-- Microflow create/alter refused on 9.x; `mxcli run` fails on 9.x → convert to 10.24 (`increment-4-seam-probe`).
+- Microflow create/alter refused on 9.x **[fixed after 0.26.0]**; `mxcli run` fails on 9.x (nightly: launcher wants Java 11) → convert to 10.24 (`increment-4-seam-probe`).
 - exec is not atomic; a recommended drop + create can stop after the drop → copy first, `mx check` after every exec (`increment-3-nativenote`, `increment-4-seam-probe`).
 - No `-p` silently picks any `.mpr` in the working directory → always pass `-p` (`increment-3-nativenote`).
 - `with all` omits nanoflows → describe them one by one (`increment-3-nativenote`).
 - JS/Java action type parameters describe as entity `.Entity` → hand-off row (`increment-3-nativenote`).
 - No native navigation profile can be created → native starter as target (`increment-3-nativenote`).
-- OData publish passes `check` with no key or a non-unique key → `PublicID: AutoNumber default 1`; expose bare attribute names, not quoted (`increment-5-web-assets`).
+- OData publish passes `check` with no key or a non-unique key → `PublicID: AutoNumber default 1`; expose bare attribute names, not quoted (quoting **[fixed after 0.26.0]**) (`increment-5-web-assets`).
 - `mxcli new` 11.x apps are MPR v2 → back up `<app>.mpr` **and** `mprcontents/` (`increment-6-core-services`).
 - 11.x consumed OData: `ConfigurationMicroflow:` holding a headers microflow → CE6808, and the slot cannot be cleared; `set (ConfigurationMicroflow: none)` stores a microflow named `none` that crashes `mx check` → drop and recreate the consumed service with `HeadersMicroflow:` only (`increment-6-core-services`).
 - Combo box on an association passes `check`, fails exec or `mx check` → wrap in a data view (`increment-5-web-assets`).
 - `marketplace update` needs `--force` on a converted copy and leaves CE0463 → `mx update-widgets` with an absolute path; DataGrid 2 on 10.24 reads `CE0463 "The definition of this widget has changed"` until `mxcli fix widgets` (`increment-4-seam-probe`, `increment-5-web-assets`, `increment-7-strangled`).
 - Trial licence: machine OData sessions count against the user cap → `The OData endpoint returned 402 Payment Required` (`increment-7-strangled`), and the trial caps logins too (`Maximum number of sessions exceeded!`, increment 6) → restart the runtime between journey batches; for repeated e2e runs use a licensed test environment.
-- `limit 1` retrieve is a list but `check` accepts object operations → use `first`, then drop + create (`increment-4-seam-probe`).
+- `limit 1` retrieve is a list but `check` accepts object operations → use `first`, then drop + create (`increment-4-seam-probe`). Nightly: `mx check` names it CE7247 and a splice to `first` clears it; `mxcli check` still passes it.

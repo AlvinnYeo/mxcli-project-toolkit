@@ -10,6 +10,7 @@ first stage, on a copy, as a means and not a deliverable. Reason (increment 4 se
 create or alter microflows in a 9.x project and `mxcli run` cannot run 9.x apps, so the monolith side of every
 seam needs 10.x. Mendix also refuses a 9.x package into 11.x, so the MPK mover already hops through 10.24.
 Expect one-time fixes per monolith (marketplace updates, widget updates, Mendix 9 Java API edits).
+**Nightly finding 2026-10-13 (ASSUMED — revisit when the fix is released):** mxcli main after 0.26.0 (`nightly-80-gbd45c47e`) writes microflows into a 9.24.2 app (`mx check` 0), so monolith-side edits could stay on 9.x; the MPK export still hops through 10.24, and `mxcli run` on 9.x still fails (launcher wants Java 11).
 Two tracks remain and run in parallel: **Decompose** (split one app into several) and
 **Rehost** (read an existing `.mpr`, regenerate it as MDL into a fresh Mendix 11 app).
 
