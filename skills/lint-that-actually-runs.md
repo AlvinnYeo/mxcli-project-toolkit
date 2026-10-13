@@ -111,6 +111,15 @@ all the same order of magnitude, and no project produced a single real error-sev
 the ratchet is the *only* mechanism available. `project-bin/lint-gate.sh` implements it
 (`--update-baseline` to accept current counts).
 
+**Accepting a rise is a recorded decision, not a reflex.** Three apps built in four days
+re-baselined 61 times, every time by the agent whose script caused the rise; baselines grew
+8 -> 757, 440 -> 677 and 9 -> 187, with security warnings accepted in the same batches as naming
+info. So an update that raises any rule needs `--reason "<why>"` and is appended to
+`.claude/lint-acceptances.tsv` (commit it with the baseline); a rise in a security-tier rule
+(default `SEC*` and `CONV006`, override in `.claude/lint-security-rules.txt`) also needs
+`--approved-in-chat`, set only after the user saw the findings and said yes. A first baseline
+and a ratchet-down need neither.
+
 **The ratchet remembers one number per rule; the ledger remembers every run.** Every gate run
 appends one row per rule to `.claude/loop/lint-ledger.tsv` (timestamp, verdict, rule, count,
 severity, blind), and `project-bin/lint-trend.sh` reads it back: runs a rule fired in, first and
@@ -120,6 +129,15 @@ the evidence `process/lint-backlog.md` asks for before a warning becomes an erro
 never appears in the ledger is clean here *or* wrong; `--rule <id>` and the blind column say
 which. Before this file existed the only history was `lint-baseline.json` in git, which records
 the count that was *accepted*, not what each run saw.
+
+**The metrics ledger is the outcome side of the same question.** `project-bin/exec.sh` appends
+one row per run to `.claude/loop/metrics-ledger.tsv` via `metrics-ledger.sh` (outcome class,
+elapsed seconds, mxbuild errors, lint total, and — after a clean build — the `mxcli report`
+overall score plus its seven category scores and violation count), and `metrics-trend.sh`
+reads it back: applied-vs-failed counts, median elapsed first half → second half, lint total
+and report score first → last. Lint counts say whether a rule fires; this says whether the app
+got better and the sessions faster while it did. `bin/harvest-learnings.sh` carries the
+trend summary (never the rows — those name scripts) into the toolkit inbox at wrap-up.
 
 ## Two false-pass bugs already designed out of `lint-gate.sh` — keep them out
 

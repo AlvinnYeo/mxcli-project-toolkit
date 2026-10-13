@@ -13,6 +13,7 @@
 #
 # Usage: ./bin/exec.sh <script.mdl>
 #        ./bin/exec.sh --patch <script> [args...]
+#        ./bin/exec.sh --change-class <script.mdl>   (advisory ui-only/logic tag; writes nothing)
 #
 # --patch (2026-09-27): the same chain around a one-off script that edits the model directly
 # (a Python BSON patch for something mxcli cannot express, e.g. an association owner change).
@@ -49,6 +50,91 @@
 set -e
 _T0=$(date +%s)
 
+# ── Change class (advisory, added 2026-10-13) ────────────────────────────────
+# Tags each run `ui-only` or `logic`, so the run summary can say which TEST LANE applies
+# (skills/testing-shape.md §3 "After the base set"). ui-only = every top-level statement is a
+# page/snippet/layout write (CREATE|ALTER|DROP|MOVE PAGE|SNIPPET|LAYOUT, ALTER STYLING, UPDATE
+# WIDGETS); read-only statements (SHOW, DESCRIBE, ...) are neutral. Anything else — a microflow,
+# an entity, an enum, an association, a GRANT, navigation, settings, an unknown verb — is
+# `logic`, and so is a script with no page statement at all: when unsure, the heavier lane.
+# A GRANT on a page is security, so a page script that also grants is `logic`.
+#
+# WHY. A 20-task UX-fix retro (toolkit issue #274) re-proved UI-only changes 5-10x each — the
+# implementer's journey plus 4-5 regression journeys of other modules, reviewer re-runs, a full
+# `mxcli test` (~6 min) at every batch close — and 143 min of microflow tests found stale
+# strings and credential problems, not logic bugs. The tag puts the lane in front of whoever
+# reads the run, instead of leaving "how much to re-test" to habit.
+#
+# ADVISORY ONLY: it never blocks, never changes a gate, and is not a test. It is a grep over
+# statement heads, not a parser: comments ("--", "//", "/* */") and quoted strings are blanked
+# first, then only lines at bracket depth 0 are read, so widget lines inside { } and property
+# lines inside ( ) never count as statements. Continuation lines whose first word is not a verb
+# are ignored. Golden input: real MDL — skills/agents-examples/*.mdl,
+# examples/stylegallery/mdlsource/gallery/*.mdl, tests/wave2/fixtures/page-fidelity-mocks/*.mdl
+# (tests/wave2/test-exec-change-class.sh). Plain awk: bash 3.2 / BSD awk / Git Bash.
+#
+#   ./bin/exec.sh --change-class <script.mdl>   prints `ui-only` or `logic`, then a tab and the
+#                                               deciding statement head (line N: ...); exit 0.
+#                                               Touches nothing, needs no .mpr.
+mxtk_change_class() {  # $1 = MDL script; prints "<class>\t<why>"
+  awk '
+    function head_class(w1, w2, w4,    obj) {
+      if (w1 ~ /^(SHOW|DESCRIBE|CONNECT|DISCONNECT|REFRESH|SEARCH|HELP|SELECT|LIST|USE|EXIT|QUIT)$/) return "neutral"
+      if (w1 == "UPDATE" && w2 == "WIDGETS") return "ui"
+      if (w1 == "ALTER" && w2 == "STYLING") return "ui"
+      if (w1 ~ /^(CREATE|ALTER|DROP|MOVE)$/) {
+        obj = w2
+        if (w1 == "CREATE" && w2 == "OR") obj = w4
+        if (obj ~ /^(PAGE|SNIPPET|LAYOUT)$/) return "ui"
+        return "logic"
+      }
+      if (w1 ~ /^(GRANT|REVOKE|UPDATE|INSERT|DELETE|SQL|IMPORT|EXPORT|EXECUTE|RENAME|SET|CALL|COMMIT|CHANGE|RETRIEVE|DECLARE)$/) return "logic"
+      return "skip"   # a continuation line (to Role;  returns Boolean ...) — not a statement head
+    }
+    BEGIN { depth = 0; inblock = 0; indollar = 0; ui = 0; logic = ""; }
+    {
+      line = $0; clean = ""; n = length(line); i = 1
+      while (i <= n) {
+        c = substr(line, i, 1); c2 = substr(line, i, 2)
+        if (inblock)   { if (c2 == "*/") { inblock = 0; i += 2 } else i++; continue }
+        if (indollar)  { if (c2 == "$$") { indollar = 0; i += 2 } else i++; continue }
+        if (c2 == "/*") { inblock = 1; i += 2; continue }
+        if (c2 == "$$") { indollar = 1; i += 2; continue }
+        if (c2 == "--" || c2 == "//") break
+        if (c == "\047") {                        # a string literal: blanked, so a caption that
+          i++                                      # says "create microflow" is not a statement
+          while (i <= n && substr(line, i, 1) != "\047") i++
+          i++; clean = clean "\047\047"; continue
+        }
+        if (c == "\"") { i++; continue }           # a quoted identifier: keep the name, drop quotes
+        clean = clean c; i++
+      }
+      start_depth = depth
+      t = clean; gsub(/^[ \t]+/, "", t)
+      if (start_depth == 0 && t ~ /^[A-Za-z]/) {
+        split(toupper(t), w, /[ \t(;{]+/)
+        k = head_class(w[1], w[2], w[4])
+        if (k == "ui") ui++
+        else if (k == "logic" && logic == "") {
+          h = t; if (length(h) > 60) h = substr(h, 1, 60) "..."
+          logic = "line " NR ": " h
+        }
+      }
+      tmp = clean; o = gsub(/[({]/, "", tmp); tmp = clean; c_ = gsub(/[)}]/, "", tmp)
+      depth += o - c_; if (depth < 0) depth = 0
+    }
+    END {
+      if (logic != "")  { printf "logic\t%s\n", logic; exit }
+      if (ui == 0)      { printf "logic\tno page/snippet/layout statement found\n"; exit }
+      printf "ui-only\t%d page/snippet/layout statement(s), nothing else\n", ui
+    }' "$1"
+}
+if [ "${1:-}" = "--change-class" ]; then
+  [ -f "${2:-}" ] || { echo "Usage: ./bin/exec.sh --change-class <script.mdl>" >&2; exit 2; }
+  mxtk_change_class "$2"
+  exit 0
+fi
+
 . "$(dirname "$0")/_common.sh"
 
 MPR="$(find_mpr)" || exit 1
@@ -78,6 +164,27 @@ if [ "$PATCH_MODE" = "1" ]; then
     *.py|*.sh) ;;
     *) [ -x "$SCRIPT" ] || { echo "✗ --patch: $SCRIPT is not .py, not .sh and not executable — cannot tell how to run it."; exit 1; } ;;
   esac
+fi
+
+# Change class of THIS run (mxtk_change_class, top of file). Computed before the cd, while a
+# script path relative to the caller still resolves. Advisory: an unreadable script just gets
+# no tag, and the guard chain below reports the real problem.
+CHANGE_CLASS=""; CHANGE_WHY=""
+if [ "$PATCH_MODE" = "1" ]; then
+  CHANGE_CLASS="logic"; CHANGE_WHY="--patch script (opaque to the classifier)"
+elif [ -r "$SCRIPT" ]; then
+  _cc="$(mxtk_change_class "$SCRIPT" 2>/dev/null || true)"
+  CHANGE_CLASS="${_cc%%	*}"; CHANGE_WHY="${_cc#*	}"
+fi
+change_lane() {
+  case "$CHANGE_CLASS" in
+    ui-only) echo "re-run this change's own journey once + a LOOK. No .test.mdl, no other module's journeys; reviewers read the artifacts, they do not re-run" ;;
+    logic)   echo "re-run only the tests whose subject this change touched (changed microflows + their SHOW CALLERS, changed pages' journeys). Full mxcli test at module close, not here" ;;
+  esac
+}
+if [ -n "$CHANGE_CLASS" ]; then
+  echo "→ Change class: $CHANGE_CLASS ($CHANGE_WHY)"
+  echo "  test lane (skills/testing-shape.md §3): $(change_lane)"
 fi
 
 cd "$PROJECT_ROOT"
@@ -146,10 +253,42 @@ HDR2
   # The gate cell is read from GATE_STATE rather than passed in, so no caller
   # can omit it — a blank cell in this table reads as "fine", which is the exact
   # false-green the gate exists to prevent.
-  _detail="$2$_EXEC_APPROVAL_SUFFIX"
+  _detail="$2${CHANGE_CLASS:+ · change: $CHANGE_CLASS}$_EXEC_APPROVAL_SUFFIX"
   printf '| %s | `%s` | %s | %s | %s |\n' \
     "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$LOG_NAME" \
     "${GATE_STATE:-not-run}" "$1" "$_detail" >> "$BUILD_LOG"
+  record_metrics "$1"
+}
+
+# ── Metrics ledger (added 2026-10-12) ────────────────────────────────────────
+# Every BUILD-LOG row also lands as one TSV row in .claude/loop/metrics-ledger.tsv — outcome
+# class, elapsed seconds, mxbuild error count, lint verdict and total, whether a snapshot was
+# restored, and the `mxcli report` score when one was taken this run. The BUILD-LOG is for a
+# human reading one project; the ledger is for project-bin/metrics-trend.sh ("is the score
+# moving, are gate failures falling, are execs getting faster") and for bin/harvest-learnings.sh,
+# which carries the numbers into the toolkit so the question can be asked across projects.
+# Hooked HERE so no outcome can skip it: a ledger with only the good runs would show a rising
+# score and hide the restores it cost. Failure to append never fails the exec.
+SCORED=0
+record_metrics() {  # $1=status text (as given to log_build)
+  [ -x "$PROJECT_ROOT/bin/metrics-ledger.sh" ] || return 0
+  bash "$PROJECT_ROOT/bin/metrics-ledger.sh" exec \
+    --script "$LOG_NAME" --gate "${GATE_STATE:-not-run}" --result "$1" \
+    --elapsed "$(( $(date +%s) - _T0 ))" --mxbuild-errors "${GATE_ERRORS:-}" \
+    --lint-rc "${LINT_RC_FOR_LEDGER:-}" --restored "${RESTORED:-0}" --scored "$SCORED" 2>/dev/null || true
+}
+# `mxcli report` scores the model (0-100, ≈7 s on an 876-flow model, 2026-10-12). Taken only
+# after a clean mxbuild — a failed write is restored or never happened, so there is nothing
+# new to score. MXTK_NO_SCORE=1 skips it (slow machine, CI); the row still lands, scores empty.
+take_score() {
+  [ -z "${MXTK_NO_SCORE:-}" ] || { echo "  · score skipped (MXTK_NO_SCORE)"; return 0; }
+  [ -x "$PROJECT_ROOT/bin/metrics-ledger.sh" ] || return 0
+  echo "→ Scoring the model (bin/metrics-ledger.sh score → mxcli report)..."
+  if _sc=$(bash "$PROJECT_ROOT/bin/metrics-ledger.sh" score 2>&1); then
+    SCORED=1; echo "  ✓ $_sc"
+  else
+    echo "  ⚠ ${_sc:-score not taken}"
+  fi
 }
 
 # ── Concurrent-writer guard ──────────────────────────────────────────────────
@@ -366,13 +505,30 @@ run_lint_gate() {
   bash "$PROJECT_ROOT/bin/lint-gate.sh" >"$_lo" 2>&1 || LINT_RC=$?
   case "$LINT_RC" in
     0) LINT_DETAIL="lint unchanged vs baseline"; echo "  ✓ lint: no rule rose vs baseline" ;;
-    1) _rules=$(grep -E '^ +[A-Z]+[0-9]+ +[a-z]+ +[0-9]+ -> [0-9]+ +\(\+[0-9]+\)' "$_lo" \
+    1) # Rule ids are matched as [A-Z][A-Z0-9-]*[0-9]+, not [A-Z]+[0-9]+: mxcli's built-in
+       # rules include hyphenated ids (MDL-FLOW01), and the old pattern dropped them from every
+       # row — three field apps logged 475 ROSE rows and not one named MDL-FLOW01 (2026-10-12).
+       _rules=$(grep -E '^ +[A-Z][A-Z0-9-]*[0-9]+ +[a-z]+ +[0-9]+ -> [0-9]+ +\(\+[0-9]+\)' "$_lo" \
                  | awk '{printf "%s %s ", $1, $6}')
-       LINT_DETAIL="lint ROSE: ${_rules:-see output}"
-       echo "  ✗ lint: rule(s) rose vs baseline — ${_rules:-see below}"
-       sed -n '/^FAIL/,$p' "$_lo" | head -60 | sed 's/^/    /'
-       echo "    Fix the script and re-run, or accept the debt on purpose with"
-       echo "    bin/lint-gate.sh --update-baseline and say so in the commit message." ;;
+       _blind=$(sed -n '/^!! A RULE COULD NOT READ/,/^$/p' "$_lo" \
+                 | grep -oE '^ +[A-Z][A-Z0-9-]*[0-9]+:' | tr -d ' :' | sort -u | paste -sd, -)
+       if [ -z "$_rules" ] && grep -q '^PASS' "$_lo"; then
+         # lint-gate exits 1 for PASS-BLIND too. Logging that as "ROSE: see output" made a rule
+         # that inspected nothing look like a rise with no rule named — 20 such rows in two
+         # field apps whose CONV020 shipped unconfigured (#229). It is an instrument fault.
+         LINT_RC=3
+         LINT_DETAIL="lint BLIND: ${_blind:-a rule} inspected nothing (instrument fault, not a rise)"
+         echo "  ✗ lint: nothing rose, but ${_blind:-a rule} could not read the model — a clean count means nothing"
+         sed -n '/^!! A RULE COULD NOT READ/,/^$/p' "$_lo" | head -12 | sed 's/^/    /'
+         echo "    Configure or fix the rule (see the message above); do not re-baseline over it."
+       else
+         LINT_DETAIL="lint ROSE: ${_rules:-see output}${_blind:+; BLIND: $_blind}"
+         echo "  ✗ lint: rule(s) rose vs baseline — ${_rules:-see below}"
+         sed -n '/^FAIL/,$p' "$_lo" | head -60 | sed 's/^/    /'
+         echo "    Fix the script and re-run. Accepting the debt is the user's call, made in chat:"
+         echo "    bin/lint-gate.sh --update-baseline --reason \"<why>\" (a security-tier rise also"
+         echo "    needs --approved-in-chat). The acceptance is logged to .claude/lint-acceptances.tsv."
+       fi ;;
     *) LINT_DETAIL="lint could not run (lint-gate exit $LINT_RC)"; echo "  ⚠ $LINT_DETAIL"
        tail -5 "$_lo" | sed 's/^/    /' ;;
   esac
@@ -381,8 +537,12 @@ run_lint_gate() {
 # One place decides the applied-row wording, so both mxbuild-clean branches agree.
 log_applied() {  # $1 = mxbuild detail
   run_lint_gate
+  LINT_RC_FOR_LEDGER="$LINT_RC"
+  take_score
   if [ "$LINT_RC" -eq 1 ]; then
     log_build "⚠️ applied, LINT ROSE" "$1; $LINT_DETAIL"
+  elif [ "$LINT_RC" -eq 3 ]; then
+    log_build "⚠️ applied, LINT BLIND" "$1; $LINT_DETAIL"
   else
     log_build "✅ applied" "$1; $LINT_DETAIL"
   fi
@@ -1123,6 +1283,13 @@ if [ "$GATE_STATE" != "pass" ]; then
   exit 0
 fi
 
+if [ "$LINT_RC" -eq 3 ]; then
+  echo ""
+  echo "✗ Script applied and mxbuild is clean, but a LINT RULE IS BLIND — this is not a pass."
+  echo "  $LINT_DETAIL"
+  echo "  The write is kept. Fix the rule's configuration before trusting any lint result."
+  exit 1
+fi
 if [ "$LINT_RC" -eq 1 ]; then
   echo ""
   echo "✗ Script applied and mxbuild is clean, but LINT ROSE — this is not a pass."
@@ -1136,6 +1303,7 @@ echo "✓ Script applied to $MPR_BASE."
 echo ""
 _EL=$(( $(date +%s) - _T0 ))
 echo "  elapsed: ${_EL}s (check + snapshot + exec + mxbuild gate)"
+[ -n "$CHANGE_CLASS" ] && echo "  change class: $CHANGE_CLASS — test lane: $(change_lane)"
 # A budget, not a gate: a normal run is 30-90 s on a healthy machine. Past 4 minutes the
 # usual cause is the machine (Defender scanning every fork, OneDrive, a slow disk), and
 # doctor --quick names which — the reader should not have to guess "is it me or the toolkit".

@@ -31,7 +31,7 @@ Then filter by Role(s). A helper dispatched with a role stub (ba, architect, mdl
 | Any question before asking the user or writing anything — query the model, then read the source, then ask the human, in that order | `skills/query-the-model.md` | P,0,1,2,3,4,5,6,7 | every role |
 | Putting a question TO the user — any gate, any stage: ask in chat not in a file, two named options plus your recommendation, one batch per gate then end the turn | `skills/interview-protocol.md` | P,0,1,2,3,4,5,6,7 | lead, ba, architect |
 | Any stage transition — the 2+1 format every CAC uses, and the one-register rule (answers land in PROJECT.md, never in a separate state file). The seven CACs themselves are routed per stage in the situational table | `skills/checkpoints/checkpoint-template.md` | 0,1,2,3,4,6,7 | lead, ba, architect |
-| Setting up or completing a project's dev-process subagents — once, at project start, not "on demand" | `skills/agent-roles.md` | P,4,5 | lead |
+| Starting a subagent, sending it a fix round, or reading an agent-stop notice; or setting up the project's subagents — read its Dispatching section per dispatch, the rest once at setup | `skills/agent-roles.md` | P,1,2,3,4,5,6 | lead |
 | Deciding whether to extract at all, before any BRD gets generated | `skills/source-triage.md` | 0 | ba |
 | Taking in a new source — before generating anything from it. Grades what the source can support; nothing else in this toolkit reads a source | `bin/source-sufficiency.sh` | 0,1 | ba |
 | Closing Stage 1, or adding files to a source folder — every inventoried file must name the artifact that consumed it (text AND embedded diagrams), or carry a waiver; blocks Stages 1–2 until it does | `bin/source-ledger.sh` | 0,1,2 | ba |
@@ -52,7 +52,7 @@ Then filter by Role(s). A helper dispatched with a role stub (ba, architect, mdl
 | After drafting and again after exec'ing any page script — scores the page MDL (or `mxcli describe` output on stdin) against its wireframe: headings/actions/content/classes, weighted. The scored companion to check-page-shell's binary gate; 32% median measured without it, 90% first-draft with it. Every run is appended to the project's docs/PAGE-FIDELITY.tsv — first non-stub row per page = first-build score of record vs the ≥80% target (forward-reference stubs score with --stub, exempt) | `project-bin/page-fidelity.js` | 5 | mdl, gate, review |
 | Reviewing any module before calling it done — the ONE pass: build, gate, prove, LOOK (is it logical, does it look right, does it match our design, over every page not just the tested ones), confirm with the denominator stated | `skills/module-review.md` | 5,6 | mdl, review, test |
 | Before any mxcli exec / exec.sh / --mcp write — ask or run? the knob decides | `bin/exec-approval.sh` | 5,6 | mdl, gate |
-| Before calling any module tested — what testing a module means, and the false-green register of confirmed ways a test reports green over a broken feature | `skills/testing-shape.md` | 5,6 | test, gate, review |
+| Before calling any module tested, or before re-running tests after a change — what testing a module means, which re-runs a change owes (UI-only vs logic lane), and the false-green register of confirmed ways a test reports green over a broken feature | `skills/testing-shape.md` | 5,6 | test, gate, review |
 | Finishing any module — before calling it done. One command that runs every instrument and keeps "instrument faulted" apart from "feature failed"; in a wired project run the installed copy at bin/verify-module.sh | `project-bin/verify-module.sh` | 5,6 | mdl, gate, test, review |
 | A style change that appears to have done nothing, or an app still grey after a design port every instrument called green — the three ways a correct rule paints nothing (matches nothing / matches chrome / loses the cascade), the two reads that tell them apart, and the class that arrived in the stylesheet and is bound to no widget | `skills/learned-css-that-never-applied.md` | 5,6 | mdl, review, gate |
 | Before trusting a green check/exec/DESCRIBE result as proof, or when a runtime symptom appears over a fully green model — the register of constructs that pass early rungs and fail later ones | `skills/learned-detection-gaps.md` | 5,6 | mdl, gate, review |
@@ -375,7 +375,9 @@ they were generated (`architect-agent` on the strong tier, the other five on the
 hands work over — so in the token-path A/B (nine runs, Stages P–4) the main session did nearly
 everything itself, at its own model's price, and only two skills (`brd-generation.md`,
 `image-transcription.md`) ever asked for a fan-out. Owner is accountability; this table is the
-runtime rule. It is the single source; `agent-roles.md` (setup) defers here.
+runtime rule. It is the single source; `agent-roles.md` (setup) defers here. *How* to dispatch —
+model named on every call, fresh agent not fork, fix rounds, notices — is `agent-roles.md` →
+"Dispatching".
 
 **The main session keeps, always:** every question to the user (§1); every gate verdict and
 its `--closeout` block; every `mxcli exec` / MCP write (`agent-roles.md`'s one rule); the
