@@ -3,8 +3,8 @@
 **Applies to:** migration — a Mendix model (`.mpr`, Mendix 9 or later) is the legacy source, and the
 whole app is regenerated as MDL into a clean target app.
 **Purpose:** Run the Rehost extractor, drive its check → quarantine → exec → resume loop to a
-fidelity ledger, and report the CONFIRMED done-criterion — *build-green with hand-offs* — instead of
-a fidelity percentage. Upstream of the ledger this is a pipeline (`pipelines/mendix-mpr/`);
+fidelity ledger, and report the done-criterion — *build-green with hand-offs plus journey parity on
+the main flows* — instead of a fidelity percentage. Upstream of the ledger this is a pipeline (`pipelines/mendix-mpr/`);
 downstream, runbook Stages 2–6 apply unchanged (Stages 2–4 are WAIVED with a reason for a 1:1
 regenerate).
 **Evidence:** `pipelines/mendix-mpr/README.md` (field runs), `pipelines/mendix-mpr/samples/genai-showcase-11.12.0/FINDINGS.md`,
@@ -22,24 +22,33 @@ Bound: the choice and its reason are a `PROJECT.md` register line.
 | One or a few modules moved into another app, Java bodies and IDs intact | **MPK move** — `decompose-app.md` Stage 3 |
 | Split a monolith into several apps | `decompose-app.md` (it moves slices by MPK, not by regeneration) |
 
+**Rehost vs MPK move.** Rehost (MDL regeneration) is a full re-platform into a clean project, and it
+fails wherever mxcli's describe cannot express the model. An MPK move carries modules as they are:
+byte-identical, IDs preserved, no clean-up. The MPK route is `decompose-app.md`.
+
 Measured scope: Rehost has run same-version only (11.13 → 11.13, 11.12 → 11.12). A 9/10 source read
 works (FSM 9.24 read probe), but regeneration from 9/10 into 11 is **not yet exercised**
 (`pipelines/mendix-mpr/README.md` → "Not yet exercised"). Say so in the plan; do not promise it.
 
 ## Step 1 — Prepare the target
 
-Bound: the target opens in `mx check`, and every marketplace module of the source is installed or a
-hand-off row.
+Bound: the target opens in `mx check`; every row below has a state, and every hand-off row an owner
+in `PROJECT.md`.
 
-1. `mxcli new <App> --version <target> --theme none`.
-2. Marketplace modules are **never regenerated**: install them by name and version
-   (`mxcli marketplace install`). Expect gaps and record each as a hand-off:
-   - Mendix-9-built packages refuse to install into 11 (`created with version 9.24.2 … open it in
-     … 10.21.0 to 10.24.99 first`): three of them on GenAI.
-   - Versions no longer listed (`version "1.5.1" not found`).
-   - The blank template's own modules at different versions; reinstalling a present module is not
-     automatic.
-3. Install the widget `.mpk` files the source pages use.
+`mxcli new <App> --version <target> --theme none`, then walk what a rehost carries:
+
+| Item | State | Action |
+|---|---|---|
+| Entities, flows, pages, nanoflows | copied; gaps on large apps | Steps 2–4; ledger rows |
+| Java actions | user code copied; helper classes and jars **not** | copy helpers and userlib jars by hand. R22 (`mpk-export-probe/captures/`) lands only the action body; without helpers mxbuild fails `package org.apache.tika does not exist` (R17) |
+| User roles, app settings | copied (`describe userrole`, `describe settings`) | `describe userrole` drops `CheckSecurity: false` — re-set it |
+| Demo-user passwords, project security level | `***` / a report — hand-off | re-enter real passwords; write `alter app security` |
+| Constants | copied with default values | per-environment values: environment row |
+| Navigation | not emitted by the extractor | re-enter menus and home pages; record as hand-off |
+| Theme / styling | not carried (`(app)` ledger row) | copy `theme/` and `themesource/<module>/` |
+| Marketplace modules | re-installed, never regenerated (`mxcli marketplace install`) | each gap is a hand-off: Mendix-9-built packages refuse into 11 (3 on GenAI; convert through 10.24 or replace); delisted versions; template modules at other versions |
+| Custom widgets | installed from the source's `.mpk` files | before Step 2 |
+| Environment configuration: certificates, DB credentials, per-environment constants, scheduled events on/off, deployment settings | outside the `.mpr` entirely | its own per-environment checklist, owned by whoever runs the environment |
 
 ## Step 2 — Run the extractor
 
@@ -57,8 +66,8 @@ excluded. Switches:
 - `REHOST_KEEP_ORDER=1` — replay modules in the order given instead of reference order (use when
   you have resolved a module cycle by hand).
 
-**Budget** (GenAI, 36 modules): source describes ~30 min fresh with fill-in; first check/exec pass
-~14 min summed; a full rerun with reused describes 36 min. A one-module app took 35 s.
+**Budget** (GenAI, 36 modules): describes ~30 min; first check/exec ~14 min; rerun with reused
+describes 36 min. One module: 35 s.
 
 ## Step 3 — Understand the loop the script runs
 
@@ -81,11 +90,9 @@ Per module, in order:
 The failure this loop exists for: the first full GenAI run executed **1 of 36 modules** — one
 emitter defect plus all-or-nothing check sank the other 35 (commit a1b59bc).
 
-Still open (GenAI `FINDINGS.md` E1–E3): when quarantine can map nothing, the rest of the module is
-dropped silently — 7 modules, 1520 ledger rows, recorded only as `absent from target describe`. A
-module missing from the target is an extractor fault, not 100 failed documents; and the
-`never executed` counts in `run-log.txt` overstate by about 7×. Count distinct statements in
-`<M>.deferred.mdl`.
+Still open (GenAI `FINDINGS.md` E1–E3): when quarantine maps nothing, the rest of the module drops
+silently (7 modules, 1520 rows as `absent from target describe`) — an extractor fault, not 100 failed
+documents. `run-log.txt`'s `never executed` overstates ~7×; count statements in `<M>.deferred.mdl`.
 
 ## Step 4 — Read the fidelity ledger
 
@@ -107,9 +114,9 @@ attribute was `emitted-identical` on the ledger and still CE1613 in `mx check` (
 
 Bound: the report states `mx check` errors, mxbuild result, and the hand-off count by class.
 
-**Done = build-green with hand-offs** (CONFIRMED 2026-10-12): `mx check` 0, `BUILD SUCCEEDED`,
-every ledger row landed or a named hand-off. Run the gate yourself — the script does not
-(`project-bin/exec.sh`'s mxbuild gate, or `mx check <target.mpr>`).
+**Build gate** (CONFIRMED 2026-10-12): `mx check` 0, `BUILD SUCCEEDED`, every ledger row landed or
+a named hand-off. Run it yourself — the script does not (`project-bin/exec.sh`'s mxbuild gate, or
+`mx check <target.mpr>`). Then Step 5b; done needs both.
 
 Hand-off classes by construction in mxcli 0.26 — record each document, fix in Studio Pro:
 
@@ -120,20 +127,34 @@ Hand-off classes by construction in mxcli 0.26 — record each document, fix in 
 | Rules | cannot be described or created; also missing from the denominator |
 | Mutual recursion | exec refuses forward references, so both flows and their callers stay deferred |
 | NOT re-executable widgets | describe marks them; e.g. `Forms$FileManager` |
-| Marketplace version gaps | not installable at the source's version |
-| Mendix-9-built packages into 11 | Mendix refuses them; convert through 10.24 or replace |
-| Demo users, project security, theme | not carried by describe |
+| Step 1 hand-off rows | not carried by describe |
 
 If the model will not load (`ArgumentNullException … EntityType.set_EntityId`), mxcli wrote a
 microflow whose `import from mapping` result has a null entity: `drop microflow` then the source
 `create or modify` in one script (GenAI M1).
 
-Regression parity is **not** a Rehost gate — not reachable headlessly (rules,
-mutual recursion, live credentials). It is a separate, human-run level; say which was reached.
+## Step 5b — Journey parity, source vs target
+
+Bound: N/N journeys pass on **both** apps with the same data effects, or the report says
+`journeys NOT RUN: <reason>`. Silence is not a result.
+
+Describe-identical is not behaviour-identical (the CE1613 sort above). Run the same Playwright journeys against the source app and the
+rehosted app and compare outcomes, with the existing machinery — `journey-proof.md` for the journey
+shape, `e2e-harness-base.md` for the harness (as `existing-app-assurance.md` uses it), `project-tests/e2e/journey-runner.js` to run them.
+
+1. One journey per main user flow; assert its data effect in both databases.
+2. Make every journey idempotent: run-unique IDs, never an empty grid assumed. Failure: the
+   increment 5 journey broke on its third run because accumulated rows let the grid's sticky header
+   cover "New Part" (`fsm-template-9.24.2/slice-assets-core/FINDINGS.md`). Run each twice.
+3. A journey passing on one app only is a rehost defect; trace it to its ledger row.
+
+Measured so far: Banking (same-version, 155 docs) was proven statically only; GenAI ran no journey.
+
+**Done = build-green with hand-offs plus journey parity on the main flows** — or build-green with
+hand-offs and `journeys NOT RUN` with a written reason. Say which.
 
 ## Step 6 — Learnings
 
-mxcli defects → `contrib/inbox/` (triaged into `bug-logs/mxcli-bugs.md`); extractor defects → the
-pipeline with a captured fixture; judgement about what to regenerate or hand off → this skill. GenAI's
-emitter defects are in `contrib/inbox/2026-10-12-rehost-increment-2-genai-mxcli-findings.md` — read it
-rather than re-diagnosing. `CHANGELOG.md` line in the same commit, crediting the source app.
+mxcli defects → `contrib/inbox/`; extractor defects → the pipeline with a captured fixture; judgement
+about what to regenerate or hand off → this skill. GenAI's emitter defects:
+`contrib/inbox/2026-10-12-rehost-increment-2-genai-mxcli-findings.md` — read before re-diagnosing. `CHANGELOG.md` line in the same commit, crediting the source app.
