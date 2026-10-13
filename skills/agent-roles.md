@@ -75,6 +75,17 @@ shows up in the bill:
    does not need yet gets no reply; read the lane's files when its last unit lands. Never send a
    message to an agent that has already reported — that restarts it at its full context.
 
+**App restarts: the implementer restarts its own app, through one script only.** Write this into
+every implementer brief: "When `exec.sh` prints `restart needed`, run `./bin/app-restart.sh`
+yourself and carry on; never stop or start an app any other way (no kill by name, no `pkill`, no
+second `run --local`), and never touch another lane's app." The helper stops only the pid that
+`run --local` recorded for that project and refuses otherwise (`ui-loop.md` § "What watch picks
+up"). The old rule, that only the lead restarts apps, came from a broad kill in one lane that took
+down another lane's app; the helper cannot do that, and the rule cost 24 implementer
+restart-resumes (41.6M tokens, 8.5% of subagent tokens) in the 2026-10-12 run (#289). If the
+helper refuses (exit 3) or the app does not come back (exit 1), the implementer reports
+`BLOCKED NEEDS_RESTART` with its output, as before.
+
 **Prefix you do not control.** Every subagent turn also carries the harness's skill listing,
 tool and MCP notes and the instruction chain — 47–48k tokens in that run before the brief was
 read, about 40% of subagent volume. Each installed skill and plugin adds to it on every turn of
