@@ -18,7 +18,24 @@
 #       --approved-in-chat              # ALSO required when a security-tier rule rises
 #   bin/lint-gate.sh --full             # ignore the vendor exclusion (rarely useful)
 #
-# Exit codes: 0 clean or unchanged · 1 a rule increased · 2 could not run (or a refused update)
+# Exit codes: 0 clean or unchanged · 1 a rule increased, or BLIND (a rule inspected nothing,
+#             or the toolkit rules reverted to stock — see below) · 2 could not run (or a
+#             refused update)
+#
+# RULES REVERTED TO STOCK ARE BLIND, NOT A RISE (#264, 2026-10-13). `mxcli init` re-seeds
+# .claude/lint-rules/ and silently overwrites the toolkit's rules with stock ones. Two apps hit
+# it: CONV010 went 26 -> 169 and the next exec — a pages-only script — was logged as the rise;
+# in the other the re-seed sat uncommitted for five days and the baseline absorbed the noisier
+# counts. bin/lib/install-lint-rules.sh already writes .claude/.mxtk-lint-receipt (md5 of each
+# rule AS INSTALLED; it survives `mxcli init`), so before linting this script reads it: a rule
+# whose md5 no longer matches its receipt line AND whose `# mxtk-lint-rule:` header is gone (or
+# whose file is gone) was re-seeded, not edited by a person. The run then prints "BLIND — lint
+# rules reverted to stock", names the files, points at sync-project.sh (which restores them and
+# rewrites the receipt, so the next run is clean) and exits 1 without linting; --update-baseline
+# is refused, since baselining stock counts is how the five-day case went in. A rule that still
+# carries the header but differs is a hand edit — install-lint-rules.sh reports those, this does
+# not. No receipt = nothing to compare (pre-receipt installs) = no check. A deliberate headerless
+# local rule: LINT_RULES_REVERTED_OK=1 runs anyway, with the warning.
 #
 # ACCEPTING DEBT IS RECORDED, NOT SILENT (2026-10-12). Three toolkit-built apps re-baselined
 # 61 times in four days — every acceptance made by the agent whose script caused the rise,
@@ -111,7 +128,7 @@ while [ $# -gt 0 ]; do
               REASON="$2"; shift ;;
     --reason=*) REASON="${1#--reason=}" ;;
     --approved-in-chat) APPROVED=1 ;;
-    -h|--help) sed -n '2,35p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,60p' "$0"; exit 0 ;;
     *) echo "lint-gate: unknown argument '$1'" >&2; exit 2 ;;
   esac
   shift
@@ -131,6 +148,61 @@ case "$(uname -s 2>/dev/null)" in MINGW*|MSYS*|CYGWIN*) [ -x ./mxcli.exe ] && MX
 EXCLUDE=""
 if [ "$FULL" -eq 0 ] && [ -f "$VENDOR_FILE" ]; then
   EXCLUDE="$(grep -v '^[[:space:]]*#' "$VENDOR_FILE" | grep -v '^[[:space:]]*$' | paste -sd, -)"
+fi
+
+# Receipt check (#264, see header). Runs before lint, on check AND update runs, and also under
+# LINT_JSON so fixtures exercise it. Reads the receipt bin/lib/install-lint-rules.sh writes;
+# never writes it — only the installer does, and that is the remedy named below.
+RECEIPT="$ROOT/.claude/.mxtk-lint-receipt"
+if [ -f "$RECEIPT" ]; then
+  # Read into a variable first: a heredoc inside $(...) does not parse on bash 3.2.
+  IFS= read -r -d '' _RCHK <<'PY' || true
+import hashlib, os
+rec, d = os.environ["RECEIPT"], os.environ["RULES_DIR"]
+for line in open(rec, encoding="utf-8", errors="replace"):
+    parts = line.split()
+    if len(parts) < 2 or parts[0].startswith("#"):
+        continue
+    name, want = parts[0], parts[1]
+    path = os.path.join(d, name)
+    if not os.path.isfile(path):
+        print("%s\tgone (installed per the receipt, missing now)" % name)
+        continue
+    data = open(path, "rb").read()
+    got = hashlib.md5(data).hexdigest()
+    if got == want:
+        continue
+    if b"# mxtk-lint-rule:" in data:
+        continue  # header kept: a hand edit, which install-lint-rules.sh reports
+    print("%s\theader gone, md5 %s != receipt %s" % (name, got[:8], want[:8]))
+PY
+  REVERTED="$(RECEIPT="$RECEIPT" RULES_DIR="$ROOT/.claude/lint-rules" "$PY" -c "$_RCHK")"
+  if [ -n "$REVERTED" ]; then
+    TKR=""
+    type find_toolkit_root >/dev/null 2>&1 && TKR="$(PROJECT_ROOT="$ROOT" find_toolkit_root 2>/dev/null || true)"
+    echo "!! LINT RULES REVERTED TO STOCK (mxcli init?) — this run's delta is not attributable:"
+    printf '%s\n' "$REVERTED" | while IFS="$(printf '\t')" read -r _f _why; do
+      printf '   %s: %s\n' "$_f" "$_why"; done
+    echo ""
+    echo "   Restore the toolkit rules (rewrites .claude/.mxtk-lint-receipt), then re-run:"
+    echo "     ${TKR:-<toolkit-root>}/bin/sync-project.sh $ROOT"
+    if [ "${LINT_RULES_REVERTED_OK:-}" = "1" ]; then
+      echo "   LINT_RULES_REVERTED_OK=1 — linting anyway; counts below are from the files on disk."
+      echo ""
+    elif [ "$UPDATE" -eq 1 ]; then
+      echo "lint-gate: REFUSED — --update-baseline over reverted rules would baseline stock counts." >&2
+      exit 2
+    else
+      echo "BLIND — lint rules reverted to stock; lint not run, nothing compared against the baseline."
+      # lint-last.json gets the verdict but no total: lint did not run, and a stale total from
+      # the previous run would be read as this run's by metrics-ledger.sh. No ledger row either.
+      mkdir -p "$ROOT/.claude/loop" 2>/dev/null &&
+        printf '{\n  "timestamp": "%s",\n  "verdict": "BLIND-RULES-REVERTED",\n  "reverted": "%s"\n}\n' \
+          "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(printf '%s\n' "$REVERTED" | cut -f1 | paste -sd, -)" \
+          > "$ROOT/.claude/loop/lint-last.json" 2>/dev/null || true
+      exit 1
+    fi
+  fi
 fi
 
 # LINT_JSON=<file> skips mxcli entirely and reads pre-captured lint output. This makes
