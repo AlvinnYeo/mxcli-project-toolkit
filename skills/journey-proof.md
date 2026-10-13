@@ -104,6 +104,33 @@ Logout runs on every exit path: normal end, a crash, and SIGINT/SIGTERM. A run w
 not confirmed says so. Declared state does not make a rerun idempotent. A journey that consumes
 its own fixture still needs a reset/seed journey that `leaves` that state again.
 
+### Three rules a green suite still breaks
+
+1. **When a journey proves a focus or "selected" style: assert the landing state before any
+   pointer action.** Mendix focuses the first nav item from script on page load, and Chrome treats
+   that as `:focus-visible`. A step that clicks first clears the ring. A check that counts only
+   inset box-shadows misses an outline. Set `"assertLanding": true` on the journey (or pass
+   `--assert-landing`). Right after login, before any click, the runner then records
+   `landing as <user>: no focus ring before any click`. It FAILs on any element with a visible
+   outline, and on a focused element (`document.activeElement`, `:focus`, `:focus-visible`)
+   with a box-shadow. One run is one role, so report **"N of N roles: no ring on landing"**
+   across the per-role runs. *Field case 2026-10-12 (#281):* the ring showed on landing for
+   3 of 3 roles on one app while its 3 UX asserts stayed green. They clicked the page body
+   first and counted only inset box-shadows.
+2. **When a journey resets or reloads demo data: tag it `"resetsData": true`.** The runner prints
+   the tagged journeys at start. With `--protect-state` it refuses them (one `SETUP
+   protect-state` line). Use the flag for any run between a rehearsal and a recording, and
+   record or snapshot the state first. *Field case 2026-10-12 (#279):* one suite run between
+   rehearsal and recording wiped one app's seeded state, and that app never appeared in the film.
+3. **When a fix changes a displayed fact (a status, a count, a label): assert the old text is
+   absent on every page that shows the fact, not only on the page being fixed.** Take the page
+   list from the fact's `Displayed fact:` row in `PROJECT.md` (`process-coherence-pass.md`
+   pass 5, added by #303) and add a `textAbsent` for the old value to a step that lands on each of those pages.
+   *Field case 2026-10-12/13 (#283):* a truth fix made a withdrawn item read "Stopped". A later
+   task added badges that read the stored status, and 4 pages showed the old status again,
+   including an external operator's main page. The task's own journeys passed, because they
+   checked only the page that had been fixed.
+
 ---
 
 ## The five rungs

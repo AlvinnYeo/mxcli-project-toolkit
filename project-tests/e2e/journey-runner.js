@@ -9,7 +9,8 @@
 // credential + reachability, required env vars, live sessions. Exit 2 = aborted there.
 // Env: TEST_USER / TEST_PASS (required; ALLOW_CONFIG_CREDENTIALS=1 to use the config
 // default), M2EE_ADMIN_PASS / M2EE_ADMIN_PORT, ALLOW_NO_DATA_RUNG=1, JOURNEY_SESSION_CAP=<n>,
-// ALLOW_SESSION_CAP=1. Journeys may declare requiresEnv / requires / leaves / consumes.
+// ALLOW_SESSION_CAP=1. Journeys may declare requiresEnv / requires / leaves / consumes,
+// resetsData (refused under --protect-state) and assertLanding (or --assert-landing).
 //
 // WHY THIS EXISTS
 // The suite's 14 `TARGETS['full-app']` entries are independent PAGE STOPS: navigate,
@@ -44,6 +45,10 @@ const O = require(__dirname + '/otel.js');
 const { cfg } = require(__dirname + '/config.js');
 
 const POSITIVE_CONTROL = process.argv.includes('--positive-control');
+// --protect-state: refuse every journey tagged "resetsData": true (see preflight step 0b).
+const PROTECT_STATE = process.argv.includes('--protect-state');
+// --assert-landing (or any journey with "assertLanding": true): the landing check after login.
+const ASSERT_LANDING = process.argv.includes('--assert-landing');
 const files = process.argv.slice(2).filter(a => !a.startsWith('--'));
 // `require.main === module` guard: tests/e2e/journey-rung4-scope.test.js requires this
 // file to exercise the rung-4 SQL builders directly. Without the guard, requiring it
@@ -972,7 +977,8 @@ function missingEnv(journeys, env) {
 //   skip   — journey id -> reason, journeys not to walk
 //   abort  — null, or the exit code (2: instrument fault) that ends the suite here
 // `redact` is applied to anything quoted back from the probe, so a token can never be echoed.
-function preflight(journeys, { env = process.env, probe = runAdminProbe, admin = cfg } = {}) {
+function preflight(journeys, { env = process.env, probe = runAdminProbe, admin = cfg,
+                               protectState = PROTECT_STATE } = {}) {
   const lines = [], rows = [], skip = new Map();
   const redact = s => (admin.adminToken && admin.adminToken.length > 2
     ? String(s).split(admin.adminToken).join('<redacted>') : String(s));
@@ -993,6 +999,17 @@ function preflight(journeys, { env = process.env, probe = runAdminProbe, admin =
       'TEST_PASS, e.g. `set -a; . ./.env; set +a`), or set ALLOW_CONFIG_CREDENTIALS=1 if the ' +
       'config default is the real demo password. Suite ABORTED before any login');
     return { lines, rows, skip, abort: 2 };
+  }
+
+  // 0b. journeys that reset or reload demo data (#279). Field run 2026-10-12: one suite run
+  // between a rehearsal and a recording wiped one app's seeded state, and that app never
+  // appeared in the film. The tag is always printed; --protect-state refuses tagged journeys.
+  const resetting = journeys.filter(j => j.resetsData === true).map(j => j.id);
+  if (resetting.length && !protectState) {
+    lines.push(`SETUP  resetsData: ${resetting.join(', ')} reset or reload demo data — anything seeded or rehearsed by hand is gone after this run (--protect-state refuses them)`);
+  } else if (resetting.length) {
+    for (const id of resetting) skip.set(id, 'tagged resetsData; --protect-state is on');
+    setup('protect-state', `refused ${resetting.join(', ')} — tagged "resetsData": true and --protect-state is on. Record or snapshot the demo state first, then run them without the flag`);
   }
 
   // 1. env — one line for the suite, however many journeys share the gap.
@@ -1043,6 +1060,54 @@ function preflight(journeys, { env = process.env, probe = runAdminProbe, admin =
       (p.sessions > 0 && !cap ? ' — on a trial licence leaked sessions fill the cap; set JOURNEY_SESSION_CAP to refuse at it' : ''));
   }
   return { lines, rows, skip, abort: null };
+}
+
+// ── Landing state: no focus ring before any pointer action (#281) ───────────
+// Mendix focuses the first nav item from script on page load, and Chrome treats that as
+// :focus-visible. So a focus ring added for accessibility paints on every landing. A step
+// that clicks first clears it, and a check that counts only inset box-shadows misses an
+// outline. Field run 2026-10-12: the ring showed on landing for 3 of 3 roles on one app
+// while its 3 UX asserts stayed green.
+//
+// collectLanding() runs in the page right after login, before any click. It returns the
+// elements that draw a ring: any element with a visible outline, plus any FOCUSED element
+// (activeElement, :focus, :focus-visible) with a box-shadow. A card's resting shadow is
+// not a focus ring, so unfocused box-shadows are not collected. judgeLanding() is the pure
+// verdict, exported for the fixture.
+async function collectLanding(page) {
+  return page.evaluate(() => {
+    const out = [];
+    const name = el => {
+      const cls = (typeof el.className === 'string' ? el.className : '').trim().split(/\s+/)
+        .filter(c => /^mx-name-|^mx-navigation|^nav|^btn/.test(c)).slice(0, 2).join('.');
+      return el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (cls ? '.' + cls : '');
+    };
+    for (const el of document.querySelectorAll('*')) {
+      const cs = getComputedStyle(el);
+      let focused = el === document.activeElement;
+      try { focused = focused || el.matches(':focus') || el.matches(':focus-visible'); } catch {}
+      const outlined = cs.outlineStyle !== 'none' && cs.outlineWidth !== '0px';
+      const shadowed = focused && cs.boxShadow && cs.boxShadow !== 'none';
+      if (outlined || shadowed)
+        out.push({ el: name(el), outlineStyle: cs.outlineStyle, outlineWidth: cs.outlineWidth,
+                   boxShadow: cs.boxShadow, focused });
+      if (out.length >= 20) break;
+    }
+    return out;
+  }).catch(e => ({ error: String(e && e.message || e) }));
+}
+
+function judgeLanding(snapshot) {
+  if (!Array.isArray(snapshot))
+    return { verdict: 'INVALID', detail: `landing state not read: ${(snapshot && snapshot.error) || 'no snapshot'}` };
+  const rings = snapshot.filter(r =>
+    (r.outlineStyle && r.outlineStyle !== 'none' && r.outlineWidth !== '0px')
+    || (r.focused && r.boxShadow && r.boxShadow !== 'none'));
+  if (!rings.length) return { verdict: 'PASS', detail: 'no outline and no focus box-shadow on any element' };
+  return { verdict: 'FAIL', detail: `${rings.length} element(s) draw a ring before any click: ` +
+    rings.slice(0, 5).map(r => r.outlineStyle && r.outlineStyle !== 'none' && r.outlineWidth !== '0px'
+      ? `${r.el} outline ${r.outlineWidth} ${r.outlineStyle}` : `${r.el} focus box-shadow`).join('; ') +
+    ' — style the ring for keyboard focus only (e.g. under a class set on the first Tab key)' };
 }
 
 // ── Declared state: requires / leaves / consumes ────────────────────────────
@@ -1134,6 +1199,7 @@ module.exports = {
   sqlAssocTotal, sqlAssocLinked, sqlMustPointAt, captureScope, scopeEvidence,
   runExitCode, personaMismatch,
   classifyAdminProbe, journeyNeedsAdmin, missingEnv, preflight, orderJourneys, stateTracker,
+  judgeLanding,
 };
 
 // ── Main ────────────────────────────────────────────────────────────────────
@@ -1195,6 +1261,13 @@ const findingsFile = () => path.join(cfg.artifactsDir,
 
   const li = await H.login(page);
   armRelease(page, li);
+
+  // Landing check: once per run, right after login, before any click. One run signs in as
+  // one role, so "N of N roles" is the count over the per-role runs.
+  if (li.ok && (ASSERT_LANDING || journeys.some(j => j.assertLanding === true))) {
+    const lj = judgeLanding(await collectLanding(page));
+    record('ui', `landing as ${li.user}: no focus ring before any click`, lj.verdict, lj.detail);
+  }
   // Identity, not presence. A silent degrade to admin bypasses the role grants the
   // journey exists to exercise, and every assertion below would be measuring an
   // access path no real user takes.

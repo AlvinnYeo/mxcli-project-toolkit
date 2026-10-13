@@ -17,7 +17,9 @@
 #     its adminPass is replaced by a marker here, as test-stack-up-local.sh does).
 # The success body ([{"n":"3"}]) is the column-keyed shape helpers.js documents for --json.
 #
-# Cases: unset TEST_PASS refuses before any login (#278); 403 aborts the whole suite before any journey (pure + end-to-end through the real
+# Cases: unset TEST_PASS refuses before any login (#278); resetsData + --protect-state (#279);
+# the landing judge counts outlines and focus box-shadows (#281; the in-page collector needs a
+# browser and is not fixtured — the snapshot rows here are that collector's own output shape); 403 aborts the whole suite before any journey (pure + end-to-end through the real
 # runner with a stub mxcli); missing env vars are ONE SETUP line; requires/leaves/consumes
 # order the suite and name the unmet precondition; journeys without headers behave as before;
 # the credential source is named and the credential never printed.
@@ -110,6 +112,21 @@ p = R.preflight([data, ui], { env: {}, probe: probe(R.classifyAdminProbe(E.OKOUT
 out('CRED', { abort: p.abort, calls, lines: p.lines, rows: p.rows.length });
 p = R.preflight([ui], { env: { ALLOW_CONFIG_CREDENTIALS: '1' }, probe: probe(R.classifyAdminProbe(E.OKOUT, 0)), admin: { ...admin, passFromEnv: false } });
 out('CREDOVR', { abort: p.abort, rows: p.rows.length });
+
+// #279: resetsData tag printed; --protect-state refuses tagged journeys only
+const rs = { id: 'J-reset', resetsData: true, steps: [] };
+p = R.preflight([rs, ui], { env: {}, probe: probe(R.classifyAdminProbe(E.OKOUT, 0)), admin, protectState: false });
+out('RS', { abort: p.abort, lines: p.lines, rows: p.rows.length, skip: p.skip.size });
+p = R.preflight([rs, ui], { env: {}, probe: probe(R.classifyAdminProbe(E.OKOUT, 0)), admin, protectState: true });
+out('RSP', { abort: p.abort, lines: p.lines, rows: p.rows.length, skip: [...p.skip.keys()] });
+
+// #281: landing judge — outline anywhere, box-shadow only when focused
+out('L_CLEAN', R.judgeLanding([]));
+out('L_OUTLINE', R.judgeLanding([{ el: 'a.mx-navigationtree', outlineStyle: 'solid', outlineWidth: '2px', boxShadow: 'none', focused: true }]));
+out('L_FOCUSSHADOW', R.judgeLanding([{ el: 'a.nav-link', outlineStyle: 'none', outlineWidth: '0px', boxShadow: 'rgb(0, 95, 204) 0px 0px 0px 2px', focused: true }]));
+out('L_CARD', R.judgeLanding([{ el: 'div.card', outlineStyle: 'none', outlineWidth: '0px', boxShadow: 'rgba(0, 0, 0, 0.1) 0px 1px 3px 0px', focused: false }]));
+out('L_ZERO', R.judgeLanding([{ el: 'a', outlineStyle: 'auto', outlineWidth: '0px', boxShadow: 'none', focused: false }]));
+out('L_ERR', R.judgeLanding({ error: 'Target closed' }));
 
 // UI-only suite: no probe at all
 calls = 0;
@@ -228,6 +245,18 @@ echo "== T2b: unset TEST_PASS refuses before any login (#278) =="
 case "$(line CRED)" in *'"abort":2,"calls":0'*'SETUP  credentials: TEST_PASS is unset'*demo_user*ALLOW_CONFIG_CREDENTIALS*'"rows":1'*) ok "aborts, names the user and the override, probe never called" ;; *) bad "unset TEST_PASS not refused" "$(line CRED)" ;; esac
 [ "$(line CREDOVR)" = '{"abort":null,"rows":0}' ] && ok "ALLOW_CONFIG_CREDENTIALS=1 proceeds" || bad "override ignored" "$(line CREDOVR)"
 
+echo "== T2c: resetsData / --protect-state (#279) =="
+case "$(line RS)" in *'"abort":null'*'SETUP  resetsData: J-reset reset or reload demo data'*'"rows":0,"skip":0'*) ok "tag printed at start, journey still runs without the flag" ;; *) bad "tag not printed / journey refused" "$(line RS)" ;; esac
+case "$(line RSP)" in *'"abort":null'*'SETUP  protect-state: refused J-reset'*'"rows":1,"skip":["J-reset"]'*) ok "--protect-state refuses only the tagged journey, one row" ;; *) bad "--protect-state wrong" "$(line RSP)" ;; esac
+
+echo "== T2d: landing judge — outlines and focus box-shadows (#281) =="
+case "$(line L_CLEAN)" in *'"verdict":"PASS"'*) ok "nothing drawn → PASS" ;; *) bad "clean landing not PASS" "$(line L_CLEAN)" ;; esac
+case "$(line L_OUTLINE)" in *'"verdict":"FAIL"'*'a.mx-navigationtree outline 2px solid'*) ok "an outline on the focused nav item → FAIL, named" ;; *) bad "outline missed (the #281 false green)" "$(line L_OUTLINE)" ;; esac
+case "$(line L_FOCUSSHADOW)" in *'"verdict":"FAIL"'*'focus box-shadow'*) ok "non-inset focus box-shadow → FAIL" ;; *) bad "focus shadow missed" "$(line L_FOCUSSHADOW)" ;; esac
+case "$(line L_CARD)" in *'"verdict":"PASS"'*) ok "a card's resting shadow is not a ring" ;; *) bad "resting shadow counted" "$(line L_CARD)" ;; esac
+case "$(line L_ZERO)" in *'"verdict":"PASS"'*) ok "zero-width outline is not a ring" ;; *) bad "zero-width outline counted" "$(line L_ZERO)" ;; esac
+case "$(line L_ERR)" in *'"verdict":"INVALID"'*'Target closed'*) ok "unread landing → INVALID, never PASS" ;; *) bad "unread landing not INVALID" "$(line L_ERR)" ;; esac
+
 echo "== T3: session cap (#287) =="
 case "$(line SCAP)" in *'"abort":2'*'3 live session(s), cap 3'*ALLOW_SESSION_CAP*) ok "live count at JOURNEY_SESSION_CAP refuses the run, names the override" ;; *) bad "cap not enforced" "$(line SCAP)" ;; esac
 [ "$(line SCAPOVR)" = '{"abort":null}' ] && ok "ALLOW_SESSION_CAP=1 overrides" || bad "cap override ignored" "$(line SCAPOVR)"
@@ -325,6 +354,15 @@ E2EOUT="$(cd "$WORK/tests/e2e" && env -u TEST_PASS -u APP_PASS -u ALLOW_CONFIG_C
 [ "$(printf '%s\n' "$E2EOUT" | grep -c 'SETUP  credentials: TEST_PASS is unset')" -eq 1 ] && ok "one SETUP credentials line" || bad "no SETUP credentials line" "$E2EOUT"
 printf '%s\n' "$E2EOUT" | grep -qiE 'login as|FAULTED|launch' && bad "a login was attempted" "$E2EOUT" || ok "no login attempted (browser never opened)"
 [ -f "$WORK/argv" ] && bad "admin probe ran" || ok "no admin probe either"
+
+echo "== T12: real runner — --protect-state with every journey tagged → refused, no login =="
+rm -f "$WORK/argv"
+printf '{"id":"J-demo-reset","resetsData":true,"steps":[{"name":"s","data":{"creates":"M.E"}}]}\n' > "$J/J-demo-reset.journey.json"
+E2EOUT="$(cd "$WORK/tests/e2e" && APP_PORT=1 TEST_PASS=fixture-pass MXCLI="$WORK/stub/mxcli" STUB_ARGV="$WORK/argv" \
+          node journey-runner.js "$J/J-demo-reset.journey.json" --protect-state 2>&1)"; RC=$?
+[ "$RC" -eq 2 ] && ok "exit 2, nothing walked" || bad "rc=$RC" "$(printf '%s' "$E2EOUT" | tail -6)"
+printf '%s\n' "$E2EOUT" | grep -q 'SETUP  protect-state: refused J-demo-reset' && ok "refusal named" || bad "no refusal line" "$E2EOUT"
+printf '%s\n' "$E2EOUT" | grep -q '=== JOURNEY' && bad "tagged journey walked" || ok "tagged journey not walked"
 
 echo ""
 echo "PASS=$PASS FAIL=$FAIL"
