@@ -175,7 +175,7 @@
 <tr><td>Fidelity</td><td>Banking 154/155 identical; GenAI 579 identical, 271 drift</td><td>NativeNote 66/66 describe-identical; Assets slice 207 identical, 5 drift</td></tr>
 <tr><td>Speed</td><td>35 s for 155 documents; about 36 min for 36 modules</td><td>Export under 1 s; install about 8 s per module</td></tr>
 <tr><td>IDs and data</td><td>New IDs are generated</td><td>Entity IDs preserved, measured 9.24 to 10.24 to 11.13</td></tr>
-<tr><td>Java and jars</td><td>Java actions are a hand-off class</td><td>Java folders arrive byte-identical</td></tr>
+<tr><td>Java and jars</td><td>User code in Java actions is carried; helper classes, extra imports and jars are not; type parameters are a hand-off</td><td>Java folders arrive byte-identical</td></tr>
 <tr><td>Widgets</td><td>Legacy widgets and some pages not carried</td><td>Widget packages travel with the module</td></tr>
 <tr><td>Version hops</td><td>Same-version only so far</td><td>11.13 refuses packages older than 10.21; a 9.x source goes through 10.24 first (<code>mx convert</code>, about 35 s)</td></tr>
 <tr><td>Clean-up of the old model</td><td>Yes: you get a clean project and MDL you own</td><td>No: the module arrives as it was, errors and all; edges to missing modules must be fixed</td></tr>
