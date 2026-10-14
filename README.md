@@ -511,6 +511,7 @@ Every mxcli project has a `.ai-context/skills/` directory (bundled by `mxcli ini
 
 | Task | Skill to load |
 |---|---|
+| Applying or proving a change request (CR row), a change whose class, size or status is unclear, or a "Change log:" gate line to explain: full class/size/ask tables, the wrong-vs-right example, apply and prove steps, the owners table and what the warn-only gate check counts | `skills/change-intake-detail.md` |
 | Deep, adaptive interview on one topic, on demand, when a checkpoint's 2+1 or a single question batch isn't enough | `skills/grill-mode.md` |
 | CAC-1, closing Stage 0 in EVERY entry mode — scope IN: full scope or a slice, and in what order. Opens with a brainstorm, not options | `skills/checkpoints/checkpoint-scope.md` |
 | CAC-1b, after Stage 1 — scope OUT: is what extraction produced what you meant. No gate stops you; run it late against the BRDs if it was skipped | `skills/checkpoints/checkpoint-extraction.md` |
@@ -525,7 +526,7 @@ Every mxcli project has a `.ai-context/skills/` directory (bundled by `mxcli ini
 | Changing an EXISTING Mendix app — adding a feature, altering a flow, restructuring a module — when it has no BRDs, no architecture doc and no wireframes: the knowledge base comes from the live model (Path D), stages 2–4 run over what changes plus what it touches, nothing more, and the Track B regression baseline is the precondition; audit-only stays in existing-app-assurance | `skills/existing-app-change.md` |
 | Setting up or wiring a COMPANY BRAIN — the private tier between the toolkit and a project for own skills, conventions, lint rules, MDL snippets and approved MPKs; and deciding whether something goes to the toolkit, the company brain or docs/brain/ | `skills/company-brain.md` |
 | Cutover and retrospective — promoting proven patterns back into the toolkit | `skills/close-the-loop.md` |
-| Before citing ANY behavioural claim about the harness, the Mendix runtime or a test tool as evidence — a claim not in the register may not be cited | `skills/measured-claims.md` |
+| Before citing ANY behavioural claim about the harness, the Mendix runtime or a test tool as evidence, or counting tokens from transcripts — a claim not in the register may not be cited | `skills/measured-claims.md` |
 | Any review pass that runs more than once — module-review, coherence, monkey, wiring-sweep: findings accumulate across runs, a per-run report cannot show a trend | `skills/improvement-register.md` |
 
 **Source — reading a legacy system (migration entry mode)**
@@ -580,6 +581,7 @@ Every mxcli project has a `.ai-context/skills/` directory (bundled by `mxcli ini
 | After every wireframe edit: assembles design/wireframes/*.html into design/prototype.html, one hash-routed page a stakeholder can click through instead of twenty separate files. Generated, never edited (design-artifacts.md Step 3) | `project-bin/assemble-prototype.js` |
 | Before wireframes pass to the build loop, and with --brd before a BRD is signed off: dead #/route links, orphan screens, controls with no data-bind and no data-cut, BRD routes no screen has, screens no use case walks (design-artifacts.md Step 3c, brd-validation.md check 8) | `project-bin/check-prototype-links.js` |
 | Designing the brand and ONE ANNOTATED WIREFRAME PER SCREEN before building pages — the design system alone is half the deliverable | `skills/design-artifacts.md` |
+| Stage 3, after the role model is CONFIRMED and BEFORE THE FIRST WIREFRAME — and any time a page shows ONE object, a menu item or home page is added, or a data source retrieves the current/first record: role homes, inboxes, and per page how it is reached and which object it takes as parameter | `skills/interaction-model.md` |
 | Before a wireframe or a design commits to a WIDGET, when a requirement shows a widget to one role and not another, and when a page script hits a parse error that looks like a syntax mistake: the short list of things MDL cannot write at all, and the four-minute probe that answers it at Stage 3 instead of at build time | `skills/learned-mdl-cannot-express.md` |
 
 **Build — the loop itself**
@@ -587,7 +589,7 @@ Every mxcli project has a `.ai-context/skills/` directory (bundled by `mxcli ini
 | Task | Skill to load |
 |---|---|
 | Dispatching a build step to a helper — generate its one-file pack (the brief's Build steps row, mxcli brain brief, live DESCRIBEs, example, folder) and hand over the path instead of a reading list. Measured: 25-38% fewer tool calls and 30-41% less time, same quality; the token saving is not proven | `project-bin/context-pack.sh` |
-| Building a module with mxcli — verified, iterative, coverage-checklist gated | `skills/iterative-build-loop.md` |
+| An exec.sh guard refused a write (not a permission prompt), or building a module with mxcli — verified, iterative, coverage-checklist gated; on a refusal: commit, wait or stop, never FORCE_EXEC | `skills/iterative-build-loop.md` |
 | After marking a module done, or any time "how much is built vs proven" is asked — renders build-plan.html from done- prefixes and verify-module.sh/improvement-register.md, kept as two honestly separate views; --json writes architecture/build-plan.json parsed from build-plan.md's Phase headings (a plan with no Phase headings gets no file) | `project-bin/build-plan-status.sh` |
 | Turning a client-derived Mendix app into a clean, shareable demo with zero client fingerprint — branding, data, custom widgets | `skills/anonymize-client-app-for-demo.md` |
 | Handing a headless-built model to a person — opening it in Studio Pro, a free sandbox, or a colleague's machine: the model travels, the demo data and runtime config (keys, an agent's bound model) do not, and each needs its own re-establish step | `skills/handoff-to-studio-pro.md` |
@@ -610,7 +612,7 @@ Every mxcli project has a `.ai-context/skills/` directory (bundled by `mxcli ini
 
 | Task | Skill to load |
 |---|---|
-| Building and auditing Mendix pages — widget patterns, datasource shapes | `skills/learned-page-patterns.md` |
+| Building and auditing Mendix pages, or starting a UI fix round across many pages — widget patterns, datasource shapes; for a round: SCSS first, four regressions to check | `skills/learned-page-patterns.md` |
 | Generating a whole page tree in one script — the structure patterns that survive it | `skills/oneshot-page-structure-patterns.md` |
 | Building or auditing a collapsible sidebar nav — Atlas Core's collapsed state needs icons assigned per menu item or it silently clips label text | `skills/learned-sidebar-collapse-icons.md` |
 | Building or altering any data grid — native DATAGRID vs pluggable DG2 decision rule, the ALTER PAGE INSERT corruption, sort-by and filter-binding traps | `skills/learned-dg2-patterns.md` |
@@ -764,7 +766,8 @@ Then filter by Role(s). A helper dispatched with a role stub (ba, architect, mdl
 | Putting a question TO the user — any gate, any stage: ask in chat not in a file, two named options plus your recommendation, one batch per gate then end the turn | `skills/interview-protocol.md` | P,0,1,2,3,4,5,6,7 | lead, ba, architect |
 | The user gives feedback or asks for a change mid-project — "change X", "it also needs Y", a remark on a screenshot or the running app, a stakeholder's ask relayed in chat: log a CR row in PROJECT.md ## Change log BEFORE any edit, size it, then edit the highest artifact it alters (BRD, decision, architecture, wireframe), never the MDL first | `skills/change-intake.md` | 2,3,4,5,6,7 | lead, ba |
 | Any stage transition — the 2+1 format every CAC uses, and the one-register rule (answers land in PROJECT.md, never in a separate state file). The seven CACs themselves are routed per stage in the situational table | `skills/checkpoints/checkpoint-template.md` | 0,1,2,3,4,6,7 | lead, ba, architect |
-| Starting a subagent, sending it a fix round, or reading an agent-stop notice; or setting up the project's subagents — read its Dispatching section per dispatch, the rest once at setup | `skills/agent-roles.md` | P,1,2,3,4,5,6 | lead |
+| Setting up or completing a project's dev-process subagents — once, at project start, not "on demand" | `skills/agent-roles.md` | P,4,5 | lead |
+| Starting a subagent, sending it a fix round, or reading an agent-stop notice — name the model, fresh not fork, fresh fixer not resume, coalesce notices | `skills/dispatching.md` | P,1,2,3,4,5,6 | lead |
 | Deciding whether to extract at all, before any BRD gets generated | `skills/source-triage.md` | 0 | ba |
 | Taking in a new source — before generating anything from it. Grades what the source can support; nothing else in this toolkit reads a source | `bin/source-sufficiency.sh` | 0,1 | ba |
 | Closing Stage 1, or adding files to a source folder — every inventoried file must name the artifact that consumed it (text AND embedded diagrams), or carry a waiver; blocks Stages 1–2 until it does | `bin/source-ledger.sh` | 0,1,2 | ba |
