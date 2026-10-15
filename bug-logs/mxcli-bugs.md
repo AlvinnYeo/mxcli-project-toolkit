@@ -7092,3 +7092,123 @@ Both flagged flows are Data grid 2 datasources on pages in the same module and w
 **Version:** mxcli v0.26.0 (retested on v0.27.0 where noted), Mendix 11.15, from a five-app lab project.
 **What happens.** The described snippet text has no `DataSource: $View` on its root data view, so exec of it fails CE0488. A page describe omitted a pill, a text and a link widget, so a design audit reads "partially read". A DateTime attribute created `not localized` keeps that after `create or modify entity` and after `alter ... modify attribute X: DateTime`; only writing `DateTime localized` flips it. `not localized` makes the client compare the UTC wall clock with local now, so overdue chips were wrong.
 **Toolkit side (workaround):** after a snippet round trip add the datasource by hand; count widgets in the described text against the page before trusting an audit; always write `DateTime localized` explicitly, then `describe entity` to read it back.
+
+## BUG-DRAFT-nav-glyph-reset-home: an undefined menu glyph is only a `check` warning (MDL078) and kills mxbuild with no error file, a partial `create or modify navigation` resets the menu, and a default home page is not checked per role (2026-10-15)
+
+> **NOT YET FILED.** Upstream issue drafted. MDL078 is a deliberate warning upstream (the font table is a snapshot); the lint rule MPR007 covers the role/home case.
+
+**Discovered:** 2026-10-14/15, a five-app lab project. **mxcli version:** v0.26.0 (checked against the v0.27.0 source). **Mendix:** 11.15.0. macOS.
+
+**What happens.** (1) `icon glyph 57388` passes `check` with MDL078 as a warning, exec applies it, mxbuild exits 1 (`Sequence contains no matching element`) and writes no `last-mxbuild-errors.json`, so the gate reports only "failed to run (exit 1)". (2) A partial `create or modify navigation <profile>` rewrites the profile: items not restated are gone, so the final profile needs its own last script. (3) `home page M.P` on the default profile gives CE2729 per role that cannot open P.
+
+**Workaround:** `show glyphs [like '...']` and use a listed code; treat an MDL078 warning as a build blocker; keep ONE final navigation script that restates every item; use `home page M.P for <UserRole>` per role, and run `mxcli lint` (MPR007) before the build.
+
+**Toolkit side:** ledger only; `skills/learned-sidebar-collapse-icons.md` covers the icon requirement.
+
+## BUG-DRAFT-workflow-call-microflow-system-workflow-param: a workflow `call microflow` target with a `System.Workflow` parameter: `check` demands the mapping, mxbuild says CE0117 for every spelling (2026-10-15)
+
+> **NOT YET FILED.** Upstream issue drafted; none found upstream.
+
+**Discovered:** 2026-10-14/15, a five-app lab project. **mxcli version:** v0.26.0 (checked against the v0.27.0 source). **Mendix:** 11.15.0. macOS.
+
+**What happens.** A microflow with a `System.Workflow` parameter, called from a workflow `call microflow` with `Workflow = ...` mapped: `check` insists on the mapping, the build gate reports CE0117 "Unknown variable 'Workflow'". Separately, `close` is a keyword and cannot name a workflow activity.
+
+**Workaround:** drop the parameter and find the instance through `System.Workflow_ParentWorkflow` (or the context entity's association); rename the activity (`closeCase`, not `close`).
+
+**Toolkit side:** ledger only; `skills/workflow-structure-rules.md` has the other measured workflow signatures.
+
+## BUG-DRAFT-describe-show-constants-print-secrets: `describe constant` and `show constants` print the stored default, so a demo password lands in the transcript (2026-10-15), HIGH
+
+> **NOT YET FILED.** Upstream issue drafted. The v0.27.0 source has no masking and no `--reveal` flag.
+
+**Discovered:** 2026-10-14/15, a five-app lab project. **mxcli version:** v0.26.0 (checked against the v0.27.0 source). **Mendix:** 11.15.0. macOS.
+
+**What happens.** After a constant's default has been filled with a credential, `describe constant M.Name` and `show constants in M` print it verbatim (seen in two apps' transcripts). Names matching Password, Secret or Token are not masked.
+
+**Workaround:** never run either command on a project whose constants may hold a secret; keep secret constants EMPTY in the model and pass the value at run time with `--constant Module.Name=value` (written nowhere).
+
+**Toolkit side:** one line in `skills/learned-constants-and-secrets.md` (step 3).
+
+## BUG-DRAFT-business-event-mdl-gaps: `create business event service` has String(200) attributes only, collides with the inherited CloudEvent id attribute, and needs BSON patches for the V2 publish subject and a shared channel name (2026-10-15)
+
+> **NOT YET FILED.** Upstream issue drafted. Related and closed: mendixlabs/mxcli#476 (reserved attribute names), PR #533 (duplicate channels).
+
+**Discovered:** 2026-10-14/15, a five-app lab project. **mxcli version:** v0.26.0 (checked against the v0.27.0 source). **Mendix:** 11.15.0. macOS.
+
+**What happens.** (1) A message attribute is String(200); a long payload attribute needs unlimited length and the entity side must match or mxbuild reports a max-length mismatch. (2) A message attribute named `EventId` duplicates a member of the inherited CloudEvent entity. (3) The `PublishBusinessEvent_V2` Subject written through MDL needs a refresh (CE0115). (4) `ChannelName` is random per service, so publisher and subscriber apps land on different topics.
+
+**Workaround:** BSON patch scripts for unlimited length, subject and channel name, then `mxcli fix hashes --repair`; avoid `EventId` as an attribute name; check that publisher and subscriber channel names are equal before running. Measured: 16 of 16 channels matched on the broker after the patch.
+
+**Toolkit side:** ledger only (`project-bin/mxpatch.py` is the place for a shipped patcher if this recurs).
+
+## BUG-DRAFT-business-events-appid-copied: a Business Events AppId is the project unit id, is copied with the model, and no mxcli command prints it (2026-10-15)
+
+> **NOT YET FILED.** Upstream issue drafted; none found upstream.
+
+**Discovered:** 2026-10-14/15, a five-app lab project. **mxcli version:** v0.26.0 (checked against the v0.27.0 source). **Mendix:** 11.15.0. macOS.
+
+**What happens.** Copying an app model keeps the project unit id, which Business Events uses as the AppId. It is not in `describe settings` or `show settings`. Two apps with the same AppId subscribing to the same message join one consumer group and compete for records.
+
+**Workaround:** read each app's AppId statically before wiring a second subscriber (the `Projects$Project` unit id in the unpacked `mprcontents`); one subscriber per message is safe.
+
+**Toolkit side:** ledger only.
+
+## BUG-DRAFT-marketplace-install-deps-and-widgets: `marketplace install` pulls no dependent module and leaves CE0463 widget definitions (2026-10-15)
+
+> **NOT YET FILED.** Upstream: `marketplace install --file` shipped (mendixlabs/mxcli#1150, PR #1151, merged). Dependency resolution and the widget fix inside install are not covered by it.
+
+**Discovered:** 2026-10-14/15, a five-app lab project. **mxcli version:** v0.26.0 (checked against the v0.27.0 source). **Mendix:** 11.15.0. macOS.
+
+**What happens.** Installing a connector module without the module it depends on gives about 50 mxbuild CE errors; installing the dependency with `install --file <downloaded.mpk>` worked. A Marketplace module can install under a folded name (Workflow Commons as one word) and leaves CE0463 widget definitions that `mxcli fix widgets` repairs (41 units).
+
+**Workaround:** read the module's dependencies on its Marketplace page, install them first (by content id or `install --file`), then `mxcli fix widgets -p <app>.mpr` before the first mxbuild.
+
+**Toolkit side:** ledger only; `skills/decompose-app.md` already lists the `fix widgets` step.
+
+## BUG-DRAFT-run-local-scheduled-events-off: `run --local` boots with scheduled events off and says so only in the runtime log (2026-10-15)
+
+> **NOT YET FILED.** Upstream issue drafted. `--runtime-setting` exists in v0.27.0; nothing prints or defaults the setting.
+
+**Discovered:** 2026-10-14/15, a five-app lab project. **mxcli version:** v0.26.0 (checked against the v0.27.0 source). **Mendix:** 11.15.0. macOS.
+
+**What happens.** A lapse or retry scheduled event never runs; the log says "Synchronizing scheduled events: None". `--runtime-setting ScheduledEventExecution=ALL` fixes it. Passing it through a restart wrapper that rewrites the shared start command overwrote that command.
+
+**Workaround:** start once with `--runtime-setting ScheduledEventExecution=ALL` and keep it in the project's own start line. Already taught for tests in `skills/testing-shape.md` ("`run --local` starts with scheduled events off").
+
+**Toolkit side:** the skill paragraph exists; this entry makes it findable by symptom.
+
+## BUG-DRAFT-test-local-fixed-ports: `mxcli test --local` hard-codes ports 8081/8091 and refuses while another app holds 8081, FIXED in mxcli v0.27.0 (2026-10-15)
+
+> **FIXED UPSTREAM** in v0.27.0: `mxcli test --app-port / --admin-port / --serve-port` (CHANGELOG 0.27.0, Added). No upstream issue needed.
+
+**Discovered:** 2026-10-14/15, a five-app lab project. **mxcli version:** v0.26.0 (checked against the v0.27.0 source). **Mendix:** 11.15.0. macOS.
+
+**What happens (v0.26.0 and older).** With another app on :8081, `bin/test-scratch.sh` reports ":8081 already answers" for as long as it runs; `--attach` needs a restart in test-endpoint mode.
+
+**Workaround:** on v0.27.0 and later pass `--app-port` and `--admin-port` to `mxcli test --local`. On v0.26.0 stop the other app, or prove behaviour with REST scripts against the running app.
+
+**Toolkit side:** ledger only for now; a `skills/testing-shape.md` line naming the flags waits on a behaviour A/B (baseline file). `bin/test-scratch.sh` still takes its lock on the fixed 8081/8091; moving it to the new flags needs a field run and is left open.
+
+## BUG-DRAFT-business-events-oversize-ce-id: the Business Events consumer drops a record whose `ce_id` is over 36 characters, commits the offset and leaves no row (2026-10-15)
+
+> **NOT YET FILED.** Owner: the Business Events Marketplace module (Mendix), not mxcli.
+
+**Discovered:** 2026-10-14/15, a five-app lab project. **mxcli version:** v0.26.0 (checked against the v0.27.0 source). **Mendix:** 11.15.0. macOS.
+
+**What happens.** A produced event with `ce_id` longer than 36 characters (for example `HE-<id>-<Message>`) is dropped by the consumer: the log has "error processing record ... maximum length of 36", the offset is committed, there is no EventLog row and no retry. `ConsumedBusinessEvent.EventId` is String(36).
+
+**Workaround:** use a UUID for `ce_id`; carry an application idempotency key in the payload instead of the CloudEvent id.
+
+**Toolkit side:** ledger only.
+
+## NOTE-published-rest-404-for-missing-role: a published REST operation answers 404, not 403, for an authenticated user without the allowed role (Mendix runtime, 2026-10-15)
+
+> **Not an mxcli bug.** Mendix runtime behaviour; a support question is drafted.
+
+**Discovered:** 2026-10-14/15, a five-app lab project. **mxcli version:** v0.26.0 (checked against the v0.27.0 source). **Mendix:** 11.15.0. macOS.
+
+**What happens.** Valid credentials but no allowed module role on the service: the runtime answers 404 "Resource not found"; 401 only for missing or wrong credentials. A contract that says 403 fails its own test.
+
+**Workaround:** write 404 (and 401) into the API contract and the proof script, or add an explicit role check in the operation's microflow that returns 403.
+
+**Toolkit side:** ledger only.

@@ -19,6 +19,16 @@ Sections dated before 2026-09-19 predate the cycle and stay as they are. Named m
 
 ## Unreleased
 
+- learn(bug-ledger): **published REST answers 404, not 403, for a user without the allowed role** (TK-046, Mendix runtime behaviour; write 404 into the contract) — a five-app lab project
+- learn(bug-ledger): **the Business Events consumer silently drops a record whose ce_id is over 36 characters** (TK-045, Business Events module owner; use a UUID) — a five-app lab project
+- learn(testing): **`mxcli test --local` takes `--app-port` / `--admin-port` from v0.27.0, so it no longer refuses while another app holds 8081** (TK-044, fixed upstream; ledger only, the skill line waits on an A/B) — a five-app lab project
+- learn(bug-ledger): **`run --local` starts with scheduled events off** (TK-043; skill text already in testing-shape.md, now findable by symptom) — a five-app lab project
+- learn(bug-ledger): **`marketplace install` pulls no dependency and leaves CE0463 widgets; `install --file` and `fix widgets` are the workaround** (TK-042; overlaps merged upstream #1151) — a five-app lab project
+- learn(bug-ledger): **a Business Events AppId is copied with the model and shown by no command** (TK-041, upstream draft) — a five-app lab project
+- learn(bug-ledger): **`create business event service` gaps: String(200) only, CloudEvent id collision, V2 subject and channel name need patching** (TK-040, upstream draft) — a five-app lab project
+- learn(secrets): **`describe constant` and `show constants` print a stored credential verbatim; keep secret constants empty and pass `--constant`** (TK-039, HIGH, upstream draft; skill line + ledger) — a five-app lab project
+- learn(bug-ledger): **a workflow call-microflow with a System.Workflow parameter: check demands the mapping, mxbuild says CE0117** (TK-038, upstream draft, workaround recorded) — a five-app lab project
+- learn(bug-ledger): **an undefined menu glyph is only a warning and kills the build with no error file; a partial navigation modify resets the menu** (TK-037, upstream draft, workaround recorded) — a five-app lab project
 - fix(verify-module): the graph, coverage and journeys rung budgets are variables (`VM_TMO_GRAPH`, `VM_TMO_COVERAGE`, `VM_TMO_JOURNEYS`; defaults unchanged at 300/300/900, like the existing `VM_TMO_CONFORMANCE`), so a large build plan or a loaded machine can raise the 300 s that reported a clean coverage run as a timeout (TK-008) — five-app lab project (Mendix 11.15, mxcli v0.26.0)
 - fix(app-restart): mask the value of any `Name=value` whose name holds password/secret/token/key (e.g. `--constant Module.XPassword=v`), not only values after secret-named flags; the printed `start:` line leaked them (TK-003) — five-app lab project (Mendix 11.15, mxcli v0.26.0)
 - learn(bug-logs): **six BUG-DRAFT entries from a five-app lab project (mxcli v0.26.0, Mendix 11.15)**: `check` expression gaps (formatDecimal, Decimal toString, raw backslash in replaceAll), declare/retrieve partial checks, microflow splice and alter variable scope, create without commit, Data grid 2 write defects, describe round-trip and DateTime localization. Each gives the workaround; none is filed upstream yet, upstream issue numbers named where they exist (#580, #1489, #1111, #891). Read on demand through `bin/bug-lookup.sh`. — MendixMau, five-app lab report TK-027 to TK-036
