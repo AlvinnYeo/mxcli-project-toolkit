@@ -215,8 +215,15 @@ _report_result() {
   # into coherence-cadence.sh and build-plan-status.sh. Observed on a real field run:
   # `mode=static-only pages=0 fault=2` reported as PASS. Fault is checked FIRST because "did not
   # run" must never be readable as "ran and was clean".
+  #
+  # `stack:4` is test-stack-up.sh's "instrument blocked": the port `mxcli run --local` needs is
+  # held by another process. Its own header says to record that as blocked, not as a test
+  # failure — the app was never measured, so it is a FAULT, not a FINDING. Scoped to the stack
+  # rung's kind on purpose: exit 4 means something else elsewhere (conformance-check.sh: NOT
+  # APPLICABLE), so it is not a global remap.
   case "$kind:$rc" in
     *:2)      verdict=FAULT ;;
+    stack:4)  verdict=FAULT ;;
     info:*)   verdict=INFO ;;
     *:0)      verdict=PASS ;;
     *)        verdict=FINDING ;;
@@ -235,6 +242,7 @@ _report_result() {
 # run <name> <logfile> <kind> <timeout_s> -- <cmd...>
 #   kind=gate   exit 1 => finding, exit 2 => instrument fault
 #   kind=info   never fails the pass; recorded for the trend line
+#   kind=stack  as gate, plus exit 4 (test-stack-up: port held by another process) => fault
 # Blocks until the instrument finishes.
 run() {
   local name="$1" log="$2" kind="$3" tmo="$4"; shift 5   # the literal --
@@ -376,7 +384,7 @@ echo "══ verify-module: $MODULE ══  $STAMP"
 # so the runtime instruments below cannot be pointed at a guessed one.
 STACK_OK=0
 if [ -x "$(_tool test-stack-up.sh)" ]; then
-  run "stack (test-stack-up --check)" "$OUTDIR/00-stack.log" gate 60 -- \
+  run "stack (test-stack-up --check)" "$OUTDIR/00-stack.log" stack 60 -- \
     "$(_tool test-stack-up.sh)" --check
   grep -q "^stack (test-stack-up --check)	PASS" "$SUMMARY" && STACK_OK=1
   # "app up with a caveat" is not "app down", and reporting it as one sends the reader
@@ -426,6 +434,8 @@ fi
 # These three share no state and touch no app, so they always run in parallel — unlike the
 # runtime instruments in §2 there is nothing here to race on and no login session to spend, so
 # this needs no opt-in flag.
+# Rung budgets in seconds, overridable for big plans or loaded machines (TK-008):
+#   VM_TMO_CONFORMANCE (1200)  VM_TMO_GRAPH (300)  VM_TMO_COVERAGE (300)  VM_TMO_JOURNEYS (900)
 if [ -x "$(_tool conformance-check.sh)" ]; then
   run_launch "conformance (ledger claims vs live model)" "$OUTDIR/10-conformance.log" gate "${VM_TMO_CONFORMANCE:-1200}" -- \
     "$(_tool conformance-check.sh)" --module "$MODULE"
@@ -434,7 +444,7 @@ else
 fi
 
 if [ -x "$(_tool graph-sweep.sh)" ]; then
-  run_launch "graph sweep (orphans + wiring shape)" "$OUTDIR/11-graph.log" gate 300 -- \
+  run_launch "graph sweep (orphans + wiring shape)" "$OUTDIR/11-graph.log" gate "${VM_TMO_GRAPH:-300}" -- \
     "$(_tool graph-sweep.sh)" --module "$MODULE"
 else
   fault "graph sweep (orphans + wiring shape)" "bin/graph-sweep.sh not installed"
@@ -444,8 +454,16 @@ fi
 # requirements to check against" is precisely the hole that let several projects ship with no
 # coverage ledger at all, so coverage-check.sh and the review agent had nothing to run and their
 # absence read as silence.
-LEDGER="${LEDGER_FILE:-$ROOT/architecture/modules/$MODULE/coverage-ledger.md}"
-[ -f "$LEDGER" ] || LEDGER="$ROOT/architecture/coverage-ledger.md"
+# A ledger is a file OR a per-BRD directory (<Module>/coverage-ledger/<BRD>.md) — LEDGER_FILE
+# documents both (conformance-check.sh, coverage-preflight.sh). Testing only `-f` sent a directory
+# LEDGER_FILE silently to architecture/coverage-ledger.md (review of #307, 2026-10-13).
+resolve_ledger_hint() {
+  local l="${LEDGER_FILE:-$ROOT/architecture/modules/$MODULE/coverage-ledger.md}"
+  if [ -z "${LEDGER_FILE:-}" ] && [ ! -f "$l" ] && [ -d "${l%.md}" ]; then l="${l%.md}"; fi
+  [ -f "$l" ] || [ -d "$l" ] || l="$ROOT/architecture/coverage-ledger.md"
+  printf '%s\n' "$l"
+}
+LEDGER="$(resolve_ledger_hint)"
 BRD="${BRD_FILE:-}"
 if [ -z "$BRD" ]; then
   for pat in "$ROOT"/analysis/*/brd/*.brd.json "$ROOT"/analysis/*/knowledge-base/brd/*.brd.json; do
@@ -480,12 +498,12 @@ else
   # 3 and 4 are not passes and not faults; they are graded absences, and the rung says which.
   PREFLIGHT="$(_tool coverage-preflight.sh)"
   if [ -n "$PREFLIGHT" ] && [ -x "$PREFLIGHT" ]; then
-    run_launch "coverage (BRD leaves: UNCLAIMED/PHANTOM/DOUBLE)" "$OUTDIR/12-coverage.log" gate 300 -- \
+    run_launch "coverage (BRD leaves: UNCLAIMED/PHANTOM/DOUBLE)" "$OUTDIR/12-coverage.log" gate "${VM_TMO_COVERAGE:-300}" -- \
       "$PREFLIGHT" --summary ${MODULE:+--module "$MODULE"}
   elif [ -f "$LEDGER" ] && [ -n "$BRD" ]; then
     # Preflight absent (an older wired project that has not synced). Fall back to the engine
     # directly — level 1 only, which is what this rung did before the grading layer existed.
-    run_launch "coverage (BRD leaves: UNCLAIMED/PHANTOM/DOUBLE)" "$OUTDIR/12-coverage.log" gate 300 -- \
+    run_launch "coverage (BRD leaves: UNCLAIMED/PHANTOM/DOUBLE)" "$OUTDIR/12-coverage.log" gate "${VM_TMO_COVERAGE:-300}" -- \
       "$COVERAGE_CHECK" --summary "$BRD" "$LEDGER"
   else
     fault "coverage (BRD leaves)" \
@@ -510,6 +528,9 @@ run_join_all
 # a second time in the same pass buys nothing. The path is passed unconditionally: if rung 1 faulted
 # the file is absent, review says so and FAULTS, which is the truth — nothing was measured — and it
 # costs seconds instead of minutes.
+# The path names the run's BASE report; a per-BRD ledger writes report-<date>-<BRD>.tsv instead
+# (and no base file), and review-module.sh reads every report-<date>*.tsv sibling with it — so
+# the reuse finds a per-BRD module's rows rather than FAULTing on "does not exist" (2026-10-13).
 if [ -x "$(_tool review-module.sh)" ]; then
   run "review (model vs decided — report.json)" "$OUTDIR/13-review.log" info 600 -- \
     "$(_tool review-module.sh)" "$MODULE" --json-only \
@@ -557,12 +578,12 @@ else
     fault "journeys" "no journey runner at ${JOURNEY_RUNNER#$ROOT/}" \
           "Set JOURNEY_RUNNER, or see the journey-proof.md skill for the harness this expects."
   elif [ -f "$JOURNEY" ]; then
-    _exec "journeys (UI + ordered spans + data effects)" "$OUTDIR/20-journeys.log" gate 900 -- \
+    _exec "journeys (UI + ordered spans + data effects)" "$OUTDIR/20-journeys.log" gate "${VM_TMO_JOURNEYS:-900}" -- \
       node "$JOURNEY_RUNNER" "$JOURNEY"
     # Non-vacuity: a journey that cannot fail is not evidence. Skipped under --quick because it
     # re-walks every step.
     [ "$QUICK" -eq 1 ] || _exec "journeys (positive control — MUST detect a broken precondition)" \
-      "$OUTDIR/21-journeys-control.log" gate 900 -- \
+      "$OUTDIR/21-journeys-control.log" gate "${VM_TMO_JOURNEYS:-900}" -- \
       node "$JOURNEY_RUNNER" "$JOURNEY" --positive-control
   else
     fault "journeys" "no ${JOURNEY#$ROOT/}" \

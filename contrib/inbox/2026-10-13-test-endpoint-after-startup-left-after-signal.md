@@ -11,6 +11,7 @@ mxcli v0.25.0, Mendix 11.14.0 Beta, toolkit c1efcb3.
 **Proposed target:** upstream mxcli for the root cause (already logged here as #244, open); in the
 toolkit, `skills/testing-shape.md` (the `--test-endpoint` paragraph) and an exec.sh pre-flight hint
 
+**Currency check:** 2026-10-16 against master d1cbd41: partly stale. exec.sh's pre-flight now refuses on a leftover injected setting and prints the `ALTER SETTINGS` repair (`_common.sh`), so the exec.sh hint half is done. Still open: #244 upstream, and `skills/testing-shape.md` does not say that a stop by signal skips the restore.
 ---
 
 ## What is already covered

@@ -226,9 +226,35 @@ table against `design/wireframes/*.html` and reports `MANUAL <built> wireframes 
 
 ---
 
+## Step 2b: Interaction Model — before the first wireframe
+
+With the Screen Inventory written and the role model CONFIRMED, write `design/interaction-model.md`
+per `skills/interaction-model.md`: a home per role, an inbox per BRD user task, and one row per inventoried
+screen naming how it is reached, its page parameter and its data view source. Do it before drawing:
+wireframes drawn as one role looking at one record hide a page that shows "the first open record"
+instead of the clicked one, and every later check compares the build with the wireframe.
+
+---
+
 ## Step 3: Build Wireframes FROM the Design System
 
-Each wireframe is assembled from Step 1's components — never restyled from scratch. One HTML per screen, or a single annotated showcase. Every wireframe carries a **binding annotation** the build loop will check:
+Each wireframe is assembled from Step 1's components — never restyled from scratch. One HTML per screen, or a single annotated showcase. Every wireframe opens with a **page contract** copied from its row in `design/interaction-model.md`:
+
+```html
+<div class="wf-contract">
+  <p>Page parameter: Sales.Order</p>          <!-- Module.Entity, or: none — list page | none — singleton | none — home -->
+  <p>Reached from: row of Order_Overview; row of Review_Inbox</p>
+  <p>Drawn as role: Reviewer</p>
+</div>
+```
+
+The value is the qualified entity (`Module.Entity`) or `none — <reason>`, in exactly that form
+(a later gate parses the line). `none` is a statement, not a blank: it says the page is a list, a
+home or a singleton. The `wf-` prefix makes the block annotation, so `page-fidelity.js` does not score it as
+page content and `assemble-prototype.js` hides it behind **Show bindings**. Draw the screen as the
+role named there, with that role's menu.
+
+Every wireframe also carries a **binding annotation** the build loop will check:
 
 | Source field / element | Mendix widget | Datasource | Required | Read-only | Conditional |
 |---|---|---|---|---|---|
@@ -384,7 +410,8 @@ for the facts behind each check.
 **The property that makes this worth gating: a design-system defect is dormant until some widget
 carries the class.** So the defects are all present from the first build and surface one at a time,
 much later, as UI work attaches classes to pages. "The build is green and the pages look fine" is
-not evidence that the design system is correct — it is evidence that it is not being exercised yet.
+not evidence that the design system is correct — it is evidence that it is not being exercised yet,
+and it reads identically either way.
 
 ---
 
@@ -394,10 +421,11 @@ not evidence that the design system is correct — it is evidence that it is not
 design/
   brand.md                     ← brand decisions + deliberate inversions + Atlas variable mapping
   target-ui.md                 ← UX pattern inventory from client mockup → Atlas implications
+  interaction-model.md         ← role homes, inboxes, one row per screen: how reached, page parameter, data view source (skills/interaction-model.md)
   ds.css                       ← token + component CSS (linked by showcase + all wireframes)
   design-system.html           ← annotated showcase (links ds.css; not the token source)
   wireframes/
-    <Screen>.html              ← one per surface, with binding-annotation table, data-route, #/route links (the SOURCE)
+    <Screen>.html              ← one per surface, with wf-contract block, binding-annotation table, data-route, #/route links (the SOURCE)
   prototype.html               ← assembled by project-bin/assemble-prototype.js from wireframes/ + ds.css; clickable, never hand-edited
   screenshots/                 ← source screenshots copied in (tier-1 ground truth)
 
@@ -423,7 +451,7 @@ mdlsource/gallery/
 ## Anti-Patterns This Skill Prevents
 
 - **Wireframes before a design system.** Produces inconsistent screens with no shared tokens; the Atlas theme becomes a per-page cleanup job.
-- **Embedding tokens in `design-system.html` instead of a separate `ds.css`.** Wireframes must redeclare tokens → drift and inconsistency between screens.
+- **Embedding tokens in `design-system.html` instead of a separate `ds.css`** → see `learned-stylegallery.md` § Anti-Patterns This Skill Prevents.
 - **Skipping `brand.md` and `target-ui.md`.** Design decisions end up undocumented; deliberate inversions (primary/CTA swap) look like mistakes to future maintainers.
 - **Hand-picking chart/KPI colors.** Bypasses the `dataviz` validator — ship colorblind-unsafe data. Use the validated palette.
 - **Generative design for screens that have a source screenshot.** Invents divergence you then correct back toward the source.

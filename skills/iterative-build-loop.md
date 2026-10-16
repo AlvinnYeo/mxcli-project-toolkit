@@ -96,9 +96,7 @@ assumption.
 **Do not trigger** for decisions a BRD never made a claim about (internal naming, layout choice, an
 enum's internal value set) — there's nothing to drift, and syncing anyway is noise.
 
-**Wireframes follow the same trigger, filtered further:** only re-render a wireframe when the decision
-changes something visually observable (new field, new button, changed flow, different state/color) —
-not for logic/microflow changes invisible in the UI.
+**Wireframes** → see `conversion-runbook.md` § 3b "Wireframes" (same trigger, visually observable changes only).
 
 **User feedback mid-build** ("also add X", a remark on a screenshot) starts one step earlier, in
 `change-intake.md`. It gets a `## Change log` row before any edit, the BRD or wireframe is edited
@@ -316,13 +314,96 @@ rm -f "$MPR.lock"
 echo "✓ SP restarting — click Run Locally when it finishes loading."
 ```
 
+### Every model write goes through `bin/exec.sh` — and what to do when a guard refuses
+
+Every MDL script, and every one-off model patch (`--patch`), is applied with `./bin/exec.sh`.
+A raw `./mxcli exec` writes no BUILD-LOG row, takes no snapshot and runs no gate, so the change
+shows as "not recorded" to everything that reads the build log (status, done-drift, proof views).
+
+When a guard refuses, the script's change is not in the model, unless exec.sh says the write is kept (LINT ROSE/BLIND, ⚠️ PARTIAL) — then do not re-apply it. Most refusals also write a
+BUILD-LOG row (uncommitted model, `--commit-first`, a failed pre-exec check, a gate that could
+not run, PRE-EXISTING errors, a NEW gate error); the plain Studio Pro refusal, the lock refusal and argument errors only print.
+Your move is one of three — **commit, wait, or stop and report** — never an override:
+
+| Refusal | Do this |
+|---|---|
+| Uncommitted model changes | Re-run with `--commit-first` (commits the `.mpr` + `mprcontents/` only), or commit them yourself, then re-run |
+| Studio Pro holds the model (also refuses `--commit-first`) | Stop. Ask the person to save (Cmd+S) and close the project; never kill Studio Pro |
+| Another session holds this project's exec lock | The lock refuses at once; it does not queue. Re-run after the other apply finishes. A dead holder is taken over automatically — never `rm` the lock |
+| The mxbuild gate cannot run, even after its own download | Stop and report; run `bin/doctor.sh`. `ALLOW_UNVERIFIED=1` only when the person says so |
+| Pre-exec check or a NEW mxbuild error | Fix the script. That is the gate working |
+| `PRE-EXISTING <codes>` — errors already in the model before this script | Not the script's cause. Stop and report: it needs Studio Pro (e.g. "Update security") or a separate fix script, not a retry |
+| Any other refusal | Read the remedy exec.sh prints and do that; the table above is not the full list of guards |
+
+**Never set `FORCE_EXEC=1` on your own initiative** — only when the person tells you to, naming
+the risk. The failure it causes: an agent hits the uncommitted-model guard mid-loop, sets
+`FORCE_EXEC=1` to keep going, the next script's gate fails, and the auto-restore silently drops
+every MCP change made since the last commit (problem 4 above). The guard is the only thing
+between those two events.
+
+**The MCP write path stays allowed** where `learned-mdl-preflight.md` prescribes it (its
+Step 0 write-mode choice), and it is **accepted as unrecorded**: no exec row, no exec gate. Its record
+is the commit you make before the next exec (the pre-exec sequence below, step 2), with a
+message that starts `MCP:` and names what changed.
+
+**Check before closing a phase:** every model-changing commit since the phase began is covered
+by one of three things — an `✅`/`⚠️ applied`/`⚠️ PARTIAL` BUILD-LOG row for the script it commits, a
+`--commit-first` commit (message `model: commit pending model changes before exec.sh …`), or an
+`MCP:` commit. Blocked and failed rows have no commit, so this is a coverage check, not an
+equality between counts. Done when all N model commits are covered, N of N. A commit covered by
+none of the three is a raw `mxcli exec` — re-run that script through exec.sh, or record why it
+cannot be. After a `⚠️ PARTIAL` row, finish the script's remaining statements; never re-run the whole script.
+
+### The gate checks the saved file — save, then check
+
+`exec.sh`'s mxbuild gate reads the `.mpr` on disk, never an editor's in-memory model, so after
+any Studio Pro or MCP edit, **save first, then check**. The failure this prevents (field
+comparison, 2026-09-29): an MCP build ran `mx check` against a stale disk copy and 229 errors
+stayed hidden until a real save. Step 1 of the sequence below is that save; exec.sh's
+Studio-Pro-holds-the-model refusal exists for the same reason.
+
+### Gate cost as the model grows — what to batch, and what not to
+
+The per-script apply grows with the model (field run, 2026-09-29: 22–30 s per script in the
+first slice, 55–65 s in the second, almost all of it mxbuild). What the gate already saves:
+the pre-flight baseline mxbuild is skipped when the verification stamp says the model is
+unchanged since its last clean build, so a run of clean applies costs **one** mxbuild each, not
+two. A second apply while one is running is refused by the exec lock instead of colliding (two
+of eleven failed applies in that run were concurrent mxbuild collisions, from before the lock);
+re-run it after the other apply finishes.
+
+`exec.sh` has **no** batched-gate mode. Do not imitate one with `SKIP_CHECK`, `SKIP_BASELINE`,
+`FORCE_EXEC` or raw `mxcli exec` runs between gates — each of those is an unrecorded or
+unverified write. If gate time dominates, reduce the number of applies at the granularity level
+(see "Iterative Granularity": layer scripts rather than per-page ones where partial recovery is
+unlikely, fewer stub-then-fill passes) — never by drafting less in parallel.
+
+**Draft the ready set in parallel, apply serially.** The unit is the build-plan row. The ready
+set is every `BUILD` row whose "Depends on" rows are all applied, minus overlapping writers: two
+rows whose scripts `create or replace`, `alter` or drop+create the same document (the row's
+written documents are listed in Produces, `brd-to-build-plan.md`) are never in one ready set,
+whatever "Depends on" says, and no row is drafted while its Produces overlaps a drafted but
+unapplied row. Rows in the ready set run at once; within a row, its scripts go in
+order, one `mdl-agent` per script. Applies go one at a time through `exec.sh` (the exec lock
+refuses a second); after each apply, recompute the ready set. The failure this prevents: a run
+that drafted one script at a time and sat idle while each draft finished. The risk it adds: a
+queued draft can restate a document as it was before a sibling apply — STOP rule 21's incident,
+where the second of two drop+creates of a shared seed aggregator silently dropped a seed call
+with `mx check` at 0 errors. So before applying a draft, if any apply has landed since it was
+drafted, run `mxcli diff -p <mpr> <script> --format struct` (`learned-mdl-preflight.md` STOP
+rule 23; check each `-` line against `describe` per its BUG-146 note before re-drafting): any
+confirmed `-` line, or any target STOP rule 21 covers (aggregator, after-startup chain, navigation), means
+re-draft from a fresh `describe` — never patch. `exec.sh`'s own
+`check --references` cannot see this: a stale restatement still resolves. Report
+`ready set N, drafted N, applied k`.
+
 ### Pre-exec sequence when MCP work was done
 
 Before running exec.sh after any MCP session:
 
 ```
 1. Cmd+S in Studio Pro (or run save-sp.sh)
-2. git add MyProject.mpr mprcontents/ && git commit -m "Commit MCP changes before exec"
+2. git add MyProject.mpr mprcontents/ && git commit -m "MCP: <what changed>"
 3. Close the project in Studio Pro
 4. ./bin/exec.sh mdlsource/my-script.mdl
 ```
@@ -456,7 +537,7 @@ numbered: a gate inserted in the middle used to leave every ordinal behind it wr
       - Wait for the user to confirm SP is running — never assume
       - Confirm the app is actually serving the new build: `curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/login.html` → `200`. The browser shows the old JS bundle until SP recompiles; screenshots taken before this check show stale state.
       - Log in as demo user (not Administrator)
-      - **Navigate by clicking the nav item / button — not a direct URL** (this exercises real navigation; an overlay or stray toggle can silently swallow every click on one page)
+      - **Navigate by clicking the nav item / button — not a direct URL** (→ see `module-review.md` § 4c)
       - Fill minimum required fields
       - Click save / next
       - Confirm record created or navigation succeeded — **and confirm the demo user actually reached the page** (a blank screen or unclickable nav is a failure, not a pass)
@@ -498,7 +579,7 @@ numbered: a gate inserted in the middle used to leave every ordinal behind it wr
     ```
 
     At minimum, stage 3/4 must confirm for each page this module added:
-      - **Every displayed field shows its value** — especially DateTime/enum/calculated fields. A blank where data must exist (e.g. a system `createdDate`) is a render bug (P1), not missing data — confirm the binding in MDL, then treat a persistent blank as a finding.
+      - **Every displayed field shows its value** → see `module-review.md` § 4c (a persistent blank is P1).
       - **Every grid/gallery** shows rows or a proper empty-state message — never nothing.
       - **Every action/View button** points at the *current* page, not a superseded one (`DESCRIBE PAGE`).
       - **Every nav item, breadcrumb, and button actually reaches working logic** — a wired affordance with no microflow behind it, or one that dead-ends, is a P1, not a cosmetic finding.
@@ -661,7 +742,7 @@ Some operations cannot be done via mxcli. Plan for these explicitly in each modu
 | Drop attribute with access rules | Delete in Studio Pro (BUG-01 — mxcli corrupts MPR) | 2 min |
 | After XPath retrieves written by mxcli | Run binary patch script + reload Studio Pro (BUG-15b) | 3 min |
 
-**Cross-module associations can be created via mxcli** using `CREATE ASSOCIATION` — BUG-02 is fixed in v0.13.0. No Studio Pro handoff needed.
+Cross-module associations: `CREATE ASSOCIATION` via mxcli. No Studio Pro handoff needed (`bin/bug-lookup.sh BUG-02`).
 
 ---
 

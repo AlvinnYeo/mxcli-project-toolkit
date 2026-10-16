@@ -33,7 +33,7 @@ run on real work and watched going red. That is the whole of the claim.
 >
 > So: **five rungs, seven mutants** (rung 3 and rung 4 each carry two). "Rung 6/7" in a
 > `design-audit` artifact refers to that separate instrument, not to a sixth and seventh rung of the
-> journey.
+> journey. Do **not** merge them into one 1–7 table.
 
 ---
 
@@ -86,7 +86,7 @@ each one was knowable before the first click.
 
 | Line | Meaning | Do |
 |---|---|---|
-| `SETUP  credentials: TEST_PASS is unset` | aborted, exit 2, **no login attempted** | load the project env (`TEST_USER`/`TEST_PASS`). A run without it submitted the config default and then the admin fallback, and locked two demo accounts for ~5 min each (#278). `ALLOW_CONFIG_CREDENTIALS=1` only when the config default is the real password |
+| `SETUP  credentials: TEST_PASS is unset … placeholder password` | aborted, exit 2, **no login attempted** | the run would submit the **template placeholder** (nobody set `TEST_PASS` and `project.config.js`'s `DEFAULT_PASS` is still the template value), then the admin fallback. That locked two demo accounts for ~5 min each (#278). Put the real demo password in `DEFAULT_PASS`, or export `TEST_PASS`. A password the project set in `project.config.js` is accepted. `ALLOW_CONFIG_CREDENTIALS=1` only when the placeholder really is the demo password |
 | `SETUP  admin: … refused the credential (HTTP 403); credential from <source>` | suite **aborted**, exit 2, nothing walked | fix the credential at the named source. Resolution order: `M2EE_ADMIN_PASS` env → this app's `.mxcli/run-local.json` (`mxcli run --local`) → `.docker/.env` → a labelled guess. The value is never printed |
 | `SETUP  admin: admin API unreachable at host:port` | aborted, exit 2 | app down, or set `M2EE_ADMIN_PORT`. `ALLOW_NO_DATA_RUNG=1` runs anyway with every data rung INVALID |
 | `SETUP  env: missing MOCK_X (needed by J1, J3)` | **one** line, those journeys not walked | export the vars a journey names in `requiresEnv` |
@@ -99,6 +99,19 @@ before every journey that consumes X. A journey whose precondition did not hold 
 `precondition not met: X (left by journey Y, which did not complete: 1 FAIL / 0 INVALID)`
 and is not walked. Without the headers it would show up as a seed INVALID. Journeys without
 headers run in file order, as before.
+
+**APP-DOWN is not FAIL (#285).** The preflight probes the app only once. In one field run a
+watch rebuild took the runtime down mid-suite, and every later journey FAILed as if its feature
+were broken. The runner now probes `baseUrl` before each journey: 3 tries, 5 s apart. Any HTTP
+answer below 500 counts as up.
+
+- **Down before a journey:** an `APP-DOWN` line. The journey is recorded `INVALID` with
+  `appDown: true` and is not walked.
+- **Down after a journey:** that journey's FAIL rows are flagged `[APP-DOWN after this journey …]`
+  and keep FAIL, because the app may have died of what the journey found.
+
+The summary names both lists. Restart the app and rerun only those journeys. `APP_PROBE=0` turns
+the probe off.
 
 Logout runs on every exit path: normal end, a crash, and SIGINT/SIGTERM. A run whose logout is
 not confirmed says so. Declared state does not make a rerun idempotent. A journey that consumes
@@ -148,7 +161,7 @@ prove. (#149: a journey declaring a non-admin persona walked green under the adm
 |---|---|---|---|
 | 1 | **Landing guard** | the step's `ready` widget is visible | Without it, every later assertion runs against the *previous* page and screenshots it under the new page's title |
 | 2 | **What the screen says** | `textPresent` / `textAbsent` | The machine can do the work correctly and the screen still lie about it. This is the rung that found the one real product defect in the pilot |
-| 3 | **Ordered spans** | microflows fired, **in order**, plus `mustNotFire` | `assertFired` is existence-only: it cannot tell a skipped step from a reordered one |
+| 3 | **Ordered spans** | microflows fired, **in order**, plus `mustNotFire` | `assertFired` is existence-only: it cannot tell a skipped step from a reordered one. A `mustNotFire`-only claim needs a liveness reference — see below |
 | 4 | **Data effects** | row-count delta, `assocMustBeSet`, `mustPointAt` | See below — three distinct claims that look like one |
 | 5 | **Outcome** | one OQL query over the end state | Per-step deltas can each be right while the journey's net result is wrong |
 
@@ -165,6 +178,27 @@ mustPointAt    the FK points at the SEEDED value → "…at the RIGHT one"
 with no link to the unit it is for is a broken golden path even though it saved.
 
 `mustPointAt` is the third claim and the expensive one to skip. **Set-ness is not correctness.**
+
+### A negative-only span claim needs a liveness reference
+
+A step whose whole proof is "X did not run" declares `spans: { "mustNotFire": ["ACT_X_Reset"] }`
+with no `ordered`. Cancel on a "Reset all state?" confirmation is an example. Such a step can
+correctly capture **zero spans**. Jaeger down or OTel off also gives zero spans.
+
+- **Before #150:** both cases read `INVALID — zero spans captured`, so the claim could never pass.
+- **Wrong fix:** reading zero spans as PASS passes the claim with tracing dead.
+
+The runner waits the full capture window, then asks for evidence that tracing was live:
+
+| Evidence | Verdict |
+|---|---|
+| the step declares `"liveness": "<span>"` (a span the step is known to produce, such as the page's data-source retrieve) and it was captured | judged: `tracing live` PASS, then each `did not run` |
+| no declared span; the service emitted ≥1 span since this journey started (2 s clock-skew margin, so the previous journey's spans do not count; `otel.liveness`) | judged, same rows |
+| declared span missing, service silent, or Jaeger unreachable | `INVALID`: the claim is not judged |
+
+The `trace-negative` control mutant covers this shape too. It injects the forbidden name into the
+step's capture **after** the liveness check, so `did not run` must go red. With tracing dead the
+mutant reads INVALID and the rung stays unproven.
 
 ---
 
@@ -208,6 +242,23 @@ the same vacuity bug one level up.
 2. **A control run writes real rows.** The mutants that get past step 1 commit real records
    (pilot: one transactional table went 50 → 57 rows). Never run controls against anything you are also using as a
    demo baseline, and never against production.
+
+### Every journey names its claim and ships a control
+
+**Trigger:** you write or change a journey. Declare `"claim"` (the one business sentence the journey
+exists to prove), then copy the journey to `<id>.control.json` beside it, or in `controls/` beside
+it, with one claim the app must not satisfy and `"control": { "of": "<journey id>", "mustFail":
+"<check-name text>" }`. Run `tests/e2e/named-controls.js <control files>`. A control is PROVEN only
+when the runner exits 1, every check whose name contains `mustFail` is FAIL (at least one), and
+nothing else is FAIL or INVALID. Its `persona` must equal `TEST_USER`, or it is a FAULT and does not
+run. Never name a control `*.journey.json`: real walks, `report-normalize.js` and
+`fixture-manifest.sh` discover journeys by that suffix, and would walk the control as a journey.
+The seven mutants above prove the harness. Only a named control proves the claim.
+
+*Failure it prevents (2026-09-26, #159):* a journey claimed "a case waits while an upstream system is
+offline". It passed every rung, and its positive control proved 7 of 7. Its named control read
+`NOT PROVEN`, because the case was waiting for a different reason. `journey-runner.js` prints
+`WARN   named control:` for a journey with no `claim` or no control file (warn-only, no field run yet).
 
 ### Control output goes in its own file
 
@@ -303,6 +354,7 @@ across runs, so a diff in the report means a diff in the project.
 - [ ] All five rungs asserted; none quietly absent.
 - [ ] `--positive-control` run, **all seven mutants proven** (every one of rungs 1–5 covered),
       results in their own file.
+- [ ] Every journey has a `claim` and a named control, and `named-controls.js` reads PROVEN for each.
 - [ ] Zero `INVALID` in the real run — or each one explained as an instrument fault, not a feature.
 - [ ] Walk renders: every step has actions, a shot (or an honest placeholder), and its checks.
 - [ ] Ledger rows the journey exercises are marked, and modules with a ledger and no journey are

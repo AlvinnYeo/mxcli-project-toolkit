@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # exec.sh — the guard chain around a model write.
 #
-#   concurrent-writer guard → module-brief advisory → mxcli check → snapshot → baseline → exec
+#   STOP-row scan → concurrent-writer guard → module-brief advisory → mxcli check → snapshot → baseline → exec
 #   → mxbuild delta gate → auto-restore only on a NEW error → lint ratchet → SP reopen
 #
 # The mxbuild gate is a DELTA gate, not an absolute "0 errors" one: a write is kept
@@ -17,6 +17,7 @@
 #        ./bin/exec.sh --watch-compat <script.mdl>   (advisory: can `run --local --watch` apply
 #                                                     this, or does the app need a restart; writes nothing)
 #        ./bin/exec.sh --cr CR-07 <script.mdl>        (any mode: tag the run with its change request)
+#        Leading flags (--cr, --commit-first, then --patch) may come in any order.
 #
 # --cr (2026-10-13): names the PROJECT.md "## Change log" row this run applies
 # (skills/change-intake.md). It lands in the BUILD-LOG detail cell as "cr: CR-07", the same way
@@ -36,6 +37,9 @@
 # without spending an mxbuild on it. A gate that fails, cannot run, or reports `unverified` is
 # restored too, and ALLOW_UNVERIFIED does not apply. A dirty model with the same errors as
 # before is kept, same as for MDL (the delta gate).
+# Since 2026-10-14 (#295) a --patch run also brackets the script with `mxcli fix hashes`
+# (v0.25.0+, read-only): a ContentsHash the script left stale is a restore, before mxbuild,
+# which cannot see it. See "ContentsHash verify" below; bin/mxpatch.py writes units with it.
 # What it does NOT guard: anything the script touches besides the model. `./bin/exec.sh` is on
 # the project's allow-list (install-claude-permissions.sh), so in auto mode Claude Code's
 # classifier does not review the script. Read what a patch does outside the .mpr before running it.
@@ -71,6 +75,7 @@
 #            ALLOW_UNVERIFIED=1 (write even though the mxbuild gate cannot run —
 #            the write is then refused by default, see "Gate must be able to run"),
 #            MXTK_NO_INSTALL=1 (never download mxbuild; offline CI)
+#            MXTK_SCAN_OVERRIDE="<reason>" (the user only: run despite a blocking STOP-row scan hit, #349)
 set -e
 _T0=$(date +%s)
 
@@ -162,24 +167,43 @@ mxtk_change_class() {  # $1 = MDL script; prints "<class>\t<why>"
       printf "ui-only\t%d page/snippet/layout statement(s), nothing else\n", ui
     }' "$1"
 }
-# --cr CR-NN may lead any mode. Parsed first, before anything needs a project, so a malformed id
-# is refused without touching the model.
-CR_ID=""
-if [ "${1:-}" = "--cr" ]; then
-  CR_ID="${2:-}"
-  case "$CR_ID" in
-    CR-[0-9]*) case "${CR_ID#CR-}" in *[!0-9]*) CR_ID="!" ;; esac ;;
-    *) CR_ID="!" ;;
+# Leading flags, parsed in ONE loop before anything needs a project, in any order:
+# --cr CR-NN, --commit-first, then optionally --patch (whose next word is the script) or one of
+# the advisory modes. A malformed --cr id, an unknown --flag, or a script name starting with
+# `--` is refused here, before the lock, the commit or the snapshot. WHY (review of #306): --cr
+# was only honoured as the FIRST argument, though the usage line documents
+# `[--commit-first] [--cr CR-NN]`; in that order commit-first committed the model and the run
+# went on with "--cr" as its script path.
+CR_ID=""; COMMIT_FIRST="${MXTK_COMMIT_FIRST:-0}"; PATCH_MODE=0; ADVISORY=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --cr)
+      CR_ID="${2:-}"
+      case "$CR_ID" in
+        CR-[0-9]*) case "${CR_ID#CR-}" in *[!0-9]*) CR_ID="!" ;; esac ;;
+        *) CR_ID="!" ;;
+      esac
+      if [ "$CR_ID" = "!" ]; then
+        echo "✗ --cr takes a change-log id like CR-07 (PROJECT.md '## Change log', skills/change-intake.md); got '${2:-}'" >&2
+        exit 2
+      fi
+      shift 2 ;;
+    --commit-first) COMMIT_FIRST=1; shift ;;
+    --patch) PATCH_MODE=1; shift; break ;;
+    --change-class|--watch-compat) ADVISORY="$1"; shift; break ;;
+    *) break ;;
   esac
-  if [ "$CR_ID" = "!" ]; then
-    echo "✗ --cr takes a change-log id like CR-07 (PROJECT.md '## Change log', skills/change-intake.md); got '${2:-}'" >&2
-    exit 2
-  fi
-  shift 2
-fi
-if [ "${1:-}" = "--change-class" ]; then
-  [ -f "${2:-}" ] || { echo "Usage: ./bin/exec.sh --change-class <script.mdl>" >&2; exit 2; }
-  mxtk_change_class "$2"
+done
+case "${1:-}" in
+  --*)
+    echo "✗ Unknown option or misplaced flag '$1' — nothing was committed, snapshotted or executed." >&2
+    echo "  Usage: ./bin/exec.sh [--commit-first] [--cr CR-NN] <script.mdl>" >&2
+    echo "         ./bin/exec.sh [--commit-first] [--cr CR-NN] --patch <script> [args...]" >&2
+    exit 2 ;;
+esac
+if [ "$ADVISORY" = "--change-class" ]; then
+  [ -f "${1:-}" ] || { echo "Usage: ./bin/exec.sh --change-class <script.mdl>" >&2; exit 2; }
+  mxtk_change_class "$1"
   exit 0
 fi
 
@@ -204,6 +228,13 @@ fi
 #   CREATE ... MODULE ROLE | USER ROLE, ALTER USER ROLE      → role added/changed
 #   CREATE PAGE (no OR — a new page)                         → new page
 #   a Url property on a page (create header, `set Url = ...`) → page URL (route table)
+# Watch-safe (the ONLY statements reported `watch can apply this`, ui-loop.md's left column):
+#   ALTER PAGE / ALTER SNIPPET, CREATE [OR ...] SNIPPET, CREATE OR REPLACE|MODIFY PAGE (no Url).
+# Read-only heads (SHOW, DESCRIBE, ...) are neutral. Any other statement — CREATE ASSOCIATION,
+# CREATE ENUMERATION, ALTER ENTITY ... MODIFY, a Java action, a constant, navigation, DROP PAGE,
+# UPDATE WIDGETS — is on neither column and prints `unknown — restart if behaviour looks stale`
+# (independent review of #304: these all used to say "watch can apply this", a claim nobody had
+# checked).
 # `CREATE OR REPLACE|MODIFY PAGE` without a Url is reported as reloadable, with a note that
 # it needs a restart IF the page is new — a script cannot tell new from replaced. Theme
 # SCSS/JS is not in the script; exec.sh checks those files against the running app's boot
@@ -212,32 +243,34 @@ fi
 # ADVISORY ONLY: never blocks, never changes a gate or a verdict. Golden input: real MDL
 # (tests/wave2/test-exec-lock-watch.sh).
 #
-#   ./bin/exec.sh --watch-compat <script.mdl>   prints `restart needed: <reasons>` or
-#                                               `watch can apply this`, exit 0. Touches nothing.
-mxtk_watch_compat() {  # $1 = MDL script; prints "restart\t<reasons>" | "watch\t<note>"
+#   ./bin/exec.sh --watch-compat <script.mdl>   prints `restart needed: <reasons>`,
+#                                               `unknown — restart if behaviour looks stale: <heads>`
+#                                               or `watch can apply this`, exit 0. Touches nothing.
+mxtk_watch_compat() {  # $1 = MDL script; prints "restart\t<reasons>" | "unknown\t<heads>" | "watch\t<note>"
   awk "$_MXTK_MDL_LEX"'
     function add(label, nr) {
       if (!(label in cnt)) { order[++nlab] = label; first[label] = nr }
       cnt[label]++
     }
-    BEGIN { depth = 0; inblock = 0; indollar = 0; cur_page = 0; nlab = 0; maybe = "" }
+    BEGIN { depth = 0; inblock = 0; indollar = 0; cur_page = 0; nlab = 0; maybe = ""; unk = ""; nunk = 0 }
     {
       lex_line($0)
       t = clean; gsub(/^[ \t]+/, "", t)
       if (start_depth == 0 && t ~ /^[A-Za-z]/) {
         n = split(toupper(t), w, /[ \t(;{]+/)
         v = w[1]
-        if (v ~ /^(CREATE|ALTER|DROP|GRANT|REVOKE|MOVE|RENAME|SHOW|DESCRIBE|UPDATE|SET|EXECUTE)$/) {
+        if (v ~ /^(CREATE|ALTER|DROP|MOVE|GRANT|REVOKE|UPDATE|INSERT|DELETE|SQL|IMPORT|EXPORT|EXECUTE|RENAME|SET|CALL|COMMIT|CHANGE|RETRIEVE|DECLARE)$/) {
           j = 2; if (v == "CREATE" && w[2] == "OR") j = 4
           o1 = w[j]; o2 = w[j+1]; o3 = w[j+2]
           cur_page = ((v == "CREATE" || v == "ALTER") && o1 == "PAGE")
+          attr = 0
+          if (v == "ALTER" && o1 == "ENTITY") for (k = 3; k <= n; k++) if (w[k] == "ADD") { attr = 1; break }
           if ((v == "CREATE" || v == "DROP") && o1 == "MICROFLOW")
             add(v == "DROP" ? "microflow dropped" : "microflow created or recreated", NR)
           else if (v == "CREATE" && (o1 == "ENTITY" || o2 == "ENTITY"))
             add("entity created or changed (new attributes)", NR)
-          else if (v == "ALTER" && o1 == "ENTITY") {
-            for (k = 3; k <= n; k++) if (w[k] == "ADD") { add("attribute added", NR); break }
-          }
+          else if (attr)
+            add("attribute added", NR)
           else if (v == "GRANT" || v == "REVOKE")
             add("access rule changed (" v ")", NR)
           else if ((v == "CREATE" && ((o1 == "MODULE" && o2 == "ROLE") || (o1 == "USER" && o2 == "ROLE"))) \
@@ -245,8 +278,23 @@ mxtk_watch_compat() {  # $1 = MDL script; prints "restart\t<reasons>" | "watch\t
             add("module/user role added or changed", NR)
           else if (v == "CREATE" && o1 == "PAGE" && j == 2)
             add("new page", NR)
-          else if (v == "CREATE" && o1 == "PAGE" && maybe == "")
-            maybe = "line " NR ": " substr(t, 1, 60)
+          else if (v == "CREATE" && o1 == "PAGE") {
+            if (maybe == "") maybe = "line " NR ": " substr(t, 1, 60)
+          }
+          # The watch-safe list (skills/ui-loop.md "What watch picks up", left column): an
+          # ALTER PAGE / ALTER SNIPPET edit, a new or changed snippet. Everything else that is
+          # not on either column is UNKNOWN, never "watch can apply this".
+          else if ((v == "ALTER" && (o1 == "PAGE" || o1 == "SNIPPET")) || (v == "CREATE" && o1 == "SNIPPET"))
+            ;
+          # Neutral: microflow-body activities (their CREATE MICROFLOW head already decides),
+          # a folder, a move into a folder.
+          else if (v ~ /^(DECLARE|CHANGE|RETRIEVE|COMMIT|CALL)$/ || (v == "CREATE" && o1 == "FOLDER") \
+                   || (v == "MOVE" && toupper(t) ~ /[ \t]TO[ \t]+FOLDER([ \t]|$)/))
+            ;
+          else if (nunk < 3) {
+            h = t; if (length(h) > 50) h = substr(h, 1, 50) "..."
+            unk = unk (nunk++ ? "; " : "") "line " NR ": " h
+          } else nunk++
         }
       }
       # A Url property on a page: the create header `(..., Url: ...)` or `set Url = ...` in an
@@ -261,15 +309,17 @@ mxtk_watch_compat() {  # $1 = MDL script; prints "restart\t<reasons>" | "watch\t
         }
         printf "restart\t%s\n", s; exit
       }
+      if (nunk > 0) { printf "unknown\t%s%s\n", unk, (nunk > 3 ? " (+" (nunk - 3) " more)" : ""); exit }
       if (maybe != "") { printf "watch\tunless the page is new: create or replace/modify page, %s\n", maybe; exit }
       printf "watch\t\n"
     }' "$1"
 }
-if [ "${1:-}" = "--watch-compat" ]; then
-  [ -f "${2:-}" ] || { echo "Usage: ./bin/exec.sh --watch-compat <script.mdl>" >&2; exit 2; }
-  _wc="$(mxtk_watch_compat "$2")"
+if [ "$ADVISORY" = "--watch-compat" ]; then
+  [ -f "${1:-}" ] || { echo "Usage: ./bin/exec.sh --watch-compat <script.mdl>" >&2; exit 2; }
+  _wc="$(mxtk_watch_compat "$1")"
   case "${_wc%%	*}" in
     restart) echo "restart needed: ${_wc#*	}" ;;
+    unknown) echo "unknown — restart if behaviour looks stale: ${_wc#*	}" ;;
     *) _n="${_wc#*	}"
        if [ -n "$_n" ]; then echo "watch can apply this — $_n"; else echo "watch can apply this"; fi ;;
   esac
@@ -281,16 +331,6 @@ fi
 MPR="$(find_mpr)" || exit 1
 MPR_BASE="$(basename "$MPR")"
 NAME="$(basename "$MPR" .mpr)"
-PATCH_MODE=0
-COMMIT_FIRST="${MXTK_COMMIT_FIRST:-0}"
-if [ "${1:-}" = "--commit-first" ]; then
-  COMMIT_FIRST=1
-  shift
-fi
-if [ "${1:-}" = "--patch" ]; then
-  PATCH_MODE=1
-  shift
-fi
 SCRIPT="${1:-}"
 [ $# -gt 0 ] && shift
 # Remaining args go to the patch script, after the model path. An MDL run takes none.
@@ -299,7 +339,7 @@ LOG_NAME="$(basename "$SCRIPT")"
 
 if [ -z "$SCRIPT" ]; then
   echo "Usage: ./bin/exec.sh [--commit-first] [--cr CR-NN] <script.mdl>"
-  echo "       ./bin/exec.sh [--commit-first] --patch <script> [args...]"
+  echo "       ./bin/exec.sh [--commit-first] [--cr CR-NN] --patch <script> [args...]"
   exit 1
 fi
 if [ "$PATCH_MODE" = "1" ]; then
@@ -324,7 +364,7 @@ elif [ -r "$SCRIPT" ]; then
 fi
 change_lane() {
   case "$CHANGE_CLASS" in
-    ui-only) echo "re-run this change's own journey once + a LOOK. No .test.mdl, no other module's journeys; reviewers read the artifacts, they do not re-run" ;;
+    ui-only) echo "re-run the journeys of every page the change reaches (embedders of a changed snippet/layout) once + a LOOK. No .test.mdl; reviewers read the artifacts, they do not re-run" ;;
     logic)   echo "re-run only the tests whose subject this change touched (changed microflows + their SHOW CALLERS, changed pages' journeys). Full mxcli test at module close, not here" ;;
   esac
 }
@@ -400,7 +440,7 @@ HDR2
   # The gate cell is read from GATE_STATE rather than passed in, so no caller
   # can omit it — a blank cell in this table reads as "fine", which is the exact
   # false-green the gate exists to prevent.
-  _detail="$2${CHANGE_CLASS:+ · change: $CHANGE_CLASS}${CR_ID:+ · cr: $CR_ID}$_EXEC_APPROVAL_SUFFIX"
+  _detail="$2${CHANGE_CLASS:+ · change: $CHANGE_CLASS}${CR_ID:+ · cr: $CR_ID}${SCAN_NOTE:+ · $SCAN_NOTE}${HV_NOTE:+ · $HV_NOTE}$_EXEC_APPROVAL_SUFFIX"
   printf '| %s | `%s` | %s | %s | %s |\n' \
     "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$LOG_NAME" \
     "${GATE_STATE:-not-run}" "$1" "$_detail" >> "$BUILD_LOG"
@@ -437,6 +477,60 @@ take_score() {
     echo "  ⚠ ${_sc:-score not taken}"
   fi
 }
+
+# ── STOP-row scan (added 2026-10-14, #349) ───────────────────────────────────
+# The toolkit's bin/mdl-scan.sh greps the script for the STOP rows of learned-mdl-preflight.md
+# that a text pattern identifies — each one a script that passed `mxcli check`, cost a full
+# apply and failed at mxbuild or on Studio Pro open. It runs first, before the lock, the
+# commit, `mxcli check` and the snapshot: a hit costs milliseconds here and 22-65 s plus a
+# restore after the apply. Each rule has a severity (bin/lib/mdl-scan-rules.tsv, whose header
+# says when a rule may move from warn to block):
+#   warn  (scan exit 3) — the hits are printed as warnings, the BUILD-LOG row notes them, and
+#         the exec goes on. Every rule ships as warn until a field run proves it.
+#   block (scan exit 1) — the exec is refused before anything is touched. FORCE_EXEC and
+#         SKIP_CHECK do not skip it. The only override is MXTK_SCAN_OVERRIDE="<reason>", for
+#         the user: printed and logged. Hardening it against an agent setting it is #348's job.
+# Found like exec-approval.sh: $MXTK_ROOT, else the "Toolkit root" row of CLAUDE.local.md.
+# Not found, or the scan itself errors (exit 2) → one warning, and the exec goes on: mxcli
+# check and the mxbuild gate still stand behind it.
+SCAN_NOTE=""; HV_NOTE=""   # HV_NOTE: the ContentsHash bracket's cell text, set below
+if [ "$PATCH_MODE" != "1" ]; then
+  _SCAN=""
+  for _s in "${MXTK_ROOT:-}/bin/mdl-scan.sh" \
+            "$(sed -nE 's/^\| *Toolkit root *\| *`([^`]+)`.*/\1/p' "$PROJECT_ROOT/CLAUDE.local.md" 2>/dev/null | head -1)/bin/mdl-scan.sh"; do
+    [ -f "$_s" ] && { _SCAN="$_s"; break; }
+  done
+  scan_ids() { printf '%s\n' "$_scan_out" | grep " \[$1\]\$" | sed -n 's/^\(STOP-[0-9a-z]*\) .*/\1/p' | sort -u | tr '\n' ' ' | sed 's/ $//'; }
+  if [ -z "$_SCAN" ]; then
+    echo "⚠ STOP-row scan skipped: bin/mdl-scan.sh not found (set MXTK_ROOT to the toolkit)." >&2
+  else
+    _scan_rc=0; _scan_out="$(bash "$_SCAN" "$SCRIPT" 2>&1)" || _scan_rc=$?   # set -e: keep the rc
+    case "$_scan_rc" in
+      0) ;;
+      3)
+        printf '%s\n' "$_scan_out" | sed 's/^/⚠ /' >&2
+        echo "  STOP-row scan: warnings only (rules not yet proven in the field) — going on. Read each line;" >&2
+        echo "  each names its learned-mdl-preflight.md row and the rewrite." >&2
+        SCAN_NOTE="scan warn: $(scan_ids warn)" ;;
+      1)
+        echo "$_scan_out"
+        case "${MXTK_SCAN_OVERRIDE:-}" in
+          ""|1|true|yes)
+            echo ""
+            echo "✗ STOP-row scan: refusing exec on a blocking rule. NOTHING was locked, snapshotted or written."
+            echo "  Each line above names its learned-mdl-preflight.md row and the rewrite. Fix the script."
+            echo "  Only the user may override, with a reason: MXTK_SCAN_OVERRIDE=\"<why>\" ./bin/exec.sh $SCRIPT"
+            log_build "🚫 blocked" "STOP-row scan: $(printf '%s\n' "$_scan_out" | grep -c ' \[block\]$') blocking hit(s), $(scan_ids block) — nothing written"
+            exit 1 ;;
+          *)
+            echo "⚠ STOP-row scan OVERRIDDEN by MXTK_SCAN_OVERRIDE: ${MXTK_SCAN_OVERRIDE}" >&2
+            echo "  Only the user sets this. An agent that set it has broken the preflight rule." >&2
+            SCAN_NOTE="scan overridden ($(scan_ids block)): $(printf '%s' "$MXTK_SCAN_OVERRIDE" | tr '|' '/')" ;;
+        esac ;;
+      *) echo "⚠ STOP-row scan could not run (exit $_scan_rc): $_scan_out" >&2 ;;
+    esac
+  fi
+fi
 
 # ── Concurrent-writer guard ──────────────────────────────────────────────────
 # The .mpr must have exactly ONE writer. Two mxcli/SP writers on the same file
@@ -497,8 +591,48 @@ exec_lock_release() {  # the trap: remove the lock only while it is still ours
   [ "${_own%% *}" = "$$" ] && rm -f "$LOCK"
   return 0
 }
+# Taking over a stale lock is serialised through a second O_EXCL file, $LOCK.takeover. Under
+# it the lock is re-read and removed ONLY if it still holds exactly the stale line judged above;
+# nothing else ever removes a lock that is not its own, so the compare-then-rm cannot hit a
+# fresh lock. WHY (independent review of #304): the old takeover moved the lock aside and put
+# it back with `mv -f` when it found a fresh one there — check-then-act. With 3+ contenders, B
+# moved A's fresh lock aside, C's noclobber write landed in the gap, B saw a lock and deleted
+# A's: 12 contenders gave up to 3 holders at once (tests/wave2/test-exec-lock-watch.sh).
+# A takeover file left by a holder killed inside those few microseconds is stale once its pid is
+# dead or it is older than 10 s (an EMPTY one once it is over a minute old — `find -mmin +1`;
+# `+0` matched a file created a second ago, so a live contender's fresh takeover file was judged
+# stale and a third contender got in: review of #324). It is moved aside, and put back with `ln`
+# (never clobbers; left on disk if that fails) if what was moved is not the one judged stale.
+# The holder removes the takeover file only while it still holds the line it wrote.
+exec_lock_takeover() {  # $1 = the stale lock line; 0 iff it was removed (or already gone)
+  _tk="$LOCK.takeover"; _mine="$$ $(date +%s)"
+  if ! ( set -o noclobber; printf '%s\n' "$_mine" > "$_tk" ) 2>/dev/null; then
+    _t="$(head -1 "$_tk" 2>/dev/null || true)"; _tpid="${_t%% *}"; _tsince="${_t#* }"
+    case "$_tsince" in ''|*[!0-9]*) _tsince=0 ;; esac
+    _tstale=0
+    if [ -n "$_t" ]; then
+      { ! kill -0 "$_tpid" 2>/dev/null || [ $(( $(date +%s) - _tsince )) -gt 10 ]; } && _tstale=1
+    elif [ -n "$(find "$_tk" -mmin +1 2>/dev/null)" ]; then
+      _tstale=1   # empty for over a minute: its creator died between the create and the write
+    fi
+    if [ "$_tstale" = 1 ]; then
+      if mv "$_tk" "$_tk.stale.$$" 2>/dev/null; then
+        # Remove what was moved ONLY if it is what was judged stale; anything else is someone's
+        # live takeover file: put it back (ln never clobbers), and if that fails leave it be.
+        # Same body as test-scratch.sh's take_over() — keep the two in step (PR #322).
+        if [ "$(head -1 "$_tk.stale.$$" 2>/dev/null || true)" = "$_t" ]; then rm -f "$_tk.stale.$$"
+        else ln "$_tk.stale.$$" "$_tk" 2>/dev/null && rm -f "$_tk.stale.$$"; fi
+      fi
+    fi
+    return 1
+  fi
+  _now="$(head -1 "$LOCK" 2>/dev/null || true)"
+  [ "$_now" = "$1" ] && rm -f "$LOCK"
+  [ "$(head -1 "$_tk" 2>/dev/null || true)" = "$_mine" ] && rm -f "$_tk"   # only our own takeover file
+  return 0
+}
 LOCK_TAKEN=0
-for _try in 1 2 3 4 5; do
+for _try in 1 2 3 4 5 6; do
   if exec_lock_try; then LOCK_TAKEN=1; break; fi
   _held="$(head -1 "$LOCK" 2>/dev/null || true)"
   if [ -z "$_held" ] && [ "$_try" -lt 3 ]; then sleep 1; continue; fi   # being written right now
@@ -513,18 +647,14 @@ for _try in 1 2 3 4 5; do
     echo "    (A dead holder is detected and taken over automatically — no manual rm is ever needed.)"
     exit 1
   fi
-  echo "  (stale exec lock from PID ${_hpid:-?}, which is not running — taking it over)"
-  # Move aside only the lock we judged; if someone else replaced it in between, put theirs back.
-  _aside="$LOCK.stale.$$"
-  if mv -f "$LOCK" "$_aside" 2>/dev/null; then
-    if [ "$(head -1 "$_aside" 2>/dev/null || true)" != "$_held" ] && [ ! -e "$LOCK" ]; then
-      mv -f "$_aside" "$LOCK" 2>/dev/null || true
-    fi
-    rm -f "$_aside"
+  if exec_lock_takeover "$_held"; then
+    echo "  (stale exec lock from PID ${_hpid:-?}, which is not running — taking it over)"
+  else
+    sleep 1   # another contender is taking it over right now; look again
   fi
 done
 if [ "$LOCK_TAKEN" != 1 ]; then
-  echo "✗ Could not take the exec lock $LOCK after 5 attempts — another session keeps re-taking it."
+  echo "✗ Could not take the exec lock $LOCK after 6 attempts — another session keeps re-taking it."
   echo "  → Wait for the other exec to finish, then re-run. Nothing was written."
   exit 1
 fi
@@ -752,6 +882,9 @@ run_lint_gate() {
   # row at all (measured on the first wired run in a real project, 2026-09-24). Capture explicitly.
   LINT_RC=0
   bash "$PROJECT_ROOT/bin/lint-gate.sh" >"$_lo" 2>&1 || LINT_RC=$?
+  # lint-gate's non-blocking SEC014 note (#312: rule installed, decision not made) is otherwise
+  # visible only on a failing run, because the capture above is shown only then. Always echo it.
+  [ -f "$_lo" ] && { grep '^note: SEC014' "$_lo" 2>/dev/null | sed 's/^/    /' || true; }
   case "$LINT_RC" in
     0) LINT_DETAIL="lint unchanged vs baseline"; echo "  ✓ lint: no rule rose vs baseline" ;;
     1) # Rule ids are matched as [A-Z][A-Z0-9-]*[0-9]+, not [A-Z]+[0-9]+: mxcli's built-in
@@ -761,7 +894,16 @@ run_lint_gate() {
                  | awk '{printf "%s %s ", $1, $6}')
        _blind=$(sed -n '/^!! A RULE COULD NOT READ/,/^$/p' "$_lo" \
                  | grep -oE '^ +[A-Z][A-Z0-9-]*[0-9]+:' | tr -d ' :' | sort -u | paste -sd, -)
-       if [ -z "$_rules" ] && grep -q '^PASS' "$_lo"; then
+       _reverted=$(sed -n '/^!! LINT RULES REVERTED TO STOCK/,/^$/p' "$_lo" \
+                    | grep -oE '^ +[A-Za-z0-9_.-]+\.star:' | tr -d ' :' | paste -sd, -)
+       if grep -q '^BLIND — lint rules reverted to stock' "$_lo"; then
+         # `mxcli init` re-seeded the toolkit rules (#264): lint-gate did not lint. Logging this
+         # as a rise blamed the next script for CONV010 26 -> 169 on flows it never touched.
+         LINT_RC=3
+         LINT_DETAIL="lint BLIND: rules reverted to stock (${_reverted:-see output}) — run sync-project.sh; delta not attributable"
+         echo "  ✗ lint: toolkit rules reverted to stock (${_reverted:-see output}) — not linted, not a rise"
+         sed -n '/^!! LINT RULES REVERTED TO STOCK/,/^BLIND/p' "$_lo" | head -16 | sed 's/^/    /'
+       elif [ -z "$_rules" ] && grep -q '^PASS' "$_lo"; then
          # lint-gate exits 1 for PASS-BLIND too. Logging that as "ROSE: see output" made a rule
          # that inspected nothing look like a rise with no rule named — 20 such rows in two
          # field apps whose CONV020 shipped unconfigured (#229). It is an instrument fault.
@@ -867,6 +1009,15 @@ fi
 
 echo "→ Snapshotting model..."
 ./bin/snapshot-mpr.sh
+# The snapshot just taken. A --patch run hands it to the script as MXPATCH_BACKUP_DIR, so the
+# .bak that bin/mxpatch.py keeps of each unit it rewrites lands beside the snapshot, OUTSIDE
+# the model tree, and is pruned with it. Until 2026-10-15 it was <unit>.mxunit.bak inside
+# mprcontents/: untracked in the model folder, one `git add mprcontents` from being committed
+# (field run, #390).
+SNAP_NOW="$(ls -dt "$PROJECT_ROOT/.mpr-snapshots"/[0-9]*/ 2>/dev/null | head -1)"; SNAP_NOW="${SNAP_NOW%/}"
+if [ "$PATCH_MODE" = "1" ] && [ -n "$SNAP_NOW" ]; then
+  export MXPATCH_BACKUP_DIR="$SNAP_NOW/mxpatch-bak"
+fi
 
 # ── Restore (one implementation) ─────────────────────────────────────────────
 # Rolls the model back to the snapshot just taken, through restore-mpr.sh. exec.sh used to
@@ -1146,6 +1297,95 @@ if [ "${SKIP_BASELINE:-0}" != "1" ] && [ -x "$MXBUILD" ] && [ -x "$JAVA_EXE" ]; 
   fi
 fi
 
+# ── ContentsHash verify (--patch only; #295, 2026-10-14) ─────────────────────
+# An MPR v2 .mpr indexes every mprcontents/**/*.mxunit by base64(SHA-256(file)). A patch that
+# rewrites a unit and not its index row leaves Studio Pro deciding "what changed" from a stale
+# index, and NOTHING else in this chain can see it — mxcli's own help: "'mx check' does not
+# notice". Both patchers the toolkit shipped did exactly that until mxpatch.py (#294). So
+# around a --patch run: `mxcli fix hashes` (read-only without --repair) once before the
+# script as a baseline, once after it exits 0, before the mxbuild gate. Only an issue the
+# BASELINE did not have fails the run (a stale index from an earlier `git checkout` is not
+# this patch's doing — it is reported with its remedy and left alone).
+#
+# The contract is captured, not assumed (tests/wave2/fixtures/mxpatch/, v0.25.0 and v0.26.0
+# verbatim): exit 0 + "The ContentsHash index matches every unit file." (or "is an MPR v1
+# project") = clean; exit 1 + the "N mismatch(es), N missing file(s), N orphan file(s)."
+# summary = issues, one "  MISMATCH|MISSING|ORPHAN" row each; exit 1 WITHOUT the summary is an
+# error ("project not found") — never read the exit code alone. Support is read from
+# `mxcli fix --help` listing `hashes`, the way doctor.sh probes property-sets: on v0.24.0
+# `mxcli fix hashes --help` exits 0 with the parent's help, so it cannot be the probe.
+# No mxcli, or one older than v0.25.0: a loud NOT RUN, and the patch goes on to the gate —
+# blocking every patch on an old binary would block the remedy (guard rule 7).
+HV_ON=0; HV_BASE=""; HV_POST=""; HV_STATE=""; HV_RC=0
+hv_supported() {   # 0 listed, 1 absent, 2 the help itself failed
+  _hv_f=$(mktemp "${TMPDIR:-/tmp}/exec-hv.XXXXXX"); _hv_r=0
+  "$PMXCLI" fix --help > "$_hv_f" 2>&1 < /dev/null || _hv_r=2
+  if [ "$_hv_r" -eq 0 ]; then grep -qE '^[[:space:]]+hashes[[:space:]]' "$_hv_f" || _hv_r=1; fi
+  rm -f "$_hv_f"; return "$_hv_r"
+}
+hv_run() {         # <outfile> — sets HV_STATE clean|issues|error and HV_RC
+  HV_RC=0
+  "$PMXCLI" fix hashes -p "$MPR" > "$1" 2>&1 < /dev/null || HV_RC=$?
+  if [ "$HV_RC" -eq 0 ] && grep -qE 'ContentsHash index matches every unit file|is an MPR v1 project' "$1"; then
+    HV_STATE=clean
+  elif [ "$HV_RC" -eq 1 ] && grep -qE '^[0-9]+ mismatch\(es\), [0-9]+ missing file\(s\), [0-9]+ orphan file\(s\)\.' "$1"; then
+    HV_STATE=issues
+  else
+    HV_STATE=error
+  fi
+}
+hv_keys() { grep -E '^  (MISMATCH|MISSING|ORPHAN) ' "$1" 2>/dev/null | awk '{print $1, $2}' | LC_ALL=C sort -u; }
+# hv_tally <file> — "1 mismatch, 2 orphan" from its MISMATCH/MISSING/ORPHAN rows, for the
+# BUILD-LOG cell.
+hv_tally() {
+  hv_keys "$1" | awk '{n[tolower($1)]++} END {s=""; split("mismatch missing orphan",k," ");
+                      for (i=1;i<=3;i++) if (n[k[i]]) s=s (s?", ":"") n[k[i]] " " k[i]; print s}'
+}
+# hv_rewritten <id> — 0 when the patch rewrote that unit: its file differs from the copy in the
+# snapshot taken before the script ran. The path is the row's third field, relative to the
+# model directory, and snapshot-mpr.sh copies mprcontents/ to the snapshot's top level, so
+# the same relative path holds on a two-tree (app/) checkout too.
+hv_rewritten() {
+  _hp="$(grep -E "^  MISMATCH +$1 " "$HV_BASE" | awk '{print $3}' | head -1)"
+  [ -n "$_hp" ] && [ -n "$SNAP_NOW" ] && [ -f "$SNAP_NOW/$_hp" ] && [ -f "$MODEL_DIR/$_hp" ] \
+    && ! cmp -s "$SNAP_NOW/$_hp" "$MODEL_DIR/$_hp"
+}
+hv_first() { grep -v -e '^[[:space:]]*$' -e '^WARNING: This is a' "$1" | head -1; }
+if [ "$PATCH_MODE" = "1" ]; then
+  echo "→ ContentsHash baseline: mxcli fix hashes (read-only)..."
+  _hv_s=0
+  if [ -z "$PMXCLI" ]; then
+    echo "  ⚠ NOT RUN — no project mxcli. A stale ContentsHash this patch leaves will go unseen:"
+    echo "    mx check and mxbuild do not read the index."
+    HV_NOTE="hashes: NOT RUN (no project mxcli)"
+  else
+    hv_supported || _hv_s=$?
+    if [ "$_hv_s" -eq 1 ]; then
+      echo "  ⚠ NOT RUN — this mxcli has no 'fix hashes' (arrived in v0.25.0). Upgrade it: a stale"
+      echo "    ContentsHash this patch leaves is invisible to mx check and to the mxbuild gate."
+      HV_NOTE="hashes: NOT RUN (mxcli has no fix hashes; v0.25.0+)"
+    elif [ "$_hv_s" -eq 2 ]; then
+      echo "  ⚠ NOT RUN — 'mxcli fix --help' itself failed, so support is unknown."
+      HV_NOTE="hashes: NOT RUN (fix --help failed)"
+    else
+      HV_BASE=$(mktemp "${TMPDIR:-/tmp}/exec-hv-base.XXXXXX")
+      hv_run "$HV_BASE"
+      case "$HV_STATE" in
+        clean)  HV_ON=1; HV_NOTE="hashes: baseline clean"; echo "  ✓ index matches every unit file" ;;
+        issues) HV_ON=1; HV_NOTE="hashes: baseline $(hv_tally "$HV_BASE") (pre-existing)"
+                echo "  ⚠ the index is ALREADY out of step before this patch ($(grep -E '^[0-9]+ mismatch' "$HV_BASE"))."
+                echo "    Not this patch's doing, and not held against it. If this patch rewrites one of these"
+                echo "    units through bin/mxpatch.py, that write gives it a fresh hash and the verify below"
+                echo "    says so. Repair the others on their own (rewrites the index from the files, never"
+                echo "    the files): ./mxcli fix hashes -p $MPR_BASE --repair" ;;
+        *)      echo "  ⚠ NOT RUN — the baseline could not be classified (exit $HV_RC: $(hv_first "$HV_BASE"))."
+                HV_NOTE="hashes: NOT RUN (baseline unclassifiable, exit $HV_RC)"
+                rm -f "$HV_BASE"; HV_BASE="" ;;
+      esac
+    fi
+  fi
+fi
+
 # ── Execute ──────────────────────────────────────────────────────────────────
 # The exit status is CAPTURED, not allowed to trip `set -e`.
 #
@@ -1177,7 +1417,97 @@ if [ "$PATCH_MODE" = "1" ]; then
     else
       log_build "❌ patch failed" "script exit $EXEC_STATUS — NOT rolled back (restore did not run)"
     fi
+    rm -f "$HV_BASE"
     exit "$EXEC_STATUS"
+  fi
+  if [ "$HV_ON" = "1" ]; then
+    echo "→ ContentsHash verify: mxcli fix hashes (read-only)..."
+    HV_POST=$(mktemp "${TMPDIR:-/tmp}/exec-hv-post.XXXXXX")
+    hv_run "$HV_POST"
+    _hv_new=""
+    [ "$HV_STATE" = issues ] && _hv_new="$(hv_keys "$HV_POST" | LC_ALL=C comm -13 <(hv_keys "$HV_BASE") - )"
+    # A baseline MISMATCH that is STILL reported, on a unit the patch rewrote, is NEW too: the
+    # patch wrote that unit and left its hash stale again. Matching on KIND+ID alone read it as
+    # "pre-existing, none new" and kept the patch (#374 review; #390's field state exactly).
+    if [ "$HV_STATE" = issues ]; then
+      _hv_same="$(hv_keys "$HV_POST" | LC_ALL=C comm -12 <(hv_keys "$HV_BASE") - )"
+      while read -r _k _id; do
+        [ "$_k" = MISMATCH ] || continue
+        if hv_rewritten "$_id"; then
+          echo "  ✗ this patch rewrote unit $_id and its ContentsHash is still stale: counted as new."
+          _hv_new="${_hv_new:+$_hv_new
+}$_k $_id"
+        fi
+      done <<EOF_SAME
+$_hv_same
+EOF_SAME
+    fi
+    if [ "$HV_STATE" = clean ] || { [ "$HV_STATE" = issues ] && [ -z "$_hv_new" ]; }; then
+      # Baseline issues the verify no longer reports. A MISMATCH on a unit the patch rewrote
+      # (its file differs from the snapshot) was repaired by that write — field run #390: an
+      # old-style --patch had left one, and the ported patcher's write fixed it. That was
+      # visible only in stdout; the BUILD-LOG cell (HV_NOTE) now carries it.
+      _hv_gone="$(hv_keys "$HV_BASE" | LC_ALL=C comm -23 - <(hv_keys "$HV_POST"))"
+      _hv_rw=""; _hv_nrw=0; _hv_noth=0
+      while read -r _k _id; do
+        [ -n "$_k" ] || continue
+        if [ "$_k" = MISMATCH ] && hv_rewritten "$_id"; then
+          _hv_rw="$_hv_rw $_id"; _hv_nrw=$((_hv_nrw + 1))
+        else
+          _hv_noth=$((_hv_noth + 1))
+        fi
+      done <<EOF_HV
+$_hv_gone
+EOF_HV
+      if [ "$HV_STATE" = clean ]; then
+        echo "  ✓ index matches every unit file"; _hv_v="verify clean"
+      else
+        echo "  ✓ no new ContentsHash issue (the baseline's other ones are still there — see above)"
+        _hv_v="verify $(hv_tally "$HV_POST") left (pre-existing), none new"
+      fi
+      for _id in $_hv_rw; do
+        echo "  ✓ this patch rewrote unit $_id with a fresh hash: its pre-existing MISMATCH is repaired."
+      done
+      if [ "$_hv_noth" -gt 0 ]; then
+        echo "  ✓ $_hv_noth other pre-existing issue(s) no longer reported (not on a unit this patch rewrote)."
+      fi
+      if [ "$HV_STATE" = issues ]; then
+        echo "    Repair the rest on their own: ./mxcli fix hashes -p $MPR_BASE --repair"
+      fi
+      _hv_fx=""
+      [ "$_hv_nrw" -gt 0 ] && _hv_fx="$_hv_nrw pre-existing repaired by this patch's rewrite"
+      [ "$_hv_noth" -gt 0 ] && _hv_fx="${_hv_fx:+$_hv_fx, }$_hv_noth other pre-existing gone"
+      HV_NOTE="$HV_NOTE, ${_hv_v}${_hv_fx:+ ($_hv_fx)}"
+    else
+      echo ""
+      if [ "$HV_STATE" = issues ]; then
+        _hv_n=$(printf '%s\n' "$_hv_new" | grep -c . || true)
+        echo "  ✗ the patch left the .mpr's ContentsHash index out of step with the unit files: $_hv_n new issue(s)."
+        printf '%s\n' "$_hv_new" | while read -r _k _id; do
+          grep -A1 -E "^  $_k +$_id " "$HV_POST" | sed 's/^/  /'
+        done
+        echo "    Write units through bin/mxpatch.py (write_unit sets the hash with the file), or end the"
+        echo "    script with: ./mxcli fix hashes -p \"\$1\" --repair"
+        _hv_detail="ContentsHash: $_hv_n new issue(s) after the patch"
+        HV_NOTE="$HV_NOTE, verify $_hv_n new"
+      else
+        echo "  ✗ could not verify the ContentsHash index after the patch (exit $HV_RC: $(hv_first "$HV_POST"))."
+        echo "    The baseline ran, so this is new. A patch is kept only on a verified model."
+        _hv_detail="ContentsHash verify could not run after the patch (exit $HV_RC)"
+        HV_NOTE="$HV_NOTE, verify error"
+      fi
+      echo "  → restoring the snapshot (the mxbuild gate cannot see this, so it is not run)."
+      restore_snapshot
+      if [ -x ./bin/model-stamp.sh ]; then ./bin/model-stamp.sh clear >/dev/null 2>&1 || true; fi
+      rm -f "$HV_BASE" "$HV_POST"
+      if [ "$RESTORED" -eq 1 ]; then
+        log_build "❌ patch refused" "$_hv_detail — rolled back, gate not run"
+      else
+        log_build "❌ patch refused" "$_hv_detail — NOT rolled back (restore did not run)"
+      fi
+      exit 1
+    fi
+    rm -f "$HV_BASE" "$HV_POST"
   fi
 else
   "${PMXCLI:-./mxcli}" exec "$SCRIPT" -p "$MPR" || EXEC_STATUS=$?
@@ -1558,6 +1888,10 @@ print_watch_compat() {
       echo "→ Watch: restart needed: $_why"
       echo "  run --local --watch keeps serving the OLD model for these. Restart this app only:"
       echo "  ./bin/app-restart.sh   (stale-runtime symptoms + what watch covers: toolkit skills/ui-loop.md)" ;;
+    unknown)
+      echo "→ Watch: unknown — restart if behaviour looks stale: $_why"
+      echo "  Not on the watch-safe list (toolkit skills/ui-loop.md \"What watch picks up\"); if the app"
+      echo "  still behaves as before this change: ./bin/app-restart.sh" ;;
     watch)
       if [ -n "$_why" ]; then echo "→ Watch: watch can apply this — $_why"
       else echo "→ Watch: watch can apply this"; fi ;;

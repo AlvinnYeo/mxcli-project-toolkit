@@ -7,7 +7,12 @@
 #   ./bin/app-restart.sh --timeout <s>    readiness bound (default 240, MXTK_RESTART_TIMEOUT)
 #
 # Exit: 0 up and serving · 1 restarted but not proven up (timeout, no bundle) · 2 usage ·
-#       3 refused — nothing was stopped (no record, record belongs elsewhere, start command unknown)
+#       3 refused — nothing was stopped (no record, record belongs elsewhere, start command unknown,
+#         the model's after-startup left on an mxcli test injection — #244) ·
+#       4 instrument blocked — the app or admin port is held by a process this script did not record
+#         (named, with its pid; never stopped). A run summary records it as blocked, not as FAIL.
+#       5 stopped, not started — stopping a `run --test-endpoint` app left its after-startup on
+#         MxTest.RegisterEndpoint, and a start would recurse (#244; the repair is printed).
 #
 # WHY (#289 item 1, field run 2026-10-12). A 20-task UX-fix run over three apps, one lane per app:
 # implementers were told never to start or stop apps, because a broad kill in one lane had once
@@ -35,12 +40,26 @@
 # Git Bash, so there --cmd is needed the first time. Every successful restart remembers the
 # command in .claude/loop/app-restart/start.cmd (self-gitignored, machine-local), so the next one
 # — or one after the app died — needs no --cmd. It must be an `mxcli run --local` command; this
-# script starts nothing else. Values after password/secret/token/key flags are masked on screen.
+# script starts nothing else. Values after password/secret/token/key flags, and of any Name=value whose Name holds one, are masked on screen.
 #
 # READY means: a new record with a live pid, a Mendix answer on its port (the login/index page
 # carries Mendix markers — any 4xx-answering process is NOT enough, see test-stack-up.sh), and the
 # JS bundle that index.html references (dist/index.js or mxui.js) answering 2xx — an app serving
 # a blank page because the bundle is missing is not up (contrib note 5e, 2026-08-29).
+#
+# PORTS HELD BY SOMEONE ELSE (#262, field run 2026-10-10): Studio Pro had started its own runtime on
+# the same app/admin ports seconds before a restart. `mxcli run --local` then failed with
+# "Authentication failed" — the admin API answering was the other runtime's — which reads as a
+# credential problem, and the next journey ran against Studio Pro's runtime: no OQL, run INVALID,
+# four more runs NOT RUN. So before stopping anything, and again before starting, the app port and
+# the admin port (record's adminPort, else app port + 10) must be free or held by the recorded
+# process tree; otherwise it exits 4 naming the holder (lsof / ss / netstat) and kills nothing.
+#
+# LEFTOVER TEST INJECTION (#244, BUG-157): `mxcli test` / `run --test-endpoint` stopped by a signal
+# leave the after-startup on MxTest.RegisterEndpoint, and the next start recurses (StackOverflowError)
+# or fails at CE1613. It is read from the model bytes (no mxcli) before anything is stopped — refused,
+# exit 3, unless the recorded app is a live --test-endpoint run, which holds it legitimately — and
+# again after the stop, before the start (exit 5). The repair is printed; this script never writes it.
 #
 # Never touches Studio Pro, the model, Docker, or another port. Docker stack: bin/test-stack-up.sh
 # --restart (scoped to this project's container). Bash 3.2 / Git Bash / macOS / Linux.
@@ -81,7 +100,7 @@ hs_str()  { sed -n "s/^  \"$1\": *\"\(.*\)\",\{0,1\} *$/\1/p" "$2" 2>/dev/null |
 pid_alive() {
   [ -n "${1:-}" ] || return 1
   case "$(mxtk_platform)" in
-    windows) tasklist //FI "PID eq $1" //NH 2>/dev/null | grep -q " $1 " ;;   # mxcli.exe records a Windows pid
+    windows) grep -q " $1 " <<<"$(tasklist //FI "PID eq $1" //NH 2>/dev/null)" ;;   # mxcli.exe records a Windows pid
     *)       kill -0 "$1" 2>/dev/null || return 1
              # a zombie answers kill -0 until something reaps it; on Linux /proc says Z
              case "$(sed 's/.*) //' "/proc/$1/stat" 2>/dev/null | cut -d' ' -f1)" in Z) return 1 ;; esac ;;
@@ -112,12 +131,82 @@ bundle_ok() {  # $1 port — the script bundle index.html loads must answer 2xx
   case "$code" in 2??) return 0 ;; esac
   BUNDLE="$src → HTTP ${code:-none}"; return 1
 }
-mask() {  # print argv joined, with the value after any password/secret/token/key flag masked
-  local a out=""
-  for a in "$@"; do case "$a" in *" "*) a="'$a'" ;; esac; out="$out $a"; done
-  printf '%s\n' "${out# }" | sed -E \
-    "s/(-[-A-Za-z_]*([Pp][Aa][Ss][Ss]|[Ss][Ee][Cc][Rr][Ee][Tt]|[Tt][Oo][Kk][Ee][Nn]|[Kk][Ee][Yy])[-A-Za-z_]*)(=| +)[^ ']+/\1\3****/g"
+mask_has_secret() {  # pure bash glob: does $1 hold a secret word? (no fork)
+  case "$1" in
+    *[Pp][Aa][Ss][Ss]*|*[Pp][Ww][Dd]*|*[Ss][Ee][Cc][Rr][Ee][Tt]*|*[Tt][Oo][Kk][Ee][Nn]*|*[Kk][Ee][Yy]*|*[Cc][Rr][Ee][Dd][Ee][Nn][Tt][Ii][Aa][Ll]*) return 0 ;;
+  esac
+  return 1
 }
+mask() {  # print argv joined, with the value after any password/secret/token/key flag masked
+  # Display only (TK-003): the executed ARGV is never touched. Each argument is masked on its own,
+  # BEFORE it is quoted for display, so a quoted secret with spaces is hidden whole. Passes:
+  # (0) the argument after a secret-named flag is a secret, whole; (1) the argument IS `Name=value`
+  # with a secret Name: everything after `=` is masked, spaces included (the argv form of
+  # `--constant "Mod.ApiKey=two words"`); (2) inside a shell string (`--cmd '...'`) a quoted
+  # `"Name=value with spaces"` / `'Name=...'`; (3) a secret-named FLAG masks its value, as
+  # `--db-password v`, `--db-password=v`, `--db-password "two words"`; (4) ANY `Name=value` whose Name
+  # holds a secret word masks the value, quoted or not. Known over-mask, kept: the word match is a
+  # substring, so `Monkey` (Key), `Turkey` (Key) and `Bypass` (Pass) mask too. Display only, harmless.
+  local _w='([Pp][Aa][Ss][Ss]|[Pp][Ww][Dd]|[Ss][Ee][Cc][Rr][Ee][Tt]|[Tt][Oo][Kk][Ee][Nn]|[Kk][Ee][Yy]|[Cc][Rr][Ee][Dd][Ee][Nn][Tt][Ii][Aa][Ll])'
+  local _v="\"[^\"]*\"|'[^']*'|[^ ]+"
+  # Speed: the sed forks only run for an argument that holds a secret word (a bash glob decides),
+  # so a typical argv costs no fork at all. The argument after `-c` is a shell string: pass (1) is
+  # skipped for it, so `bash -c 'DB_PASSWORD=x ./mxcli run ...'` keeps the whole command visible.
+  local a out="" prev_secret=0 prev_c=0 p1
+  for a in "$@"; do
+    p1='s/^$//'
+    if [ "$prev_secret" = 1 ]; then a="****"; prev_secret=0; prev_c=0
+    else
+      if [ "$prev_c" = 1 ]; then prev_c=0
+      else
+        p1="s/^([A-Za-z0-9_.-]*${_w}[A-Za-z0-9_.-]*)=.*$/\\1=****/"
+        case "$a" in
+          -c) prev_c=1 ;;
+          -*" "*|-*=*) ;;                                              # flag=value or a shell string: sed below
+          -*[!-A-Za-z_]*) ;;
+          -*) mask_has_secret "$a" && prev_secret=1 ;;
+        esac
+      fi
+      if mask_has_secret "$a"; then
+        a="$(printf '%s' "$a" | sed -E \
+          -e "$p1" \
+          -e "s/\"([A-Za-z0-9_.-]*${_w}[A-Za-z0-9_.-]*)=[^\"]*\"/\"\\1=****\"/g" \
+          -e "s/'([A-Za-z0-9_.-]*${_w}[A-Za-z0-9_.-]*)=[^']*'/'\\1=****'/g" \
+          -e "s/(-[-A-Za-z_]*${_w}[-A-Za-z_]*)(=| +)(${_v})/\\1\\3****/g" \
+          -e "s/([A-Za-z0-9_.-]*${_w}[A-Za-z0-9_.-]*)=(${_v})/\\1=****/g")"
+      fi
+    fi
+    case "$a" in *" "*) a="'$a'" ;; esac
+    out="$out $a"
+  done
+  printf '%s\n' "${out# }"
+}
+
+# Port and process helpers (mxtk_port_holder, mxtk_holder_text, mxtk_pid_in_tree) live in
+# _common.sh, shared with test-stack-up.sh. A project whose bin/_common.sh predates them stops here
+# with the remedy, instead of dying mid-restart on "command not found".
+command -v mxtk_port_holder >/dev/null 2>&1 || {
+  echo "app-restart: bin/_common.sh is older than this script (no mxtk_port_holder)." >&2
+  echo "  → <toolkit>/bin/sync-project.sh $PROJECT_ROOT --only-bin _common.sh --upgrade-bin _common.sh   (installs just that file; backs up a hand-edited copy first)" >&2; exit 2; }
+# blocked <port> "<pid>|<name>" <when> — exit 4, the holder named, nothing of it touched.
+blocked() {
+  echo "✗ app-restart: instrument blocked — port :$1 is held by $(mxtk_holder_text "$2"), not this project's run --local." >&2
+  echo "  $3. This script never stops a process it did not record, so it is not touching that one." >&2
+  echo "  Starting now would collide: mxcli reports 'Authentication failed' against the other runtime's admin API." >&2
+  echo "  → Stop that process yourself (Studio Pro: stop its run), or start on free ports:" >&2
+  echo "    ./bin/app-restart.sh --cmd './mxcli run --local --watch -p $(basename "$MPR") --app-port <free> --admin-port <free>'" >&2
+  echo "  Record this run as INSTRUMENT BLOCKED, not as a test failure." >&2
+  exit 4
+}
+# ── After-startup left on an mxcli test injection (#244, BUG-157) ───────────
+# The reader (mxtest_after_startup / mxtest_left / mxtest_refusal) and the pid check
+# (mxtk_pid_is_mxcli_run) live in _common.sh, shared with test-scratch.sh. Same stop as above for a
+# _common.sh that predates them.
+command -v mxtest_left >/dev/null 2>&1 && command -v mxtk_pid_is_mxcli_run >/dev/null 2>&1 || {
+  echo "app-restart: bin/_common.sh is older than this script (no mxtest_left / mxtk_pid_is_mxcli_run)." >&2
+  echo "  → <toolkit>/bin/sync-project.sh $PROJECT_ROOT --only-bin _common.sh --upgrade-bin _common.sh   (installs just that file; backs up a hand-edited copy first)" >&2; exit 2; }
+# in_our_tree <pid> — the recorded pid itself, or a descendant of it (the runtime mxcli started).
+in_our_tree() { [ "$ALIVE" = 1 ] && mxtk_pid_in_tree "$1" "$PID"; }
 
 # ── 1. The record ───────────────────────────────────────────────────────────
 [ -n "$HS" ] || refuse "no run --local record for this project (.mxcli/run-local.json beside $(basename "$MPR"))." \
@@ -137,7 +226,20 @@ if [ "$HS_REAL" != "$MPR_REAL" ] && [ "$HS_REAL" != "$MPR_TARGET" ] \
     "record:  $HS_PROJECT" "this:    $MPR_TARGET" \
     "A copied project carries the original's record; stopping its pid would stop someone else's app."
 fi
-ALIVE=0; pid_alive "$PID" && ALIVE=1
+# The recorded pid must still BE an mxcli run (#304 review). A SIGKILLed mxcli leaves its record
+# behind, and the OS hands its pid to an unrelated process; `kill -0` cannot tell the difference,
+# and the start-command check below cannot either when --cmd / MXTK_APP_START_CMD supplies the
+# command — so without this a stale record plus a reused pid sent TERM/KILL to that process and
+# its children. Checked on the pid itself, whichever way the start command is learned: its
+# command line names mxcli and `run` (mxtk_pid_is_mxcli_run in _common.sh); on Windows the
+# image name is mxcli.exe. Anything else is treated as not running: never stopped, and if it
+# holds one of the ports the port check below names it and stops.
+ALIVE=0
+if pid_alive "$PID"; then
+  if mxtk_pid_is_mxcli_run "$PID"; then ALIVE=1
+  else echo "  ! recorded pid $PID is alive but is not an mxcli run (the pid was reused after the app died) — treating the app as not running; that process is not touched"; fi
+fi
+ADMIN_PORT="$(hs_num adminPort "$HS")"; [ -n "$ADMIN_PORT" ] || ADMIN_PORT=$((PORT + 10))
 
 # ── 2. How it was started ───────────────────────────────────────────────────
 REC_DIR="$PROJECT_ROOT/.claude/loop/app-restart"; REC="$REC_DIR/start.cmd"
@@ -170,11 +272,40 @@ case " ${ARGV[*]} " in
        "This script restarts only that; it will not start anything else." ;;
 esac
 
+
+# ── 2a. The model must not carry a leftover mxcli test injection (#244) ─────
+# A live `run --test-endpoint` legitimately holds the injection while it runs; its stop is supposed
+# to restore it, which 3b re-checks before anything starts. In every other case the start would
+# recurse in the after-startup, so refuse before stopping anything.
+LIVE_ENDPOINT=0
+if [ "$ALIVE" = 1 ]; then case " ${ARGV[*]} " in *" --test-endpoint "*|*" --test-endpoint="*) LIVE_ENDPOINT=1 ;; esac; fi
+if mxtest_left "$MODEL_DIR" "$MPR_TARGET" && [ "$LIVE_ENDPOINT" = 0 ]; then
+  mxtest_refusal "app-restart"
+  echo "  Nothing was stopped." >&2
+  exit 3
+fi
+
 echo "→ app-restart: $(basename "$MPR") on :$PORT"
 if [ "$ALIVE" = 1 ]; then echo "  stop:  pid $PID (from $HS) and its own child processes"
 else echo "  stop:  nothing — recorded pid $PID is not running"; fi
 echo "  start: $(mask "${ARGV[@]}")"
 echo "         in $START_CWD   [$HOW]"
+echo "  ports: app :$PORT, admin :$ADMIN_PORT"
+
+# ── 2b. Ports: free, or held by the recorded tree — never by someone else ───
+# Checked before anything is stopped, so a collision costs nothing. When the recorded app is alive
+# and the holder cannot be placed in its tree (no name, or Windows where Git Bash shows no parent
+# pids), it is left to the post-stop check below, which is exact: after our tree is gone, whatever
+# still holds the port is not ours.
+for _p in "$PORT" "$ADMIN_PORT"; do
+  _h="$(mxtk_port_holder "$_p")" || continue
+  if [ "$ALIVE" = 1 ]; then
+    case "${_h%%|*}" in '?') continue ;; esac
+    [ "$(mxtk_platform)" = windows ] && continue
+    in_our_tree "${_h%%|*}" && continue
+  fi
+  blocked "$_p" "$_h" "Nothing was stopped"
+done
 [ "$DRY" = 1 ] && { echo "  (dry run — nothing stopped or started)"; exit 0; }
 
 # ── 3. Stop exactly that process tree ───────────────────────────────────────
@@ -192,11 +323,27 @@ if [ "$ALIVE" = 1 ]; then
   fi
   echo "  ✓ stopped pid $PID"
 fi
-for _i in $(seq 1 30); do port_answers "$PORT" || break; sleep 1; done
-if port_answers "$PORT"; then
-  echo "✗ app-restart: :$PORT still answers after the recorded process stopped — something else holds it." >&2
-  echo "  Not touching it, and not starting a second app. Find the owner of :$PORT by hand." >&2
-  exit 1
+_busy=""
+for _i in $(seq 1 30); do
+  _busy=""
+  for _p in "$PORT" "$ADMIN_PORT"; do mxtk_port_holder "$_p" >/dev/null && { _busy="$_p"; break; }; done
+  [ -z "$_busy" ] && ! port_answers "$PORT" && break
+  sleep 1
+done
+if [ -n "$_busy" ]; then
+  blocked "$_busy" "$(mxtk_port_holder "$_busy" || echo '?|an unidentified process')" "The recorded app was stopped; nothing was started"
+elif port_answers "$PORT"; then
+  blocked "$PORT" "?|an unidentified process" "The recorded app was stopped; nothing was started"
+fi
+
+
+# ── 3b. Did the stop leave the test injection behind? (#244) ───────────────
+# A `run --test-endpoint` stopped by a signal can skip its restore; starting it again would chain
+# MxTest.RegisterEndpoint to itself. The app is down now — say so plainly, and start nothing.
+if mxtest_left "$MODEL_DIR" "$MPR_TARGET"; then
+  mxtest_refusal "app-restart"
+  echo "  The recorded app was stopped; nothing was started (exit 5)." >&2
+  exit 5
 fi
 
 # ── 4. Start it the same way, detached, and remember how ────────────────────

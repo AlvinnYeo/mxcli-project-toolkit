@@ -94,9 +94,8 @@ written by `bin/init-project.sh`, appended to older projects by `bin/sync-projec
 
 - **Unit flips to yes per module** only when the module has calculation, mapping, or date/money
   logic; calls a Java action or a REST service; or a bug was fixed in that flow (the unit test pins
-  the fix). Otherwise Unit stays **no**. Before this default existed nothing set it, so agents read
-  "optional" as "yes" — and in a 20-task UX-fix run (toolkit issue #274) **143 minutes** of
-  microflow tests found stale expected strings and credential problems, not a single logic bug.
+  the fix). Otherwise Unit stays **no**. With no default set, agents read "optional" as "yes"
+  (what that cost: §3, "Why scoped").
 - **Trace may be added** by a module that **calls out** to something external, even when the
   project default is off. That is where swallowed failures live, and it is the only place Trace
   reliably earns its setup cost.
@@ -131,19 +130,16 @@ definition of done (`iterative-build-loop.md`). Without this anchor someone decl
 
 **After the base set: re-run what the change touched — once — and nothing else.**
 
-> **The routing question, before any test run after the base set:** *does this run prove something
-> the existing artifact does not?* If the journey report, screenshot or diff already in hand proves
-> it, the run is waste. If you cannot name what the run would show that the artifact does not, do
-> not run it.
+> **Before any test run after the base set, ask:** *does this run prove something the artifact in
+> hand (journey report, screenshot, diff) does not?* If you cannot name what it would show, do not run it.
 
-**The subject set.** A re-run is scoped to the tests whose *subject* the change touched, read off
-what the exec'd script(s) changed — the script is the change list; `bin/exec.sh` also tags each run
-`ui-only` or `logic` and prints the lane below:
+**The subject set.** A re-run covers the tests whose *subject* the exec'd script(s) changed — the
+script is the change list; `bin/exec.sh` tags each run `ui-only` or `logic` and prints its lane:
 
 | Changed in this exec | Its subject set — re-run these, only these |
 |---|---|
 | A microflow | the tests that call it, plus the tests of its callers (`SHOW CALLERS OF <Mod.Flow>`) |
-| A page or snippet | the journeys whose steps visit that page (or a page that embeds the snippet) |
+| A page, snippet or layout | the journeys of every page the change reaches: the page itself, and every page that embeds a changed snippet or uses a changed layout, in any module |
 | An entity, association, enum or access rule | the tests and journeys of the module that owns it |
 
 Anything outside that set was not at risk from this change and is not re-run.
@@ -152,7 +148,7 @@ Anything outside that set was not at risk from this change and is not re-run.
 
 | Change class | What re-runs | What does not |
 |---|---|---|
-| **UI-only** — `ALTER PAGE`/`ALTER SNIPPET`, styling, captions, visibility, layout; **no** microflow, entity, association, enum, security or navigation change (`exec.sh` tag `ui-only`) | The implementer's own journey for that page, **once**, plus a **LOOK** (screenshot, actually opened — `module-review.md` stage 4) | No `.test.mdl`. No regression journeys of other modules. No full `mxcli test`. |
+| **UI-only** — `ALTER PAGE`/`ALTER SNIPPET`, styling, captions, visibility, layout; **no** microflow, entity, association, enum, security or navigation change (`exec.sh` tag `ui-only`) | The journeys of every page the change reaches (embedders of a changed snippet/layout included), **once**, plus a **LOOK** (screenshot, actually opened — `module-review.md` stage 4) | No `.test.mdl`. No journeys of pages the change does not reach. No full `mxcli test`. |
 | **Logic** — anything else (`exec.sh` tag `logic`; a mixed script is logic) | The subject set above: the changed microflows' tests and their callers' tests, the changed pages' journeys | Tests whose subject this change did not touch. |
 
 **Who re-runs:** the implementer, once per gate. **Reviewers verify artifacts** — the diff, the
@@ -160,12 +156,9 @@ screenshots, the journey report — and **never re-run** what the implementer al
 recorded. A reviewer who doubts an artifact says which claim it fails to prove; that is a finding,
 not a second run.
 
-**When the full suite runs:** full `mxcli test` (and the module's whole journey set) runs **at
-module close**, as part of `module-review.md`'s PROVE stage; the **project-wide** suite runs at
-project close / cutover; and either runs **whenever the user explicitly asks for it** in that
-message. Those are the only triggers — **never at batch close**, never after an individual fix,
-and never because the change "felt wide". The e2e instruments themselves (journeys, Playwright,
-DB assertions, LOOK) are unchanged by this rule; only their trigger is.
+**The full suite (and the module's whole journey set) runs on the last three rows below only** — **never at batch close**, never after
+an individual fix, never because the change "felt wide". The e2e instruments are unchanged; only
+their trigger is.
 
 | Event | What happens |
 |---|---|
@@ -173,18 +166,24 @@ DB assertions, LOOK) are unchanged by this rule; only their trigger is.
 | A new script within agreed scope | Re-run its subject set. Extend the suite only for a *behaviour* the coverage checklist doesn't already cover. |
 | A new behaviour / scope change | The coverage checklist changes — the existing drift-sync path. The suite extends with it. |
 | Module close | The full suite, once (`module-review.md` PROVE). |
-| Project close / cutover | The project-wide suite, once. |
+| Release gate (before UAT/production) | The project-wide suite, once. |
 | The user asks for a full run | Run it, that message is the trigger. |
 
-> **What the unscoped rule produced (toolkit issue #274, a 20-task UX-fix retro).** This table
-> used to say "a fix to an existing script → re-run the suite as regression", with no scope. Read
-> literally, every caption change re-ran everything. Measured: each UI-only change was re-proven
-> **5–10×** — the implementer's journey, then 4–5 regression journeys of other modules, then the
-> reviewer re-running the same journeys, then a full `mxcli test` (~6 min) at every batch close.
-> **143 minutes of microflow tests** in that run found stale expected strings and credential
-> problems — not one logic bug — because the changes under test contained no logic. The fix is
-> not "test less", it is "test the subject": a caption change has no microflow subject, so it owes
-> one journey and one look.
+**Check moments — which checks each of those events owes.** Fast checks run during development;
+heavy checks wait for module close or the release gate. This sorts checks by *when*, not what
+testing a module means: the §1 shape and the two lanes are unchanged. A *planned: #N* check is not
+built yet and claims nothing until it lands.
+
+| Moment | Budget | What runs |
+|---|---|---|
+| **Every exec** | ~1 minute (mxbuild 22–65 s per script, `iterative-build-loop.md` → Gate cost) | `exec.sh` includes: lock → module-brief advisory → `mxcli check` → snapshot → apply → mxbuild delta gate → auto-restore on a new error → lint ratchet. Static STOP-row scan (planned: #349); Studio Pro warning ratchet (planned: #351); human-locked baselines (planned: #348). |
+| **Module close** | minutes | The module's full suite and journeys (row above). New page or action has a test (planned: #354); that module's server-side security tests (planned: #352). |
+| **Release gate** | as needed | The project-wide suite, once (row above). Page × role smoke on the production DB engine (planned: #353); full security report (planned: #352); language/RTL layout, multi-language apps only (planned: #354). |
+
+> **Why scoped (#274):** the old unscoped "re-run the suite as regression" re-proved each UI-only
+> change 5–10× (other modules' journeys, the reviewer re-running them, a full `mxcli test` at every
+> batch close), and with no Unit default set, **143 minutes** of microflow tests found stale strings,
+> not one logic bug. A caption change owes one journey and one look.
 
 So the authoring conversation happens **once per module**; everything after is a scoped re-run.
 That is what makes this affordable on a module under active development.
@@ -212,7 +211,7 @@ so the next person argues with the incident rather than with the rule.
 | Part | How it goes green while broken | Guard — required, not advisory |
 |---|---|---|
 | **Design system** | **`mx check: 0 errors` proves the *model* is valid. CSS is not in the model.** It says nothing about what the browser renders, nothing about whether a class named in a `DynamicClasses` expression exists, and nothing about whether a rule's selector can match the HTML Mendix emits. `mxcli check --references` treats a class name as an opaque string; `mxcli lint`'s Starlark API has **no filesystem access at all**, so a rule that reads a stylesheet has nothing to read it with. On a 2026-08-26 field run, five real design-system defects were green in every one of these at the moment each was found — every one was found with a screenshot. | Run `bin/check-design-portability.sh` at the Stage-3 gate, and make the StyleGallery a **gate** (reachable, opened, looked at) rather than a step — `design-artifacts.md` Step 5b |
-| **Design system** | **A design-system defect is dormant until some widget carries the class**, so the defects are all present from the first build and surface one at a time, months later, as UI work attaches classes to pages. "The build is green and the pages look fine" is therefore not evidence that the design system is correct — it is evidence that it is *not being exercised yet*, and it reads identically either way. | Exercise the whole system at once on one screen: the StyleGallery, instantiated with the same widgets the real pages use |
+| **Design system** | **A design-system defect is dormant until some widget carries the class** → see `design-artifacts.md` § Before you port a rule, check it can match Mendix's DOM | Exercise the whole system at once on one screen: the StyleGallery, instantiated with the same widgets the real pages use |
 | **Model** | An **uncalled microflow is legal**, so `mx check` reports 0 errors after a `DROP` + `CREATE` silently drops another script's call site. `mxcli lint`'s orphan rule (QUAL004) does not close it either: `orphaned_elements.star` lists `ACT_` in `ENTRY_POINT_PREFIXES`, so an `ACT_` microflow with no callers at all is assumed to be a UI entry point and passes. A correct heuristic, a false negative here — and a silent exemption is indistinguishable from a clean result. | `describe` before any whole-document restatement and diff against the dump — `learned-mdl-preflight.md` STOP row 21. Verify the *effect* in the database, not in the model. |
 | **UI** | A nav click with no landing guard asserts against the **previous** page and screenshots it under the intended page's title — manufacturing *plausible* failures that send you debugging the wrong subsystem (2026-07-30: twelve "Route List" failures, one nav click that never happened) | Every navigation is followed by a **landing assertion** before any other assertion |
 | **UI** | A journey step that verifies a write by **reloading and re-querying** (rather than asserting on the same screen, no reload) is a legitimate check of persistence and a total blind spot for the button's own response. It cannot distinguish "committed and navigated" from "committed and the screen sat there" — both pass the same reload-then-find assertion (2026-09-01: a create-dashboard button committed and returned with no navigation, no message, and a gallery that does not re-scan on a sibling's commit; J2 passed throughout because it always reloaded before asserting) | Pair every commit-and-return assertion with a **same-page, no-reload** check that something changed — the URL, a confirmation message, or the object now appearing in a data source that did not require a reload to show it. See `ui-preflight-pages.md` Step 4 → "Response after a write". |
@@ -221,7 +220,9 @@ so the next person argues with the incident rather than with the rule.
 | **UI** | **A logout helper that reports success without ending the session** turns a licence cap into a phantom product failure. Closing the browser or clearing cookies does not end a Mendix session; nor, measured 2026-09-12 on Mendix 11.14, does `POST /xas/ {action:'logout'}` — it answers **HTTP 200 and the session survives**. A helper returning `status === 200` therefore reported a clean logout it had never once performed. Sessions accumulated across runs until the trial cap refused the next login, and the runtime says so (`Maximum number of sessions exceeded! (You are currently using a trial license)` in the runtime log) while the browser shows only a generic "Sign in failed" — so the suite blamed the credentials, then the feature. The same suite leaked a second session per run at every **persona switch**, because switching identity called the login helper again and orphaned the session already on the server. | Call `mx.logout()` — the client's own call — and **return the verified outcome, not a status code**: a login form back on screen. Log out before every persona switch, not only at the end of the run. Prove it with the one check that cannot be faked: `SELECT COUNT(*) FROM System.Session` before and after a login/logout cycle, and again after a whole suite run. Zero leaked sessions is the bar; a suite you cannot run twice without restarting the runtime is leaking. |
 | **UI** | A login helper **silently falls back to an admin account** (a guard against lockout) — a role-scoped test then proves nothing, and neither the run nor the report looks any different (2026-08-05) | Any spec whose result depends on *who* is logged in must **assert the actual identity**, not merely that login succeeded |
 | **UI** | A helper **no-ops without erroring** when its expected page is absent, so the spec runs to completion against the wrong page (2026-08-05, a mobile scanning spec) | Helpers must **throw** when a precondition is missing, never return quietly. Dump live page state rather than trusting the assertion's own label. |
-| **UI** | A full `page.goto(baseUrl)` **silently logs the session out** once security is above `Off`. Suites that log in once and then "reset navigation" with a goto bounce to `/login.html` and every downstream assertion breaks for the wrong reason (2026-08-15, after raising `Off` → `Prototype`) | Fix at the helper, not the call site: the shared navigate-home helper detects the login form (`#usernameInput`) and **re-authenticates every time**. Never trust a cookie across `page.goto`. |
+| **UI** | A full `page.goto(baseUrl)` **silently logs the session out** once security is above `Off`. Suites that log in once and then "reset navigation" with a goto bounce to `/login.html` and every downstream assertion breaks for the wrong reason (2026-08-15, after raising `Off` → `Prototype`) | Fix at the helper, not the call site: the shared navigate-home helper detects the login form (`#usernameInput`) and **re-authenticates every time**. Never trust a cookie across `page.goto`. Unconfirmed: this bounce may have been the 403 one in the next row, misread (the record does not say whether the URL carried `messageCode=403`). |
+| **UI** | **False red: a correct access block reads as a sign-out.** A signed-in user opening a page their role may not open is redirected to `login.html?messageCode=403`, and the stock login page shows **no message**. The session is kept (same `XASSESSIONID`; a full `page.goto('<base>/')` then loads the user's home with no login). A crawler or wrong-role spec that treats "landed on login.html" as "session lost" reports a security failure over a correct block, and a human calls it "the app signs me out" (2026-10-14, Mendix 11.15, [#338](https://github.com/MendixMau/mxcli-project-toolkit/issues/338)) | Classify `messageCode=403` as **blocked, session kept**, separately from a real sign-out, then prove the session with that probe: `page.goto('<base>/')` and assert not-on-login plus menu present. A login form there is a real sign-out; the row above's re-authenticating helper still applies. Before calling any sign-out a product defect, check the runtime log for a restart at that time ([#337](https://github.com/MendixMau/mxcli-project-toolkit/issues/337)). |
+| **UI** | **False red: an instrument pinned to one widget name or a typed menu list fails after a redesign.** A session-alive probe that waited for one named home grid reported **6/7 "SESSION DID NOT SURVIVE"** after a home redesign moved that grid to a second tab; with the selector widened, 7/7 PASS, and the blocks had been correct throughout. A nav-crawl comparing menus to a hardcoded EXPECTED list went **7/34**: all 27 FAILs were expectation rows (20 MISSING, 6 EXTRA), none an error or a sign-out (2026-10-14, [#339](https://github.com/MendixMau/mxcli-project-toolkit/issues/339)) | A session-alive check asserts **not on `login.html` and the menu bar present**, never one page's widget. Menu expectations are **derived from the model** at test start (`list navigation menu` plus the role grants), never typed. The tell: every FAIL has the same reason, and it names the instrument's own expectation. |
 | **UI** | `:has-text(...)` is a **Playwright-only** pseudo-class. Inside `page.evaluate` it reaches `document.querySelector`, which throws `SyntaxError`; generic `.catch()` swallows it, so a `has_widget`-style helper evaluates **permanently false** and a visible row reads as absent (2026-08-15) | In `evaluate` context use a plain `.textContent.includes(...)` scan. Reserve `:has-text` / `:visible` for real Playwright locator strings. |
 | **UI** | `display: contents` elements always report `offsetParent === null` — so an `offsetParent !== null` visibility filter returns **empty** for a Data Grid 2 the user is actively looking at (browser layout quirk, not a Mendix bug) | Check the ancestor tabpanel's own `getComputedStyle(...).display`, never the row's `offsetParent`. |
 | **UI** | **A chat/transcript panel whose message pane is clipped to zero height reads as a full, correct answer to every DOM-level check.** The marketplace `ConversationalUI` snippet lays its container out as a flex column and expects the *host* to supply a height; a host that supplies none leaves the fixed-height composer taking every pixel and the flexing message pane resolving to `0px`. Because that pane's own `overflow-y` is `auto`, the entire conversation is simply scrolled out of a zero-height window: `textContent` returns it in full, the element exists, `count()` is non-zero, and a human sees an empty box. On 2026-08-31 an e2e walk read **776 characters of a correct, grounded answer** off a panel the user had just reported as showing nothing, and graded the step PASS. | Answer checks must assert **legibility, not presence**: after the answer lands, measure the pane's `getBoundingClientRect().height` against its content's, and fail when the pane is near-zero around a taller conversation. Take an element-scoped screenshot of the panel itself — a page-level shot at this size cannot distinguish an empty panel from a full one. A host that embeds a flex-column chat snippet owes it a definite height. |
@@ -231,7 +232,7 @@ so the next person argues with the incident rather than with the rule.
 | **Unit** | **`@expect` forms other than `=` equality are not captured** — `length(...)`, `!= empty`, `> 0` all parse to no visible assertion. In the only test file in existence this hit 8 of 14 tests. (BUG-LOCAL-30, 2026-08-05) | Write every `@expect` as plain `=` or `$Var/Attr =` equality. Run `--list` and confirm **every** test shows its `@expect`. |
 | **Unit** | A microflow passes in isolation but no button calls it, or the caller passes different args | Assert the **caller path** exists, not just the microflow |
 | **Trace** | `[].every()` is `true` — assertions pass on **zero spans** | Assert the span set is **non-empty first**, then assert over it. Also check the action wasn't a no-op: navigating to the page you are already on fires nothing. |
-| **Trace** | A caught error leaves the microflow span `OK` while its activities are `ERROR` | Assert at **activity** granularity, not microflow granularity |
+| **Trace** | A caught error leaves the microflow span `OK` while its activities are `ERROR`: the handler swallowed a real failure, and a page renders fine over a dead integration while both a UI check and a microflow-status check lie | Assert at **activity** granularity, not microflow granularity |
 | **all** | `mxcli run --local` starts with **scheduled events off**, so a job-driven feature never runs under test and its journey passes vacuously or fails for the wrong reason (2026-09-26, Mendix 11.13.0) | Prove it in a separate start with scheduled events on — §5, "`run --local` starts with scheduled events off" |
 | **all** | `$?` after a pipeline measures the pipe, not the script — biased toward false *success* | Never read `$?` through a pipe. See `tool-output-is-not-ground-truth.md`. |
 
@@ -241,13 +242,10 @@ is measured and wrong (the feature is broken), `INVALID` means **the instrument 
 absent, not green. "The test could not run" and "the feature is broken" send you to different
 people; blending them is how a week gets spent debugging a page that was never reached. In the
 report/exit-code dialect these become `pass` / `fail` / `fault`, and **`fault` is never amber** —
-amber means "ran, degraded". Corollary, applied everywhere in this toolkit: an empty result set is
-never a pass — guard non-emptiness first, then assert (`[].every()` is `true`).
+amber means "ran, degraded".
 
-**Two verdicts, never collapsed.** When a §4 shape is present the correct report is ***the test is
-invalid***, not *the feature failed*. Collapsing them is what sends people diagnosing the wrong
-subsystem. Refuse to report green on a zero-span trace assertion, an unguarded navigation, or a
-bare-existence DB assertion — regardless of what the runner printed.
+**A §4 shape means the test is *invalid*, not that the feature *failed*** — never report green on
+a zero-span trace assertion, an unguarded navigation or a bare-existence DB assertion.
 
 **An assertion is also too weak if it lacks a fixture, an observable, and an exact expected value.**
 Not "correct", not "as specified". The register says how a part lies; this says when the assertion
@@ -506,6 +504,9 @@ Data:   <ran | n/a>  — delta-not-existence: <y/n>                             
 Unit:   <ran | n/a>  — --list count matches file: <y/n>    every @expect visible: <y/n>
 Trace:  <ran | n/a>  — non-empty span check: <y/n>         activity granularity: <y/n>
 Stack:  docker | sp-local, APP_URL=<url>, docker status verified: <y/n>
+Refusals: <N of N> restricted pairs probed server-side (not a hidden menu item)
+HTTP:   undeclared 4xx/5xx: <0 of M> requests — each fails its step
+Final:  one clean-DB run <id>: <N of N> scenarios incl. timers, not stitched
 Invalid tests: <any §4 shape found — reported separately from feature failures, or "none">
 ```
 

@@ -337,6 +337,8 @@ Every row is one of five kinds, sharing one numbering and one dependency graph. 
 - **`BUILD`** — writes model. One use case (or one shared foundation: roles, a module's core domain,
   scaffold) — Step 3. The Step cell lists the row's scripts; each script is one entity, one
   microflow group (≤6), or one page section.
+  Produces names every document the row writes, shared ones included (pages, navigation,
+  after-startup, shared microflows): the parallel ready set excludes overlapping writers.
 - **`PROVE`** — headless and mechanical, mid-phase. `mxcli test`, a `curl`, a `DESCRIBE` read-back.
   On mxcli ≥ v0.19.0, `.test.mdl` suites are a first-class PROVE instrument: `@setup` really
   runs its microflow, `@verify` really evaluates its OQL (holds / fails-with-the-value /
@@ -348,6 +350,17 @@ Every row is one of five kinds, sharing one numbering and one dependency graph. 
   those as bugs found, not regressions introduced.
 - **`RUN`** — deploy, reopen Studio Pro, walk the happy path as a demo user.
 - **`HARNESS`** — invoke a named harness or skill (`journey-runner.js`, `design-audit.js`, …).
+
+**There is no `LOOK` kind, on purpose.** A look at a page is a `HARNESS` row whose Step names the
+LOOK pass (`module-review.md` stage 4, as in the module-close row below). Whether the look
+happened is never read from this plan: it is recorded by the files a look leaves behind, and
+`gate-check.sh` counts those — the `look` obligation (a `ui-review-*.html` naming the module, with
+a denominator, `VALID AT` and a `PROOF-OF-LOOK` screenshot per page), the `fidelity` obligation (a
+`docs/PAGE-FIDELITY.tsv` row per page) and the look-ledger (each page a script built is owed until
+a screenshot newer than the build is seen). A `LOOK` row with its own State cell would be a second
+record of the same fact that a person can set by hand, so the plan could say "looked at" while the
+gate says nobody did. Write the row; read the answer from `gate-check.sh <project> 5`. (Decided
+for #68 / #188 item 6.)
 
 `PROVE`/`RUN`/`HARNESS` rows carry **no test content** — only what to run, what counts as a pass,
 and what they depend on. Content lives in `testing-shape.md`, the brief's Test plan, and the

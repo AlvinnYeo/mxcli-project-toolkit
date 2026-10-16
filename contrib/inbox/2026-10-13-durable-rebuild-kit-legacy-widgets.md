@@ -11,6 +11,7 @@ Beta (Classic client, Production security), mxcli v0.25.0, toolkit c1efcb3.
 **Proposed target:** `skills/existing-app-change.md` (a "legacy-widget pages" section), a STOP row in
 `skills/learned-mdl-preflight.md`, possibly a `project-bin/` scan once field-proven as a file
 
+**Currency check:** 2026-10-16 against master d1cbd41: partly stale. STOP row 21 in `skills/learned-mdl-preflight.md` now covers restating a document another script also edits. Still open: the legacy-widget section in `skills/existing-app-change.md` and the scan for role locks that DESCRIBE does not show.
 ---
 
 ## What is already covered
